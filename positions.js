@@ -171,6 +171,9 @@ class Position {
 
         this.speed = 50;
 
+        this.nbstepsx =  Math.abs(this.prevxpos-this.xpos) / this.speed 
+        this.nbstepsy = Math.abs(this.prevypos-this.ypos) / this.speed
+
         this.prevxpos = 50;
         this.prevypos = 50;
 
@@ -204,6 +207,17 @@ class Position {
         return allvalues[previndex]
     }
 
+    
+    animate() {
+        var isanimationover = isanimationover = (this.xpos == this.prevxpos) * (this.xpos == this.prevxpos)
+
+        if (!isanimationover) {
+            this.xpos = this.prevxpos -Math.sign(this.prevxpos-this.xpos)*this.speed ;
+            this.ypos = this.prevypos -Math.sign(this.prevypos-this.ypos)*this.speed ;
+            requestAnimationFrame(animate);
+        } 
+    }
+
     draw(context) {
         context.beginPath();
         context.strokeStyle = "green";
@@ -219,13 +233,14 @@ class Position {
         context.textAlign = "center";
         context.textBaseline = "middle"
         context.font = "20px Arial";
-        if ((this.prevxpos != this.xpos) | (this.prevypos != this.ypos)) {
-            //draw transition
-        }
+
         context.fillText(this.shirtnum + "/" + this.symbol, this.xpos, this.ypos);
         context.lineWidth = 5;
-        this.prevxpos = this.xpos;
-        this.prevypos = this.ypos;
+        if ((this.prevxpos != this.xpos) | (this.prevypos != this.ypos)) {
+            //draw transition
+            //requestAnimationFrame(animate);
+        }
+
     }
 }
 
