@@ -117,6 +117,7 @@ class Lineup {
         this.mdref = this.onMouseDown.bind(this);
         this.muref = this.onMouseUp.bind(this);
         this.mmref = this.onMouseMove.bind(this);
+        this.mlref = this.onMouseLeave.bind(this);
 
         this.addEventListeners();
 
@@ -130,6 +131,7 @@ class Lineup {
         this.canvas.addEventListener('mousedown', this.mdref);
         this.canvas.addEventListener('mousemove', this.mmref);
         this.canvas.addEventListener('mouseup', this.muref);
+        this.canvas.addEventListener('mouseleave', this.mlref);
     }
 
     addPosListeners() {
@@ -148,6 +150,20 @@ class Lineup {
                 pos.onMouseUp(event); // Call onMouseUp for each position
             });
         });
+
+        this.canvas.addEventListener('mouseleave', (event) => {
+            this.positions.forEach((pos,index) => {
+                logmyobject("BECAUSE OF MOUSE LEAVE, calling mouseup on element index",index)
+                pos.onMouseLeave(event); // Call onMouseUp for each position
+            });
+        });
+    }
+
+    onMouseLeave(event) {
+        this.positions.forEach((pos,index) => {
+            logmyobject("BECAUSE OF MOUSE LEAVE, calling mouseup on element index",index)
+            pos.onMouseUp(event); // Call onMouseDown for each position
+        });        
     }
 
     onMouseDown(event) {
@@ -166,6 +182,7 @@ class Lineup {
 
     onMouseMove(event) {
         console.log("I redrew because of mouse movement");
+        this.checkPositionsLegality();
         this.draw();
     }
 
@@ -176,9 +193,9 @@ class Lineup {
         this.canvas.removeEventListener('mouseup', this.muref);
         this.positions.forEach(pos => {
             // Remove event listeners
-            this.canvas.removeEventListener('mousedown', pos.onMouseDown);
-            this.canvas.removeEventListener('mousemove', pos.onMouseMove);
-            this.canvas.removeEventListener('mouseup', pos.onMouseUp);
+            //this.canvas.removeEventListener('mousedown', pos.onMouseDown);
+            //this.canvas.removeEventListener('mousemove', pos.onMouseMove);
+            //this.canvas.removeEventListener('mouseup', pos.onMouseUp);
             pos.removeEventListeners();
         });
 
@@ -263,6 +280,54 @@ class Lineup {
         }
     }
 
+    checkPositionsLegality() { 
+        this.positions.forEach( pos1 => {
+            var pos1illegal = false;
+            this.positions.forEach( pos2 => {
+                if (!this.checkSinglePositionLegality(pos1,pos2)) {
+                    pos1illegal = true;
+                    pos1.color = "red";
+                    console.log("illegal position!!!")
+                    logmyobject(pos1);
+                } 
+            })
+            if (!pos1illegal) {
+                //logmyobject("all positions legal for",pos1.symbol)
+                pos1.color = "green";
+            }
+        })
+    }
+
+    checkSinglePositionLegality(pos1,pos2) {
+        //vertical legality
+        var vertlegal = true;
+        if (pos1.hor == pos2.hor) {
+            var fp = pos1;
+            var bp = pos2;
+            if (pos1.isbackrow) {
+                var fp = pos2;
+                var bp = pos1;
+            }
+            var bp_backfeet_pos = bp.ypos + 0.5 * bp.height;
+            var fp_frontfeet_pos = fp.ypos - 0.5* fp.height;
+            vertlegal = bp_backfeet_pos > fp_frontfeet_pos;
+        } 
+        //horizontal legality
+        var horlegal = true;
+        if (pos1.vert = pos2.vert) {
+            var lp = pos1;
+            var rp = pos2;
+            if (pos1.hor > pos2.hor) {
+                var lp = pos2;
+                var rp = pos1;
+            } 
+            var lp_leftfeet_pos = lp.xpos - 0.5 * lp.width;
+            var rp_rightfeet_pos = rp.xpos + 0.5 * rp.width;
+            horlegal = lp_leftfeet_pos < rp_rightfeet_pos;
+        } 
+        return vertlegal & horlegal
+    }
+
     draw() {
         this.context.clearRect(0, 0, window_width , window_height)
         drawcourt();
@@ -302,6 +367,8 @@ class Position {
         this.width = 0.2*window_width;
         this.height = 0.1*window_height;
 
+        this.color = "green";
+
         this.speed = 50;
 
         this.context = poscontext;
@@ -312,6 +379,22 @@ class Position {
         this.isleftside = ([4,5].includes(value));
         this.ismiddle = ([3,6].includes(value));
         this.isrightside = ([1,2].includes(value));
+
+        if (this.isfrontrow) {
+            this.vert = 1;
+        }
+        if (this.isbackrow) {
+            this.vert = 0;
+        }
+        if (this.isleftside) {
+            this.hor = 0;
+        }
+        if (this.ismiddle) {
+            this.hor = 1;
+        }
+        if (this.isrightside) {
+            this.hor = 2;
+        }
 
         if (this.isfrontrow) {
             this.ypos = 0.5*window_height/3.0
@@ -409,7 +492,7 @@ class Position {
         poscontext.textAlign = "center";
         poscontext.textBaseline = "middle"
         poscontext.font = "20px Arial";
-        poscontext.strokeStyle = "green";
+        poscontext.strokeStyle = this.color;
         poscontext.lineWidth = 3;
         poscontext.fillText(this.shirtnum + "/" + this.symbol, this.xpos, this.ypos);
         poscontext.rect(
