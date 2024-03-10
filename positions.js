@@ -100,6 +100,8 @@ class Lineup {
         this.shirtnums = shirtnums;
         this.symbols = symbols;
 
+        this.oldRules = false;
+
         this.context = lucontext;
         this.canvas = this.context.canvas;
 
@@ -212,7 +214,7 @@ class Lineup {
     onMouseMove(event) {
         //console.log("I redrew because of mouse movement");
         if (this.isDragging) {
-            this.checkPositionsLegalityStatic(this.draggingPositions, this.notDraggingPositions);
+            this.checkPositionsLegalityStatic(this.draggingPositions, this.notDraggingPositions, this.oldRules);
         }
         this.draw();
     }
@@ -336,12 +338,12 @@ class Lineup {
         return result
     }
 
-    checkPositionsLegalityStatic(checkedpositions = this.positions, otherPositions = this.positions) { 
+    checkPositionsLegalityStatic(checkedpositions = this.positions, otherPositions = this.positions, oldrules = false) { 
         checkedpositions.forEach( pos1 => {
             console.log("outer loop considering pos",pos1)
             otherPositions.forEach( pos2 => {
                 console.log("inner loop considering pos",pos2)
-                if (!this.checkSinglePositionLegality(pos1,pos2)) {
+                if (!this.checkSinglePositionLegality(pos1,pos2,oldrules)) {
                     console.log("illegal")
                     this.addPosTupleToArray(pos1,pos2, this.illegalPositionTuples)    
                 } else {
@@ -535,9 +537,85 @@ class Lineup {
         return positionswithrel
     }
 
+    checkSinglePositionLegality(pos1,pos2, oldrules = false) {
+        if (oldrules) {
+            return this.checkSinglePositionLegalityOldRules(pos1,pos2)
+        } else {
+            return this.checkSinglePositionLegalityNewRules(pos1,pos2)
+        }
+    }
+
+    checkSinglePositionLegalityOldRules(pos1,pos2) {
+        //vertical legality
+        var vertlegal = true;
+        if (pos1.hor == pos2.hor) {
+            var fp = pos1;
+            var bp = pos2;
+            if (pos1.isbackrow) {
+                var fp = pos2;
+                var bp = pos1;
+            }
+            var bp_backfeet_pos = bp.ypos + 0.5 * bp.height;
+            var bp_frontfeet_pos = bp.ypos - 0.5 * bp.height;
+            var fp_frontfeet_pos = fp.ypos - 0.5* fp.height;
+            //logmyobject("bp_backfeet_pos",bp_backfeet_pos);
+            //logmyobject("fp_frontfeet_pos",fp_frontfeet_pos);
+            //logmyobject("vertlegal",vertlegal);
+            vertlegal = bp_frontfeet_pos < fp_frontfeet_pos;
+        } 
+        //horizontal legality
+        var horlegal = true;
+        if (pos1.vert == pos2.vert) {
+
+            var lp = pos1;
+            var rp = pos2;
+            if (pos1.hor > pos2.hor) {
+                var lp = pos2;
+                var rp = pos1;
+            } 
+            var lp_leftfeet_pos = lp.xpos - 0.5 * lp.width;
+            var lp_rightfeet_pos = lp.xpos + 0.5 * lp.width;
+            var rp_rightfeet_pos = rp.xpos + 0.5 * rp.width;
+            //logmyobject("lp_leftfeet_pos",lp_leftfeet_pos);
+            //logmyobject("rp_rightfeet_pos",rp_rightfeet_pos);
+            horlegal = lp_rightfeet_pos < rp_rightfeet_pos;
+            //logmyobject("horlegal",horlegal);
+        } 
+        var output = vertlegal & horlegal;
+        if (!output) {
+            counterdebugillegalposition ++;
+            if (counterdebugillegalposition == 1) {
+                for (let step = 0; step < 100; step++) {
+                    console.log("***")
+                    console.log("SPECIAL DEBUG LOG")
+                }
+                logmyobject("pos1",pos1)
+                logmyobject("pos2",pos2)
+                logmyobject("bp_backfeet_pos",bp_backfeet_pos);
+                logmyobject("fp_frontfeet_pos",fp_frontfeet_pos);
+                logmyobject("vertlegal",vertlegal);
+                logmyobject("lp_leftfeet_pos",lp_leftfeet_pos);
+                logmyobject("rp_rightfeet_pos",rp_rightfeet_pos);
+                logmyobject("horlegal",horlegal);
+
+                logmyobject("this.draggingPositions",this.draggingPositions);
+                logmyobject("this.notDraggingPositions",this.notDraggingPositions);
+                logmyobject("this.positions",this.positions);
+
+                for (let step = 0; step < 100; step++) {
+                    console.log("SPECIAL DEBUG LOG")
+                    console.log("***")
+                }
+            }
+        }
+        //logmyobject("output",output);
+
+        return output 
+    }
 
 
-    checkSinglePositionLegality(pos1,pos2) {
+
+    checkSinglePositionLegalityNewRules(pos1,pos2) {
         //vertical legality
         var vertlegal = true;
         if (pos1.hor == pos2.hor) {
@@ -905,6 +983,13 @@ if (!test_mode) {
         mylineup.draw();
         //animate();
         
+    });
+
+    const oldrulescheckbox = document.getElementById('oldrules-toggle-checkbox');
+    oldrulescheckbox.addEventListener('change',function(){
+        mylineup.oldRules = !mylineup.oldRules;
+        mylineup.checkPositionsLegality();
+        mylineup.draw();
     });
 
 
