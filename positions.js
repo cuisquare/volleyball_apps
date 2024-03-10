@@ -1,5 +1,5 @@
 
-
+let counterdebugillegalposition = 0;
 
 class Game {
     constructor(venue,starttime,endtime,teamA,teamB) {
@@ -99,10 +99,16 @@ class Lineup {
     constructor(shirtnums = [15,16,17,18,19,20], symbols = ["S","O1","M1","Opp","O2","M2"], lucontext) {
         this.shirtnums = shirtnums;
         this.symbols = symbols;
+
         this.context = lucontext;
         this.canvas = this.context.canvas;
+
         this.positions = this.getPositions(shirtnums, symbols,this.context);
-        this.prevpositions = null;
+        this.illegalPositions = [];
+        this.illegalPositionTuples = [];
+        this.notIllegalPositions = this.positions;
+        this.newIllegalPositions = [];
+        this.prevpositions = [];
         this.isMoving = false;
         logmyobject("lineup positions at creation time",this.positions);
 
@@ -113,6 +119,10 @@ class Lineup {
             this.draw(); // Redraw the lineup on every mouse movement
         });
         */
+
+        this.isDragging = false;
+        this.draggingPositions = [];
+        this.notDraggingPositions = this.positions;
 
         this.mdref = this.onMouseDown.bind(this);
         this.muref = this.onMouseUp.bind(this);
@@ -138,7 +148,7 @@ class Lineup {
         // Event listener for mouse down on the canvas
         this.canvas.addEventListener('mousedown', (event) => {
             this.positions.forEach((pos,index) => {
-                logmyobject("calling mousedown on element index",index)
+                //logmyobject("calling mousedown on element index",index)
                 pos.onMouseDown(event); // Call onMouseDown for each position
             });
         });
@@ -146,14 +156,14 @@ class Lineup {
         // Event listener for mouse up on the canvas
         this.canvas.addEventListener('mouseup', (event) => {
             this.positions.forEach((pos,index) => {
-                logmyobject("calling mouseup on element index",index)
+                //logmyobject("calling mouseup on element index",index)
                 pos.onMouseUp(event); // Call onMouseUp for each position
             });
         });
 
         this.canvas.addEventListener('mouseleave', (event) => {
             this.positions.forEach((pos,index) => {
-                logmyobject("BECAUSE OF MOUSE LEAVE, calling mouseup on element index",index)
+                //logmyobject("BECAUSE OF MOUSE LEAVE, calling mouseup on element index",index)
                 pos.onMouseLeave(event); // Call onMouseUp for each position
             });
         });
@@ -161,28 +171,49 @@ class Lineup {
 
     onMouseLeave(event) {
         this.positions.forEach((pos,index) => {
-            logmyobject("BECAUSE OF MOUSE LEAVE, calling mouseup on element index",index)
+            //logmyobject("BECAUSE OF MOUSE LEAVE, calling mouseup on element index",index)
             pos.onMouseUp(event); // Call onMouseDown for each position
         });        
     }
 
     onMouseDown(event) {
+        this.isDragging = false;
+        this.notDraggingPositions = this.positions;
         this.positions.forEach((pos,index) => {
-            logmyobject("calling mousedown on element index",index)
+            //logmyobject("calling mousedown on element index",index)
             pos.onMouseDown(event); // Call onMouseDown for each position
+            if (pos.isDragging) {
+                //logmyobject("this object is dragging so turning all lineup to dragging",pos)
+                this.isDragging = true;
+                this.draggingPositions.push(pos);
+                this.newIllegalPositions = [];
+                this.removePositionsByValue(pos.value,this.notDraggingPositions);
+            }
         });
+        //this.checkPositionsLegalityStatic();
     }
 
     onMouseUp(event) {
-        this.positions.forEach((pos,index) => {
-            logmyobject("calling mouseup on element index",index)
+        this.positions.forEach(pos => {
+            //logmyobject("calling mouseup on element index",index)
             pos.onMouseUp(event); // Call onMouseUp for each position
         });
+        if (this.isDragging) {
+            //this.checkPositionsLegality();
+        }
+        //this.checkPositionsLegalityStatic(this.draggingPositions, this.notDraggingPositions);
+        this.isDragging = false;
+        this.draggingPositions = [];
+        this.newIllegalPositions = [];
+        this.notDraggingPositions = this.positions;
+        
     }
 
     onMouseMove(event) {
-        console.log("I redrew because of mouse movement");
-        this.checkPositionsLegality();
+        //console.log("I redrew because of mouse movement");
+        if (this.isDragging) {
+            this.checkPositionsLegalityStatic(this.draggingPositions, this.notDraggingPositions);
+        }
         this.draw();
     }
 
@@ -214,7 +245,12 @@ class Lineup {
             console.log("assigned shirtnum ",shirtnum, " to position ",pos," successfully")
             pos ++;
         })
-        console.log("assigned all shirtnums to lineup successfully")
+        console.log("assigned all shirtnums to lineup successfully");
+        console.log("these are the positions");
+        positions.forEach(pos => {
+            console.log(pos);
+        })
+
         return positions
     }
 
@@ -229,6 +265,7 @@ class Lineup {
         //this.updatePrevpos(n);
         logmyobject("lineup positions after rotate forward",this.positions);
         logmyobject("previous lineup positions after rotate forward",this.prevpositions);
+        counterdebugillegalposition = 0;
     }
 
     rotateBackward(n=1) {
@@ -242,6 +279,7 @@ class Lineup {
         //this.updatePrevpos(n, false);
         logmyobject("lineup positions after rotate backward",this.positions);
         logmyobject("previous lineup positions after rotate backward",this.prevpositions);
+        counterdebugillegalposition = 0;
     }
 
     isMoving() {
@@ -280,23 +318,224 @@ class Lineup {
         }
     }
 
-    checkPositionsLegality() { 
-        this.positions.forEach( pos1 => {
+    addPosToPosArray(pos, posarray) {
+        if (!posarray.includes(pos)) {
+            posarray.push(pos);
+        }  
+        return posarray
+    }
+
+    removePosFromPosArray(pos,posarray) {
+        return this.removePositionsByValue(pos.value,posarray);
+    }
+
+    removePositionsByValue(value,positions) {
+        var result = positions.filter(obj => {
+            return obj.value !== value
+          })
+        return result
+    }
+
+    checkPositionsLegalityStatic(checkedpositions = this.positions, otherPositions = this.positions) { 
+        checkedpositions.forEach( pos1 => {
+            console.log("outer loop considering pos",pos1)
+            otherPositions.forEach( pos2 => {
+                console.log("inner loop considering pos",pos2)
+                if (!this.checkSinglePositionLegality(pos1,pos2)) {
+                    console.log("illegal")
+                    this.addPosTupleToArray(pos1,pos2, this.illegalPositionTuples)    
+                } else {
+                    console.log("legal")
+                    this.removePosTupleFromArray(pos1,pos2,this.illegalPositionTuples)
+                }
+            })
+        })
+
+        
+        var notIllegalPositions = this.positions;
+        this.illegalPositionTuples.forEach( postuple =>{
+            console.log("turning red!")
+            var pos1 = postuple[0];
+            var pos2 = postuple[1];
+            pos1.color = "red";
+            pos2.color = "red";
+            notIllegalPositions = this.removePosFromPosArray(pos1,notIllegalPositions)
+            notIllegalPositions = this.removePosFromPosArray(pos2,notIllegalPositions)
+        })
+        notIllegalPositions.forEach( pos =>{
+            console.log("turning green position ", pos.symbol)
+            pos.color = "green";
+        })
+
+        if (this.illegalPositionTuples.length > 0) {
+            logmyobject("this.illegalPositionTuples",this.illegalPositionTuples)
+        }
+
+    }
+
+    addPosTupleToArray(mypos1, mypos2, postuplearray) {
+        var postuple = [mypos1,mypos2];
+        var found = false;
+        for (let i = 0; i < postuplearray.length; i++) {
+            const tuple = postuplearray[i];
+            const pos1 = tuple[0];
+            const pos2 = tuple[1];
+            if ((mypos1.value == pos1.value && mypos2.value == pos2.value ) | (mypos1.value == pos2.value && mypos2.value == pos1.value)) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            postuplearray.push(postuple);
+        }
+        
+    }
+
+    removePosTupleFromArray(mypos1, mypos2, postuplearray) {
+        for (let i = 0; i < postuplearray.length; i++) {
+            const tuple = postuplearray[i];
+            const pos1 = tuple[0];
+            const pos2 = tuple[1];
+            if ((mypos1.value == pos1.value && mypos2.value == pos2.value ) | (mypos1.value == pos2.value && mypos2.value == pos1.value)) {
+                postuplearray.splice(i, 1); // Remove the tuple at index i
+                return true; // Tuple removed successfully
+            }
+        }
+        return false; // Tuple not found in the array
+    }
+
+    checkPositionsLegality(checkedpositions = this.positions, otherPositions = this.positions) { 
+        var posillegal = false;
+        checkedpositions.forEach( pos1 => {
+            otherPositions.forEach( pos2 => {
+                if (!this.checkSinglePositionLegality(pos1,pos2)) {
+                    posillegal = true;
+                    pos1.color = "red";
+                    pos2.color = "red";
+
+                    if (!this.illegalPositions.includes(pos1)) {
+                        this.newIllegalPositions = this.addPosToPosArray(pos1, this.newIllegalPositions)
+                    }   
+                    this.illegalPositions = this.addPosToPosArray(pos1, this.illegalPositions)
+                    this.removePositionsByValue(pos1.value,this.notIllegalPositions);
+
+                    if (!this.illegalPositions.includes(pos2)) {
+                        this.newIllegalPositions = this.addPosToPosArray(pos2, this.newIllegalPositions)
+                    }   
+                    this.illegalPositions = this.addPosToPosArray(pos2, this.illegalPositions)
+                    this.removePositionsByValue(pos2.value,this.notIllegalPositions);
+                } 
+                else {
+                    if (this.newIllegalPositions.includes(pos1)) {
+                        pos1.color = "green"
+                        this.newIllegalPositions = this.removePositionsByValue(pos1.value,this.newIllegalPositions);
+                    }
+                    if (this.newIllegalPositions.includes(pos2)) {
+                        pos2.color = "green"
+                        this.newIllegalPositions = this.removePositionsByValue(pos2.value,this.newIllegalPositions);
+                    }
+                }
+            })
+        })
+    }
+
+    checkPositionsLegalityOLD(checkedpositions = this.positions, otherPositions = this.positions) { 
+        console.log("checking positions legality!!!")
+        checkedpositions.forEach( (pos1,index1) => {
             var pos1illegal = false;
-            this.positions.forEach( pos2 => {
+            otherPositions.forEach( (pos2,index2) => {
                 if (!this.checkSinglePositionLegality(pos1,pos2)) {
                     pos1illegal = true;
                     pos1.color = "red";
+                    pos2.color = "red";
+
+                    if (!this.newIllegalPositions.includes(pos1) & !this.illegalPositions.includes(pos1)) {
+                        console.log("Hey yall trying to assign value  to newIllegalpositions at index",index1)
+                        //this.newIllegalPositions[index1] = pos1;
+                        this.newIllegalPositions.push(pos1);
+                        console.log("Hey yall i just pushed to this.newIllegalPositions")
+                    }   
+
+                    if (!this.illegalPositions.includes(pos1)) {
+                        console.log("Hey yall trying to assign value  to illegalpositions at index",index1)
+                        //this.illegalPositions[index1] = pos1;
+                        this.illegalPositions.push(pos1);
+                        this.removePositionsByValue(pos1.value,this.notIllegalPositions);
+                        console.log("Hey yall i just pushed to this.illegalPositions");
+                    }          
+
+                    if (!this.newIllegalPositions.includes(pos2) & !this.illegalPositions.includes(pos2)) {
+                        console.log("Hey yall trying to assign value  to newIllegalpositions at index",index2)
+                        //this.newIllegalPositions[index2] = pos2;
+                        this.newIllegalPositions.push(pos2);
+                        console.log("Hey yall i just pushed to this.newIllegalPositions")
+                    }  
+
+                    if (!this.illegalPositions.includes(pos2)) {
+                        console.log("Hey yall trying to assign value  to illegalpositions at index",index1)
+                        //this.illegalPositions[index2] = pos2;
+                        this.illegalPositions.push(pos2);
+                        this.removePositionsByValue(pos2.value,this.notIllegalPositions);
+                        console.log("Hey yall i just pushed to this.illegalPositions")
+                    }          
+                 
                     console.log("illegal position!!!")
-                    logmyobject(pos1);
+                    logmyobject("pos1 which is illegal with pos2",pos1.symbol);
+                    logmyobject("pos2 which is illegal with pos1",pos2.symbol);
+                    console.log("number of elements in newIllegalPositions: ", this.newIllegalPositions.length)
+                    this.newIllegalPositions.forEach( (pos2,index2) => {
+                        console.log(pos2.symbol, " at position ", index2)
+                    }
+                    )
+                    console.log
+                    console.log("number of elements in illegalPositions: ", this.illegalPositions.length)
+                    this.illegalPositions.forEach( (pos2,index2) => {
+                        console.log(pos2.symbol, " at position ", index2)
+                    }
+                    )
                 } 
             })
             if (!pos1illegal) {
                 //logmyobject("all positions legal for",pos1.symbol)
                 pos1.color = "green";
+                //console.log("number of elements in newIllegalPositions: ", this.newIllegalPositions.length)
+                //remove element from illegalpositions
+
+                if (this.illegalPositions.includes(pos1)) {
+                    console.log("***")
+                    console.log(pos1.symbol, " is no longer illegal, removing from illegalPositions")
+                    console.log("BEFORE number of elements in illegalPositions: ", this.illegalPositions.length)
+                    this.illegalPositions = this.removePositionsByValue(pos1.value,this.illegalPositions);
+                    
+
+                    console.log("AFTER number of elements in ollegalPositions: ", this.illegalPositions.length)
+                    console.log("number of elements in illegalPositions: ", this.illegalPositions.length)
+                    this.illegalPositions.forEach( (pos2,index2) => {
+                        console.log(pos2.symbol, " at position ", index2)
+                    })
+                    console.log("***")
+                }
+                if (this.newIllegalPositions.includes(pos1)) {
+                    this.newIllegalPositions = this.removePositionsByValue(pos1.value,this.newIllegalPositions);
+                }
+                
             }
         })
     }
+
+    getPositionWithRelationship(pos) {
+        var posvalues = []
+        if (pos.value == 1) posvalues = [1,5,6]
+        if (pos.value == 2) posvalues = [1,3,4]
+        if (pos.value == 3) posvalues = [2,4,6]
+        if (pos.value == 4) posvalues = [2,3,5]
+        if (pos.value == 5) posvalues = [1,4,6]
+        if (pos.value == 6) posvalues = [1,3,5]
+        var positionswithrel = getPositionFromValue(posvalues,this.positions) 
+        return positionswithrel
+    }
+
+
 
     checkSinglePositionLegality(pos1,pos2) {
         //vertical legality
@@ -310,11 +549,15 @@ class Lineup {
             }
             var bp_backfeet_pos = bp.ypos + 0.5 * bp.height;
             var fp_frontfeet_pos = fp.ypos - 0.5* fp.height;
+            //logmyobject("bp_backfeet_pos",bp_backfeet_pos);
+            //logmyobject("fp_frontfeet_pos",fp_frontfeet_pos);
+            //logmyobject("vertlegal",vertlegal);
             vertlegal = bp_backfeet_pos > fp_frontfeet_pos;
         } 
         //horizontal legality
         var horlegal = true;
-        if (pos1.vert = pos2.vert) {
+        if (pos1.vert == pos2.vert) {
+
             var lp = pos1;
             var rp = pos2;
             if (pos1.hor > pos2.hor) {
@@ -323,9 +566,41 @@ class Lineup {
             } 
             var lp_leftfeet_pos = lp.xpos - 0.5 * lp.width;
             var rp_rightfeet_pos = rp.xpos + 0.5 * rp.width;
+            //logmyobject("lp_leftfeet_pos",lp_leftfeet_pos);
+            //logmyobject("rp_rightfeet_pos",rp_rightfeet_pos);
             horlegal = lp_leftfeet_pos < rp_rightfeet_pos;
+            //logmyobject("horlegal",horlegal);
         } 
-        return vertlegal & horlegal
+        var output = vertlegal & horlegal;
+        if (!output) {
+            counterdebugillegalposition ++;
+            if (counterdebugillegalposition == 1) {
+                for (let step = 0; step < 100; step++) {
+                    console.log("***")
+                    console.log("SPECIAL DEBUG LOG")
+                }
+                logmyobject("pos1",pos1)
+                logmyobject("pos2",pos2)
+                logmyobject("bp_backfeet_pos",bp_backfeet_pos);
+                logmyobject("fp_frontfeet_pos",fp_frontfeet_pos);
+                logmyobject("vertlegal",vertlegal);
+                logmyobject("lp_leftfeet_pos",lp_leftfeet_pos);
+                logmyobject("rp_rightfeet_pos",rp_rightfeet_pos);
+                logmyobject("horlegal",horlegal);
+
+                logmyobject("this.draggingPositions",this.draggingPositions);
+                logmyobject("this.notDraggingPositions",this.notDraggingPositions);
+                logmyobject("this.positions",this.positions);
+
+                for (let step = 0; step < 100; step++) {
+                    console.log("SPECIAL DEBUG LOG")
+                    console.log("***")
+                }
+            }
+        }
+        //logmyobject("output",output);
+
+        return output 
     }
 
     draw() {
@@ -364,15 +639,17 @@ class Position {
         this.shirtnum = shirtnum;
         this.symbol = symbol;
 
-        this.width = 0.2*window_width;
-        this.height = 0.1*window_height;
+        this.width = 0.15*window_width;
+        this.height = 0.075*window_height;
 
         this.color = "green";
 
         this.speed = 50;
 
+
         this.context = poscontext;
         this.canvas = this.context.canvas;
+
 
         this.isfrontrow = ([2,3,4].includes(value));
         this.isbackrow = ([5,6,1].includes(value));
@@ -491,7 +768,7 @@ class Position {
         poscontext.beginPath();
         poscontext.textAlign = "center";
         poscontext.textBaseline = "middle"
-        poscontext.font = "20px Arial";
+        poscontext.font = "15px Arial";
         poscontext.strokeStyle = this.color;
         poscontext.lineWidth = 3;
         poscontext.fillText(this.shirtnum + "/" + this.symbol, this.xpos, this.ypos);
@@ -517,18 +794,18 @@ class Position {
             mouseY >= this.ypos - 0.5 * this.height &&
             mouseY <= this.ypos + 0.5 * this.height
         ) {
-            console.log("you have grabbed this player")
+            //console.log("you have grabbed this player")
             this.isDragging = true;
             this.dragOffsetX = mouseX - this.xpos;
             this.dragOffsetY = mouseY - this.ypos;
         } else {
-            console.log("you have missed this player")
+            //console.log("you have missed this player")
         }
     }
 
     onMouseMove(event) {
         if (this.isDragging) {
-            console.log("you are moving this player")
+            //console.log("you are moving this player")
             const rect = this.canvas.getBoundingClientRect();
             const mouseX = event.clientX - rect.left;
             const mouseY = event.clientY - rect.top;
@@ -661,6 +938,8 @@ if (test_mode) {
     mylineup.rotateBackward(2);
     console.log("mylineup:",mylineup)
     console.log("mylineup:",JSON.stringify(mylineup, null, 4))
+
+    logmyobject("mylineup.getPositionFromValue(3)",mylineup.getPositionFromValue(3))
     
     console.log("Creating team")
     myteam = new Team("furious moomoos")
