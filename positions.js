@@ -338,7 +338,7 @@ class Lineup {
         return result
     }
 
-    checkPositionsLegalityStatic(checkedpositions = this.positions, otherPositions = this.positions, oldrules = false) { 
+    checkPositionsLegalityStatic(checkedpositions = this.positions, otherPositions = this.positions, oldrules = this.oldRules) { 
         checkedpositions.forEach( pos1 => {
             console.log("outer loop considering pos",pos1)
             otherPositions.forEach( pos2 => {
@@ -555,31 +555,25 @@ class Lineup {
                 var fp = pos2;
                 var bp = pos1;
             }
-            var bp_backfeet_pos = bp.ypos + 0.5 * bp.height;
             var bp_frontfeet_pos = bp.ypos - 0.5 * bp.height;
             var fp_frontfeet_pos = fp.ypos - 0.5* fp.height;
             //logmyobject("bp_backfeet_pos",bp_backfeet_pos);
             //logmyobject("fp_frontfeet_pos",fp_frontfeet_pos);
             //logmyobject("vertlegal",vertlegal);
-            vertlegal = bp_frontfeet_pos < fp_frontfeet_pos;
+            vertlegal = bp_frontfeet_pos >= fp_frontfeet_pos;
         } 
         //horizontal legality
         var horlegal = true;
         if (pos1.vert == pos2.vert) {
-
             var lp = pos1;
             var rp = pos2;
             if (pos1.hor > pos2.hor) {
                 var lp = pos2;
                 var rp = pos1;
             } 
-            var lp_leftfeet_pos = lp.xpos - 0.5 * lp.width;
             var lp_rightfeet_pos = lp.xpos + 0.5 * lp.width;
             var rp_rightfeet_pos = rp.xpos + 0.5 * rp.width;
-            //logmyobject("lp_leftfeet_pos",lp_leftfeet_pos);
-            //logmyobject("rp_rightfeet_pos",rp_rightfeet_pos);
-            horlegal = lp_rightfeet_pos < rp_rightfeet_pos;
-            //logmyobject("horlegal",horlegal);
+            horlegal = lp_rightfeet_pos <= rp_rightfeet_pos;
         } 
         var output = vertlegal & horlegal;
         if (!output) {
@@ -988,7 +982,7 @@ if (!test_mode) {
     const oldrulescheckbox = document.getElementById('oldrules-toggle-checkbox');
     oldrulescheckbox.addEventListener('change',function(){
         mylineup.oldRules = !mylineup.oldRules;
-        mylineup.checkPositionsLegality();
+        mylineup.checkPositionsLegalityStatic();
         mylineup.draw();
     });
 
