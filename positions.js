@@ -711,8 +711,8 @@ class Position {
         this.shirtnum = shirtnum;
         this.symbol = symbol;
 
-        this.width = 0.15*window_width;
-        this.height = 0.075*window_height;
+        this.width = 0.1*window_width;
+        this.height = 0.1*window_height;
 
         this.color = "green";
 
@@ -838,12 +838,28 @@ class Position {
     draw() {
         var poscontext = this.context;
         poscontext.beginPath();
-        poscontext.textAlign = "center";
-        poscontext.textBaseline = "middle"
-        poscontext.font = "15px Arial";
         poscontext.strokeStyle = this.color;
         poscontext.lineWidth = 3;
-        poscontext.fillText(this.shirtnum + "/" + this.symbol, this.xpos, this.ypos);
+
+        //shirtnumber
+        poscontext.textAlign = "center";
+        poscontext.textBaseline = "middle"
+        poscontext.font = "bold 20px Arial";
+        poscontext.weit
+        poscontext.fillText(this.shirtnum, this.xpos, this.ypos);
+
+        //symbol
+        poscontext.textAlign = "left";
+        poscontext.textBaseline = "bottom"
+        poscontext.font = "15px Arial";
+        poscontext.fillText(this.symbol, this.xpos-0.45*this.width, this.ypos+0.45*this.height);
+
+        //value
+        poscontext.textAlign = "right";
+        poscontext.textBaseline = "bottom"
+        poscontext.font = "15px Arial";
+        poscontext.fillText(this.value, this.xpos + 0.45*this.width, this.ypos+0.45*this.height);
+
         poscontext.rect(
             this.xpos - 0.5*this.width,
             this.ypos - 0.5*this.height,
@@ -935,10 +951,13 @@ if (!test_mode) {
 
     let context = canvas.getContext("2d");
 
-    max_court_width = Math.min(window.innerWidth,0.5*window.innerHeight)
+    max_court_width = Math.min(window.innerWidth,window.innerHeight)
+
+    //max_court_width = window.innerWidth;
     
     window_width = 0.80 * max_court_width;
-    window_height = 0.80 * 2 * max_court_width;
+    //window_height = 0.80 * 2 * max_court_width;
+    window_height = 0.80 * max_court_width;
 
     canvas.width = window_width;
     canvas.height = window_height;
@@ -977,6 +996,47 @@ if (!test_mode) {
         mylineup.draw();
         //animate();
         
+    });
+
+    function rotateCanvas(angle) {
+        // Save the current context state
+        context.save();
+    
+        // Translate the canvas to the bottom-left corner
+        context.translate(0, canvas.height);
+    
+        // Rotate the canvas counterclockwise by 90 degrees
+        context.rotate(angle);
+
+        mylineup.draw();
+    
+        // Draw your objects on the canvas (assuming you have a draw function for each object)
+        // Example:
+        // object1.draw();
+        // object2.draw();
+        // ...
+
+        // Restore the context to its original state
+        //context.restore();
+    }
+
+    // Function to convert mouse coordinates to rotated canvas coordinates
+    function convertToRotatedCoords(x, y,angle) {
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+    
+        // Rotate coordinates around the center of the canvas
+        const rotatedX = Math.cos(angle) * (x - centerX) - Math.sin(angle) * (y - centerY) + centerX;
+        const rotatedY = Math.sin(angle) * (x - centerX) + Math.cos(angle) * (y - centerY) + centerY;
+    
+        return { x: rotatedX, y: rotatedY };
+    }
+    
+    // Call the rotateCanvas function when needed
+    // For example, you can call it when a button is clicked
+    document.getElementById('rotatecanvas').addEventListener('click', function() {
+        rotateCanvas(-Math.PI / 2);
+        mylineup.draw();
     });
 
     const oldrulescheckbox = document.getElementById('oldrules-toggle-checkbox');
