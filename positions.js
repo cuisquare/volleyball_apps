@@ -870,36 +870,37 @@ class Position {
         poscontext.closePath();
 
     }
-
     onMouseDown(event) {
         const rect = this.canvas.getBoundingClientRect();
         const mouseX = event.clientX - rect.left;
         const mouseY = event.clientY - rect.top;
 
+        // Convert mouse coordinates to rotated canvas coordinates
+        const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, total_angle);
+
         if (
-            mouseX >= this.xpos - 0.5 * this.width &&
-            mouseX <= this.xpos + 0.5 * this.width &&
-            mouseY >= this.ypos - 0.5 * this.height &&
-            mouseY <= this.ypos + 0.5 * this.height
+            rotatedCoords.x >= this.xpos - 0.5 * this.width &&
+            rotatedCoords.x <= this.xpos + 0.5 * this.width &&
+            rotatedCoords.y >= this.ypos - 0.5 * this.height &&
+            rotatedCoords.y <= this.ypos + 0.5 * this.height
         ) {
-            //console.log("you have grabbed this player")
             this.isDragging = true;
-            this.dragOffsetX = mouseX - this.xpos;
-            this.dragOffsetY = mouseY - this.ypos;
-        } else {
-            //console.log("you have missed this player")
+            this.dragOffsetX = rotatedCoords.x - this.xpos;
+            this.dragOffsetY = rotatedCoords.y - this.ypos;
         }
     }
 
     onMouseMove(event) {
         if (this.isDragging) {
-            //console.log("you are moving this player")
             const rect = this.canvas.getBoundingClientRect();
             const mouseX = event.clientX - rect.left;
             const mouseY = event.clientY - rect.top;
 
-            this.xpos = mouseX - this.dragOffsetX;
-            this.ypos = mouseY - this.dragOffsetY;
+            // Convert mouse coordinates to rotated canvas coordinates
+            const rotatedCoords = convertToRotatedCoords(mouseX, mouseY,total_angle);
+
+            this.xpos = rotatedCoords.x - this.dragOffsetX;
+            this.ypos = rotatedCoords.y - this.dragOffsetY;
 
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.draw();
@@ -1009,6 +1010,8 @@ if (!test_mode) {
         context.rotate(angle);
 
         mylineup.draw();
+
+        total_angle += angle;
     
         // Draw your objects on the canvas (assuming you have a draw function for each object)
         // Example:
@@ -1021,21 +1024,34 @@ if (!test_mode) {
     }
 
     // Function to convert mouse coordinates to rotated canvas coordinates
-    function convertToRotatedCoords(x, y,angle) {
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
+    function convertToRotatedCoords(x, y, rotationAngle) {
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
     
-        // Rotate coordinates around the center of the canvas
-        const rotatedX = Math.cos(angle) * (x - centerX) - Math.sin(angle) * (y - centerY) + centerX;
-        const rotatedY = Math.sin(angle) * (x - centerX) + Math.cos(angle) * (y - centerY) + centerY;
+        // Calculate the angle between the mouse position and the canvas center
+        const angle = Math.atan2((y - centerY), x - centerX) ;
+    
+        // Calculate the distance between the mouse position and the canvas center
+        const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+    
+        // Adjust the angle based on the rotation angle of the canvas
+        const adjustedAngle = angle - rotationAngle;
+    
+        // Calculate the rotated coordinates
+        const rotatedX = centerX + distance * Math.cos(adjustedAngle);
+        const rotatedY = centerY + distance * Math.sin(adjustedAngle);
     
         return { x: rotatedX, y: rotatedY };
     }
     
+    
+    let rotate_angle = -Math.PI/ 2;
+    var total_angle =0;
+
     // Call the rotateCanvas function when needed
     // For example, you can call it when a button is clicked
     document.getElementById('rotatecanvas').addEventListener('click', function() {
-        rotateCanvas(-Math.PI / 2);
+        rotateCanvas(rotate_angle);
         mylineup.draw();
     });
 
