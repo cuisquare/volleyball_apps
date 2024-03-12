@@ -837,6 +837,48 @@ class Position {
 
     draw() {
         var poscontext = this.context;
+        poscontext.save(); // Save the current canvas state
+    
+        poscontext.beginPath();
+        poscontext.strokeStyle = this.color;
+        poscontext.lineWidth = 3;
+    
+        // Rotate the canvas around the Position instance's coordinates
+        poscontext.translate(this.xpos, this.ypos);
+        poscontext.rotate(-total_angle); // Replace 'this.rotationAngle' with the desired rotation angle in radians
+    
+        // Shirtnumber
+        poscontext.textAlign = "center";
+        poscontext.textBaseline = "middle"
+        poscontext.font = "bold 20px Arial";
+        poscontext.fillText(this.shirtnum, 0, 0); // Text position relative to the Position instance's coordinates
+    
+        // Symbol
+        poscontext.textAlign = "left";
+        poscontext.textBaseline = "bottom"
+        poscontext.font = "15px Arial";
+        poscontext.fillText(this.symbol, -0.45 * this.width, 0.45 * this.height); // Text position relative to the Position instance's coordinates
+    
+        // Value
+        poscontext.textAlign = "right";
+        poscontext.textBaseline = "bottom"
+        poscontext.font = "15px Arial";
+        poscontext.fillText(this.value, 0.45 * this.width, 0.45 * this.height); // Text position relative to the Position instance's coordinates
+    
+        poscontext.rect(
+            -0.5 * this.width, // Rectangle position relative to the Position instance's coordinates
+            -0.5 * this.height,
+            this.width,
+            this.height
+        );
+        poscontext.stroke();
+        poscontext.closePath();
+    
+        poscontext.restore(); // Restore the canvas state
+    }
+
+    drawOLD() {
+        var poscontext = this.context;
         poscontext.beginPath();
         poscontext.strokeStyle = this.color;
         poscontext.lineWidth = 3;
@@ -870,6 +912,7 @@ class Position {
         poscontext.closePath();
 
     }
+
     onMouseDown(event) {
         const rect = this.canvas.getBoundingClientRect();
         const mouseX = event.clientX - rect.left;
