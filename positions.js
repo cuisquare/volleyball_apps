@@ -1013,13 +1013,53 @@ if (!test_mode) {
     drawcourt = function() {
         context.beginPath();
         context.strokeStyle = "black";
-        context.lineWidth = 5;
+        context.lineWidth = 8;
         //context.moveTo(0, 0); // Move the pen to (30, 50)
         context.rect(0,0,window_width,window_height);
         context.stroke();
+        context.lineWidth = 5;
         context.rect(0,0,window_width,window_height / 3.0);
         context.stroke();
         context.closePath();
+
+        // Draw arrow
+        const arrowSize = 0.04*window_height;
+        const arrowX = window_width - arrowSize // Right top corner, 40 pixels from right edge
+        const arrowY = 0; // 20 pixels from top edge
+        
+        context.beginPath();
+        context.lineWidth = 1;
+        context.moveTo(arrowX, arrowY);
+        //context.strokeStyle = "purple"
+        context.lineTo(arrowX + arrowSize / 2,  arrowY + arrowSize);
+        context.stroke();
+        //context.closePath();
+        //context.beginPath();
+        //context.moveTo(arrowX, arrowY);
+        //context.strokeStyle = "orange"
+        context.lineTo(arrowX - arrowSize / 2, arrowY + arrowSize);
+        context.stroke();
+        context.fillStyle = "black";
+        context.fill();
+        context.closePath();
+        context.beginPath();
+        context.strokeStyle = "black"
+        context.lineWidth = 1;
+        context.rect(arrowX-arrowSize/6, arrowY+ arrowSize,arrowSize/3,arrowSize/2)
+        context.stroke();
+        context.fillStyle = "black";
+        context.fill();
+        context.closePath();
+        /*
+        context.beginPath();
+        context.lineWidth = 8;
+        context.moveTo(arrowX, arrowY+ arrowSize);
+        context.lineTo(arrowX,arrowY + 2*arrowSize);
+        context.stroke();
+        context.closePath();
+        */
+
+        //context.closePath();
     }
 
     mysymbols = getSymbolsFromSetterPosition(3);
@@ -1044,7 +1084,7 @@ if (!test_mode) {
 
     function rotateCanvas(angle) {
         // Save the current context state
-        context.save();
+        //context.save();
     
         // Translate the canvas to the bottom-left corner
         context.translate(0, canvas.height);
