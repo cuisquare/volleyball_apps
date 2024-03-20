@@ -96,7 +96,7 @@ class Team {
 }
 
 class Lineup {
-    constructor(shirtnums = [15,16,17,18,19,20], symbols = ["S","O1","M1","Opp","O2","M2"], lucontext) {
+    constructor(shirtnums = [15,16,17,18,19,20], symbols = ["S","O1","M1","Opp","O2","M2"], lucontext, total_angle, leftcourt) {
         this.shirtnums = shirtnums;
         this.symbols = symbols;
 
@@ -104,8 +104,27 @@ class Lineup {
 
         this.context = lucontext;
         this.canvas = this.context.canvas;
+        this.total_angle = total_angle;
 
-        this.positions = this.getPositions(shirtnums, symbols,this.context);
+        this.leftcourt = leftcourt;
+
+        this.isUpright = true;
+
+        this.rotate_angle = -Math.PI / 2
+
+        if (this.leftcourt) {
+            this.sideway_total_angle = -3 * Math.PI / 2 
+        } else {
+            this.sideway_total_angle = Math.PI / 2
+        }
+
+        this.courtxpos = 0;
+        this.courtypos = 0;
+
+        this.courtwidth = window_width;
+        this.courtheight = window_height;
+
+        this.positions = this.getPositions(shirtnums, symbols,this.context, this.total_angle);
         this.illegalPositions = [];
         this.illegalPositionTuples = [];
         this.notIllegalPositions = this.positions;
@@ -219,11 +238,85 @@ class Lineup {
         this.draw();
     }
 
+    changeOrientationCanvas() {
+        if (this.isUpright) {
+            if (this.leftcourt) {
+                this.rotateCanvasAntiClockWise()
+                this.rotateCanvasAntiClockWise()
+                this.rotateCanvasAntiClockWise()
+            } else {
+                this.rotateCanvasAntiClockWise()
+            }
+        } else {
+            if (this.leftcourt) {
+                this.rotateCanvasAntiClockWise()
+            } else {
+                this.rotateCanvasAntiClockWise()
+                this.rotateCanvasAntiClockWise()
+                this.rotateCanvasAntiClockWise()
+            }
+        }
+        this.isUpright = !this.isUpright;
+    }
+
+    increaseTotalAngle(angle) {
+        this.total_angle += angle;
+
+        this.positions.forEach( pos => {
+            pos.total_angle = this.total_angle;
+        })
+    }
+
+    applyTotalAngle(angle) {
+        this.total_angle = angle;
+
+        this.positions.forEach( pos => {
+            pos.total_angle = this.total_angle;
+        })
+    }
+
+
+
+
+
+    rotateCanvasAntiClockWise() {
+        this.#rotateCanvas(-Math.PI / 2)
+    }
+
+    #rotateCanvas(angle = this.rotate_angle) {
+        // Save the current context state
+        //context.save();
+    
+        // Translate the canvas to the bottom-left corner
+        this.context.translate(0, canvas.height);
+    
+        // Rotate the canvas counterclockwise by 90 degrees
+        this.context.rotate(angle);
+
+        //this.draw();
+
+        this.total_angle += angle;
+
+        this.positions.forEach( pos => {
+            pos.total_angle = this.total_angle;
+        })
+    
+        // Draw your objects on the canvas (assuming you have a draw function for each object)
+        // Example:
+        // object1.draw();
+        // object2.draw();
+        // ...
+
+        // Restore the context to its original state
+        //context.restore();
+    }
+
     // Function to remove all positions from the lineup
     clearPositions() {
         this.canvas.removeEventListener('mousedown', this.mdref);
         this.canvas.removeEventListener('mousemove', this.mmref);
         this.canvas.removeEventListener('mouseup', this.muref);
+        this.canvas.removeEventListener('mouseleave', this.mlref);
         this.positions.forEach(pos => {
             // Remove event listeners
             //this.canvas.removeEventListener('mousedown', pos.onMouseDown);
@@ -242,7 +335,7 @@ class Lineup {
             console.log("pos:", pos)
             console.log("shirtnum:", shirtnum)
             var symbol = symbols[shirtnums.indexOf(shirtnum)]
-            var updatedposition = new Position(pos, shirtnum,symbol,lucontext)
+            var updatedposition = new Position(pos, shirtnum,symbol,lucontext, this.total_angle)
             positions.push(updatedposition);
             console.log("assigned shirtnum ",shirtnum, " to position ",pos," successfully")
             pos ++;
@@ -441,90 +534,6 @@ class Lineup {
         })
     }
 
-    checkPositionsLegalityOLD(checkedpositions = this.positions, otherPositions = this.positions) { 
-        console.log("checking positions legality!!!")
-        checkedpositions.forEach( (pos1,index1) => {
-            var pos1illegal = false;
-            otherPositions.forEach( (pos2,index2) => {
-                if (!this.checkSinglePositionLegality(pos1,pos2)) {
-                    pos1illegal = true;
-                    pos1.color = "red";
-                    pos2.color = "red";
-
-                    if (!this.newIllegalPositions.includes(pos1) & !this.illegalPositions.includes(pos1)) {
-                        console.log("Hey yall trying to assign value  to newIllegalpositions at index",index1)
-                        //this.newIllegalPositions[index1] = pos1;
-                        this.newIllegalPositions.push(pos1);
-                        console.log("Hey yall i just pushed to this.newIllegalPositions")
-                    }   
-
-                    if (!this.illegalPositions.includes(pos1)) {
-                        console.log("Hey yall trying to assign value  to illegalpositions at index",index1)
-                        //this.illegalPositions[index1] = pos1;
-                        this.illegalPositions.push(pos1);
-                        this.removePositionsByValue(pos1.value,this.notIllegalPositions);
-                        console.log("Hey yall i just pushed to this.illegalPositions");
-                    }          
-
-                    if (!this.newIllegalPositions.includes(pos2) & !this.illegalPositions.includes(pos2)) {
-                        console.log("Hey yall trying to assign value  to newIllegalpositions at index",index2)
-                        //this.newIllegalPositions[index2] = pos2;
-                        this.newIllegalPositions.push(pos2);
-                        console.log("Hey yall i just pushed to this.newIllegalPositions")
-                    }  
-
-                    if (!this.illegalPositions.includes(pos2)) {
-                        console.log("Hey yall trying to assign value  to illegalpositions at index",index1)
-                        //this.illegalPositions[index2] = pos2;
-                        this.illegalPositions.push(pos2);
-                        this.removePositionsByValue(pos2.value,this.notIllegalPositions);
-                        console.log("Hey yall i just pushed to this.illegalPositions")
-                    }          
-                 
-                    console.log("illegal position!!!")
-                    logmyobject("pos1 which is illegal with pos2",pos1.symbol);
-                    logmyobject("pos2 which is illegal with pos1",pos2.symbol);
-                    console.log("number of elements in newIllegalPositions: ", this.newIllegalPositions.length)
-                    this.newIllegalPositions.forEach( (pos2,index2) => {
-                        console.log(pos2.symbol, " at position ", index2)
-                    }
-                    )
-                    console.log
-                    console.log("number of elements in illegalPositions: ", this.illegalPositions.length)
-                    this.illegalPositions.forEach( (pos2,index2) => {
-                        console.log(pos2.symbol, " at position ", index2)
-                    }
-                    )
-                } 
-            })
-            if (!pos1illegal) {
-                //logmyobject("all positions legal for",pos1.symbol)
-                pos1.color = "green";
-                //console.log("number of elements in newIllegalPositions: ", this.newIllegalPositions.length)
-                //remove element from illegalpositions
-
-                if (this.illegalPositions.includes(pos1)) {
-                    console.log("***")
-                    console.log(pos1.symbol, " is no longer illegal, removing from illegalPositions")
-                    console.log("BEFORE number of elements in illegalPositions: ", this.illegalPositions.length)
-                    this.illegalPositions = this.removePositionsByValue(pos1.value,this.illegalPositions);
-                    
-
-                    console.log("AFTER number of elements in ollegalPositions: ", this.illegalPositions.length)
-                    console.log("number of elements in illegalPositions: ", this.illegalPositions.length)
-                    this.illegalPositions.forEach( (pos2,index2) => {
-                        console.log(pos2.symbol, " at position ", index2)
-                    })
-                    console.log("***")
-                }
-                if (this.newIllegalPositions.includes(pos1)) {
-                    this.newIllegalPositions = this.removePositionsByValue(pos1.value,this.newIllegalPositions);
-                }
-                
-            }
-        })
-    }
-
     getPositionWithRelationship(pos) {
         var posvalues = []
         if (pos.value == 1) posvalues = [1,5,6]
@@ -675,9 +684,66 @@ class Lineup {
         return output 
     }
 
+    drawcourt = function() {
+
+        //TODO starting making changes that refer to court_width, court_height and
+        //also has position for top left corner of court which can be changed
+
+        var lucontext = this.context
+        lucontext.beginPath();
+        lucontext.strokeStyle = "black";
+        lucontext.lineWidth = 8;
+        //lucontext.moveTo(0, 0); // Move the pen to (30, 50)
+        lucontext.rect(0,0,window_width,window_height);
+        lucontext.stroke();
+        lucontext.lineWidth = 5;
+        lucontext.rect(0,0,window_width,window_height / 3.0);
+        lucontext.stroke();
+        lucontext.closePath();
+
+        // Draw arrow
+        const arrowSize = 0.04*window_height;
+        const arrowX = window_width - arrowSize // Right top corner, 40 pixels from right edge
+        const arrowY = 0; // 20 pixels from top edge
+        
+        lucontext.beginPath();
+        lucontext.lineWidth = 1;
+        lucontext.moveTo(arrowX, arrowY);
+        //lucontext.strokeStyle = "purple"
+        lucontext.lineTo(arrowX + arrowSize / 2,  arrowY + arrowSize);
+        lucontext.stroke();
+        //lucontext.closePath();
+        //lucontext.beginPath();
+        //lucontext.moveTo(arrowX, arrowY);
+        //lucontext.strokeStyle = "orange"
+        lucontext.lineTo(arrowX - arrowSize / 2, arrowY + arrowSize);
+        lucontext.stroke();
+        lucontext.fillStyle = "black";
+        lucontext.fill();
+        lucontext.closePath();
+        lucontext.beginPath();
+        lucontext.strokeStyle = "black"
+        lucontext.lineWidth = 1;
+        lucontext.rect(arrowX-arrowSize/6, arrowY+ arrowSize,arrowSize/3,arrowSize/2)
+        lucontext.stroke();
+        lucontext.fillStyle = "black";
+        lucontext.fill();
+        lucontext.closePath();
+        /*
+        lucontext.beginPath();
+        lucontext.lineWidth = 8;
+        lucontext.moveTo(arrowX, arrowY+ arrowSize);
+        lucontext.lineTo(arrowX,arrowY + 2*arrowSize);
+        lucontext.stroke();
+        lucontext.closePath();
+        */
+
+        //lucontext.closePath();
+    }
+
     draw() {
         this.context.clearRect(0, 0, window_width , window_height)
-        drawcourt();
+        this.drawcourt();
         this.positions.forEach( pos => {
             pos.draw();
         })
@@ -701,7 +767,7 @@ function logmyobject(desc ="myobj",myobj) {
 }
 
 class Position {
-    constructor(value, shirtnum, symbol = "P",poscontext) {
+    constructor(value, shirtnum, symbol = "P",poscontext,total_angle = 0) {
 
         if(!([1,2,3,4,5,6].includes(value))) {
             throw('value can only take any of the following values: [1,2,3,4,5,6], but value attempt was: '+ value.toString() );
@@ -712,7 +778,9 @@ class Position {
         this.symbol = symbol;
 
         this.width = 0.1*window_width;
-        this.height = 0.1*window_height;
+        this.height = 0.1*window_height; 
+
+        this.total_angle = total_angle;
 
         this.color = "green";
 
@@ -845,7 +913,7 @@ class Position {
     
         // Rotate the canvas around the Position instance's coordinates
         poscontext.translate(this.xpos, this.ypos);
-        poscontext.rotate(-total_angle); // Replace 'this.rotationAngle' with the desired rotation angle in radians
+        poscontext.rotate(-this.total_angle); // Replace 'this.rotationAngle' with the desired rotation angle in radians
     
         // Shirtnumber
         poscontext.textAlign = "center";
@@ -877,49 +945,13 @@ class Position {
         poscontext.restore(); // Restore the canvas state
     }
 
-    drawOLD() {
-        var poscontext = this.context;
-        poscontext.beginPath();
-        poscontext.strokeStyle = this.color;
-        poscontext.lineWidth = 3;
-
-        //shirtnumber
-        poscontext.textAlign = "center";
-        poscontext.textBaseline = "middle"
-        poscontext.font = "bold 20px Arial";
-        poscontext.weit
-        poscontext.fillText(this.shirtnum, this.xpos, this.ypos);
-
-        //symbol
-        poscontext.textAlign = "left";
-        poscontext.textBaseline = "bottom"
-        poscontext.font = "15px Arial";
-        poscontext.fillText(this.symbol, this.xpos-0.45*this.width, this.ypos+0.45*this.height);
-
-        //value
-        poscontext.textAlign = "right";
-        poscontext.textBaseline = "bottom"
-        poscontext.font = "15px Arial";
-        poscontext.fillText(this.value, this.xpos + 0.45*this.width, this.ypos+0.45*this.height);
-
-        poscontext.rect(
-            this.xpos - 0.5*this.width,
-            this.ypos - 0.5*this.height,
-            this.width,
-            this.height
-            );
-        poscontext.stroke();
-        poscontext.closePath();
-
-    }
-
     onMouseDown(event) {
         const rect = this.canvas.getBoundingClientRect();
         const mouseX = event.clientX - rect.left;
         const mouseY = event.clientY - rect.top;
 
         // Convert mouse coordinates to rotated canvas coordinates
-        const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, total_angle);
+        const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle);
 
         if (
             rotatedCoords.x >= this.xpos - 0.5 * this.width &&
@@ -940,7 +972,7 @@ class Position {
             const mouseY = event.clientY - rect.top;
 
             // Convert mouse coordinates to rotated canvas coordinates
-            const rotatedCoords = convertToRotatedCoords(mouseX, mouseY,total_angle);
+            const rotatedCoords = convertToRotatedCoords(mouseX, mouseY,this.total_angle);
 
             this.xpos = rotatedCoords.x - this.dragOffsetX;
             this.ypos = rotatedCoords.y - this.dragOffsetY;
@@ -992,80 +1024,44 @@ var test_mode = false;
 // the canvas things
 if (!test_mode) {
     let canvas = document.getElementById("canvas");
+    
 
     let context = canvas.getContext("2d");
 
     max_court_width = Math.min(window.innerWidth,window.innerHeight)
+    max_court_height = Math.min(window.innerWidth,window.innerHeight)
 
     //max_court_width = window.innerWidth;
     
-    window_width = 0.80 * max_court_width;
+    window_width = 0.80 * max_court_width ;
     //window_height = 0.80 * 2 * max_court_width;
     window_height = 0.80 * max_court_width;
 
     canvas.width = window_width;
     canvas.height = window_height;
+
     canvas.style.background = "#FFFFFF";
     
     context.clearRect(0, 0, window_width , window_height)
-    //TODO : draw the volleyball court line
-    
-    drawcourt = function() {
-        context.beginPath();
-        context.strokeStyle = "black";
-        context.lineWidth = 8;
-        //context.moveTo(0, 0); // Move the pen to (30, 50)
-        context.rect(0,0,window_width,window_height);
-        context.stroke();
-        context.lineWidth = 5;
-        context.rect(0,0,window_width,window_height / 3.0);
-        context.stroke();
-        context.closePath();
-
-        // Draw arrow
-        const arrowSize = 0.04*window_height;
-        const arrowX = window_width - arrowSize // Right top corner, 40 pixels from right edge
-        const arrowY = 0; // 20 pixels from top edge
-        
-        context.beginPath();
-        context.lineWidth = 1;
-        context.moveTo(arrowX, arrowY);
-        //context.strokeStyle = "purple"
-        context.lineTo(arrowX + arrowSize / 2,  arrowY + arrowSize);
-        context.stroke();
-        //context.closePath();
-        //context.beginPath();
-        //context.moveTo(arrowX, arrowY);
-        //context.strokeStyle = "orange"
-        context.lineTo(arrowX - arrowSize / 2, arrowY + arrowSize);
-        context.stroke();
-        context.fillStyle = "black";
-        context.fill();
-        context.closePath();
-        context.beginPath();
-        context.strokeStyle = "black"
-        context.lineWidth = 1;
-        context.rect(arrowX-arrowSize/6, arrowY+ arrowSize,arrowSize/3,arrowSize/2)
-        context.stroke();
-        context.fillStyle = "black";
-        context.fill();
-        context.closePath();
-        /*
-        context.beginPath();
-        context.lineWidth = 8;
-        context.moveTo(arrowX, arrowY+ arrowSize);
-        context.lineTo(arrowX,arrowY + 2*arrowSize);
-        context.stroke();
-        context.closePath();
-        */
-
-        //context.closePath();
-    }
 
     mysymbols = getSymbolsFromSetterPosition(3);
-    mylineup = new Lineup([5,9,45,23,12,7],mysymbols,context);
+    mylineup = new Lineup([5,9,45,23,12,7],mysymbols,context, total_angle = 0, leftcourt = true);
     mylineup.draw();
 
+
+    let canvasright = document.getElementById("canvasright");
+    canvasright.width = window_width;
+    canvasright.height = window_height;
+    let contextright = canvasright.getContext("2d");
+
+    canvasright.style.background = "#FFFFFF";
+    
+    contextright.clearRect(0, 0, window_width , window_height)
+    //contextright.fillStyle = 'blue';
+    //contextright.fillRect(0, 0, canvasright.width, canvasright.height);
+
+    mylineupright = new Lineup([3,10,8,7,13,4],mysymbols,contextright, total_angle = 0, leftcourt = false);
+    mylineupright.draw();
     
     document.getElementById('fwd').addEventListener('click',function(){
         //context.clearRect(0, 0, canvas.width, canvas.height)
@@ -1082,34 +1078,25 @@ if (!test_mode) {
         
     });
 
-    function rotateCanvas(angle) {
-        // Save the current context state
-        //context.save();
+    document.getElementById('fwdright').addEventListener('click',function(){
+        //context.clearRect(0, 0, canvas.width, canvas.height)
+        mylineupright.rotateForward();
+        mylineupright.draw();
+        //animate();
+    });
     
-        // Translate the canvas to the bottom-left corner
-        context.translate(0, canvas.height);
-    
-        // Rotate the canvas counterclockwise by 90 degrees
-        context.rotate(angle);
-
-        mylineup.draw();
-
-        total_angle += angle;
-    
-        // Draw your objects on the canvas (assuming you have a draw function for each object)
-        // Example:
-        // object1.draw();
-        // object2.draw();
-        // ...
-
-        // Restore the context to its original state
-        //context.restore();
-    }
+    document.getElementById('bckright').addEventListener('click',function(){
+        //context.clearRect(0, 0, canvas.width, canvas.height)
+        mylineupright.rotateBackward();
+        mylineupright.draw();
+        //animate();
+        
+    });
 
     // Function to convert mouse coordinates to rotated canvas coordinates
-    function convertToRotatedCoords(x, y, rotationAngle) {
-        const centerX = this.canvas.width / 2;
-        const centerY = this.canvas.height / 2;
+    function convertToRotatedCoords(x, y, rotationAngle,centerX = this.canvas.width / 2, centerY = this.canvas.height / 2) {
+        //const centerX = this.canvas.width / 2;
+        //const centerY = this.canvas.height / 2;
     
         // Calculate the angle between the mouse position and the canvas center
         const angle = Math.atan2((y - centerY), x - centerX) ;
@@ -1128,21 +1115,34 @@ if (!test_mode) {
     }
     
     
-    let rotate_angle = -Math.PI/ 2;
-    var total_angle =0;
+    //let rotate_angle = -Math.PI/ 2;
+    //var total_angle =0;
 
     // Call the rotateCanvas function when needed
     // For example, you can call it when a button is clicked
-    document.getElementById('rotatecanvas').addEventListener('click', function() {
-        rotateCanvas(rotate_angle);
+    document.getElementById('changecourtsorientation').addEventListener('click', function() {
+        mylineup.changeOrientationCanvas()
+        mylineupright.changeOrientationCanvas()
         mylineup.draw();
+        mylineupright.draw();
     });
 
     const oldrulescheckbox = document.getElementById('oldrules-toggle-checkbox');
     oldrulescheckbox.addEventListener('change',function(){
-        mylineup.oldRules = !mylineup.oldRules;
+
+        if (this.checked) {
+            mylineup.oldRules = true;
+            mylineupright.oldRules = true;
+          } else {
+            mylineup.oldRules = false;
+            mylineupright.oldRules = false;
+          }
+
         mylineup.checkPositionsLegalityStatic();
         mylineup.draw();
+        
+        mylineupright.checkPositionsLegalityStatic();
+        mylineupright.draw();
     });
 
 

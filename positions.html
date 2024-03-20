@@ -3,25 +3,32 @@
   <head>
     <meta charset="utf-8" />
     <title>Volleyball Positions</title>
-    <style>
-      * {
-        padding: 5;
-        margin: 5;
-      }
-      canvas {
-        background: #eee;
-        display: block;
-        margin: 0 auto;
-      }
-    </style>
+    <link rel="stylesheet" href="styles.css">
   </head>
   <body>
-    <button id='fwd'>Rotate Forward</button>
-    <button id='bck'>Rotate backward</button>
-    <button id='rotatecanvas'>Rotate Canvas</button>
-    <label for="oldrules-toggle-checkbox">Old Rules?</label>
-    <input type="checkbox" id="oldrules-toggle-checkbox">
-    <canvas id="canvas"></canvas>
+    <div class="canvas-container">
+      <div class="canvas-wrapper">
+          <canvas id="canvas"></canvas>
+          <div class="button-wrapper">
+            <button id='bck'>Prev</button>
+            <button id='fwd'>Next</button>
+          </div>
+      </div>
+      <div class="canvas-wrapper">
+          <canvas id="canvasright"></canvas>
+          <div class="button-wrapper">
+            <button id='bckright'>Prev</button>
+            <button id='fwdright'>Next</button>
+          </div>
+      </div>
+    </div>
+    <div class = "bottom-bar">
+      <button id='changecourtsorientation'>Rotate Courts</button>
+
+      <label for="oldrules-toggle-checkbox">Old Rules?</label>
+      <input type="checkbox" id="oldrules-toggle-checkbox">
+    </div>
+
   </body>
   <script src = "positions.js"></script>
 </html>

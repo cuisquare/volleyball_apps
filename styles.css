@@ -1,0 +1,55 @@
+* {
+    padding: 5;
+    margin: 5;
+  }
+
+body {
+    left: 50%; /* Align button horizontally in the center */
+} 
+  
+canvas {
+    background: #eee;
+    display: block;
+    margin: 0 auto;
+  }
+
+.canvas-container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+} 
+
+.canvas-wrapper {
+    position: relative;
+    flex: 1;
+}
+
+.button-wrapper {
+    position: absolute;
+    /*bottom: -30px;  Adjust button position below the canvas */
+    left: 50%; /* Align button horizontally in the center */
+    transform: translateX(-50%); /* Adjust for center alignment */
+}
+
+.bottom-bar {
+    position: absolute;
+    /*bottom: -0px;  Adjust button position below the canvas */
+    left: 50%; /* Align button horizontally in the center */
+    transform: translateX(-50%); /* Adjust for center alignment */
+}
+
+
+
+/*
+
+.canvas-container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+} 
+canvas {
+    flex: 1;
+    border: 1px solid black; 
+    box-sizing: border-box;
+}
+*/
