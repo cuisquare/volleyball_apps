@@ -566,9 +566,6 @@ class Lineup {
             }
             var bp_frontfeet_pos = bp.ypos - 0.5 * bp.height;
             var fp_frontfeet_pos = fp.ypos - 0.5* fp.height;
-            //logmyobject("bp_backfeet_pos",bp_backfeet_pos);
-            //logmyobject("fp_frontfeet_pos",fp_frontfeet_pos);
-            //logmyobject("vertlegal",vertlegal);
             vertlegal = bp_frontfeet_pos >= fp_frontfeet_pos;
         } 
         //horizontal legality
@@ -594,10 +591,10 @@ class Lineup {
                 }
                 logmyobject("pos1",pos1)
                 logmyobject("pos2",pos2)
-                logmyobject("bp_backfeet_pos",bp_backfeet_pos);
+                logmyobject("bp_frontfeet_pos",bp_frontfeet_pos);
                 logmyobject("fp_frontfeet_pos",fp_frontfeet_pos);
                 logmyobject("vertlegal",vertlegal);
-                logmyobject("lp_leftfeet_pos",lp_leftfeet_pos);
+                logmyobject("lp_rightfeet_pos",lp_rightfeet_pos);
                 logmyobject("rp_rightfeet_pos",rp_rightfeet_pos);
                 logmyobject("horlegal",horlegal);
 
@@ -1133,10 +1130,12 @@ if (!test_mode) {
         if (this.checked) {
             mylineup.oldRules = true;
             mylineupright.oldRules = true;
-          } else {
+            console.log("rules changed to old Rules")
+        } else {
             mylineup.oldRules = false;
             mylineupright.oldRules = false;
-          }
+            console.log("rules changed to new Rules")
+        }
 
         mylineup.checkPositionsLegalityStatic();
         mylineup.draw();
