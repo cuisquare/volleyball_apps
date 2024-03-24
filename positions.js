@@ -100,6 +100,8 @@ class Lineup {
         this.shirtnums = shirtnums;
         this.symbols = symbols;
 
+        this.fullshirtnums = this.shirtnums.slice()
+
         this.oldRules = false;
 
         this.context = lucontext;
@@ -149,11 +151,18 @@ class Lineup {
         this.muref = this.onMouseUp.bind(this);
         this.mmref = this.onMouseMove.bind(this);
         this.mlref = this.onMouseLeave.bind(this);
+        this.mrcref = this.onMouseRightClick.bind(this);
 
         this.addEventListeners();
 
         //this.addPosListeners();
 
+    }
+
+    addShirtnum(newShirtNum) {
+        if (!this.fullshirtnums.includes(newShirtNum)) {
+            this.fullshirtnums.push(newShirtNum)
+        }
     }
 
 
@@ -163,6 +172,7 @@ class Lineup {
         this.canvas.addEventListener('mousemove', this.mmref);
         this.canvas.addEventListener('mouseup', this.muref);
         this.canvas.addEventListener('mouseleave', this.mlref);
+        this.canvas.addEventListener('contextmenu',this.mrcref);
     }
 
     addPosListeners() {
@@ -235,6 +245,28 @@ class Lineup {
         if (this.isDragging) {
             this.checkPositionsLegalityStatic(this.draggingPositions, this.notDraggingPositions, this.oldRules);
         }
+        this.draw();
+    }
+
+    onMouseRightClick(event) { 
+        event.preventDefault(); // Prevent the default context menu
+        // Iterate over your list of Position instances
+        const rect = this.canvas.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+        this.positions.forEach(pos => {
+            if (pos.isInsideShirtNum(mouseX,mouseY)) {
+                logmyobject("calling mouse right click on element ",pos)
+                logmyobject("editing positions with forbiddent values ",this.shirtnums)
+
+                pos.editShirtNum(this.shirtnums, this.fullshirtnums)
+                this.shirtnums = this.getShirtNums(this.positions)
+                //before TODO this does not edit shirtnums array and it must do so!
+            }
+            if (pos.isInsideSymbol(mouseX,mouseY)) {
+                pos.editSymbol()
+            }
+        });
         this.draw();
     }
 
@@ -317,6 +349,7 @@ class Lineup {
         this.canvas.removeEventListener('mousemove', this.mmref);
         this.canvas.removeEventListener('mouseup', this.muref);
         this.canvas.removeEventListener('mouseleave', this.mlref);
+        this.canvas.removeEventListener('contextmenu', this.mrcref);
         this.positions.forEach(pos => {
             // Remove event listeners
             //this.canvas.removeEventListener('mousedown', pos.onMouseDown);
@@ -347,6 +380,26 @@ class Lineup {
         })
 
         return positions
+    }
+
+    getShirtNums(positions) {
+        var shirtnums = []
+        positions.forEach(pos => {
+            shirtnums.push(pos.shirtnum)
+        })
+        return shirtnums
+    }
+
+    updatePositions(newshirtnums, newsymbols) {
+        this.clearPositions();
+        this.shirtnums = newshirtnums;
+        this.symbols = newsymbols;
+        this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
+        //this.addPosListeners();
+        this.addEventListeners();
+        //this.updatePrevpos(n);
+        logmyobject("lineup positions after rotate forward",this.positions);
+        logmyobject("previous lineup positions after rotate forward",this.prevpositions);
     }
 
     rotateForward(n=1) {
@@ -781,6 +834,8 @@ class Position {
 
         this.color = "green";
 
+        this.independentEdit = false;
+
         this.speed = 50;
 
 
@@ -839,6 +894,7 @@ class Position {
         this.mdref = this.onMouseDown.bind(this);
         this.muref = this.onMouseUp.bind(this);
         this.mmref = this.onMouseMove.bind(this);
+        //this.mrcref = this.onMouseRightClick.bind(this);
 
         this.addEventListeners();
 
@@ -849,12 +905,14 @@ class Position {
         this.canvas.addEventListener('mousedown', this.mdref);
         this.canvas.addEventListener('mousemove', this.mmref);
         this.canvas.addEventListener('mouseup', this.muref);
+        //this.canvas.addEventListener('contextmenu', this.mrcref);
     }
 
     removeEventListeners() {
         this.canvas.removeEventListener('mousedown', this.mdref);
         this.canvas.removeEventListener('mousemove', this.mmref);
         this.canvas.removeEventListener('mouseup', this.muref);
+        //this.canvas.removeEventListener('contextmenu', this.mrcref);
     }
 
     prevposition() {
@@ -942,6 +1000,43 @@ class Position {
         poscontext.restore(); // Restore the canvas state
     }
 
+    isInsideBox(x, y,xmin,xmax,ymin,ymax) {     
+        return x >= xmin &&
+               x <= xmax &&
+               y >= ymin &&
+               y <= ymax;
+    }
+
+    isInsideShirtNum(x,y) {
+        return this.isInsideBox(
+            x,y,
+            this.xpos - 0.125 * this.width,
+            this.xpos + 0.125 * this.width,
+            this.ypos - 0.125 * this.width,
+            this.ypos + 0.125 * this.width
+            )
+    }
+
+    isInsideSymbol(x,y) {
+        return this.isInsideBox(
+            x,y,
+            this.xpos - 0.5 * this.width,
+            this.xpos - (0.125) * this.width,
+            this.ypos + (0.5 - 0.25) * this.width,
+            this.ypos + 0.5 * this.width
+            )
+    }
+
+    isInside(x,y) {
+        return this.isInsideBox(
+            x,y,
+            this.xpos - 0.5 * this.width,
+            this.xpos + 0.5 * this.width,
+            this.ypos - 0.5 * this.width,
+            this.ypos + 0.5 * this.width
+            )
+    }
+
     onMouseDown(event) {
         const rect = this.canvas.getBoundingClientRect();
         const mouseX = event.clientX - rect.left;
@@ -951,10 +1046,7 @@ class Position {
         const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle);
 
         if (
-            rotatedCoords.x >= this.xpos - 0.5 * this.width &&
-            rotatedCoords.x <= this.xpos + 0.5 * this.width &&
-            rotatedCoords.y >= this.ypos - 0.5 * this.height &&
-            rotatedCoords.y <= this.ypos + 0.5 * this.height
+            this.isInside(rotatedCoords.x, rotatedCoords.y)
         ) {
             this.isDragging = true;
             this.dragOffsetX = rotatedCoords.x - this.xpos;
@@ -983,6 +1075,74 @@ class Position {
         if (this.isDragging) {
             this.isDragging = false;
         }
+    }
+
+
+    onMouseRightClick(event) {
+
+        //not called anymore to give more limits to the edit
+
+        if (this.independentEdit) {
+            const rect = this.canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+            
+            //TODO make it so it detects whether editing shirt number OR position OR role
+            //if role : from one change, apply changes on all positions
+            //if shirt number : check that the change is allowed then apply or not
+            //if position: swap player with player of the target position
+    
+            if (this.isInsideShirtNum(mouseX, mouseY)) {
+                // Display form or dialog box to edit properties of 'pos'
+                this.editShirtNum();
+            } else if (this.isInsideSymbol(mouseX, mouseY)) {
+                // Display form or dialog box to edit properties of 'pos'
+                this.editSymbol();
+            } else {
+                console.log("Nothing was picked as editable for mouseX = ",mouseX, " and mouseY = ",mouseY)
+    
+            }
+        }
+
+    }
+
+    editShirtNum(currentShirtNums,fullShirtNums) {
+        // Display a form or dialog box to edit shirtnum property 
+        console.log("currentShirtNums: ",currentShirtNums)
+        console.log("fullShirtNums: ",fullShirtNums)
+        const newShirtNum = prompt("Enter new shirt number.", this.shirtnum);
+        if ((newShirtNum !== null )) {
+            if (!(currentShirtNums.includes(parseInt(newShirtNum)))) {
+                if (fullShirtNums.includes(parseInt(newShirtNum))) {
+                    this.shirtnum = parseInt(newShirtNum);
+                }
+            }  
+        }
+    }
+
+    editSymbol() {
+        // Display a form or dialog box to edit shirtnum property 
+        const newSymbol = prompt("Enter new symbol:", this.symbol);
+        if (newSymbol !== null) {
+            this.symbol = newSymbol;
+        }
+    }
+
+    editPosition() {
+        // Display a form or dialog box to edit properties of 'pos'
+        // For example:
+        const newShirtNum = prompt("Enter new shirt number:", this.shirtnum);
+        if (newShirtNum !== null) {
+            this.shirtnum = newShirtNum;
+        }
+
+        const newValue = prompt("Enter new position value (1-6 only):", this.value);
+        if (newValue !== null) {
+            this.value = newValue;
+        }
+
+
+        // Repeat this process for other properties if needed
     }
 }
 
@@ -1017,6 +1177,8 @@ function arrayRotateN(arr, reverse,n) {
     return arr;
 }
 
+
+
 var test_mode = false;
 // the canvas things
 if (!test_mode) {
@@ -1043,6 +1205,8 @@ if (!test_mode) {
 
     mysymbols = getSymbolsFromSetterPosition(3);
     mylineup = new Lineup([5,9,45,23,12,7],mysymbols,context, total_angle = 0, leftcourt = true);
+    mylineup.addShirtnum(4);
+    mylineup.addShirtnum(10);
     mylineup.draw();
 
 
@@ -1089,6 +1253,8 @@ if (!test_mode) {
         //animate();
         
     });
+
+    
 
     // Function to convert mouse coordinates to rotated canvas coordinates
     function convertToRotatedCoords(x, y, rotationAngle,centerX = this.canvas.width / 2, centerY = this.canvas.height / 2) {
