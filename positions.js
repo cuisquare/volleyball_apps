@@ -96,10 +96,17 @@ class Team {
 }
 
 class Lineup {
-    constructor(shirtnums = [15,16,17,18,19,20], symbols = ["S","O1","M1","Opp","O2","M2"], lucontext, total_angle, leftcourt) {
+    constructor(shirtnums = [15,16,17,18,19,20], symbols = [], lucontext, total_angle, leftcourt) {
         this.shirtnums = shirtnums;
-        this.symbols = symbols;
 
+        this.defaultsymbols = ["S","O1","M1","Opp","O2","M2"];
+
+        if (this.symbols == []) {
+            this.symbols = this.defaultsymbols;
+        } else {
+            this.symbols = symbols;
+        }
+        
         this.fullshirtnums = this.shirtnums.slice()
 
         this.oldRules = false;
@@ -264,7 +271,8 @@ class Lineup {
                 //before TODO this does not edit shirtnums array and it must do so!
             }
             if (pos.isInsideSymbol(mouseX,mouseY)) {
-                pos.editSymbol()
+                //TODO something that would assign all other positions based on this one position
+                pos.editSymbol(this.defaultsymbols)
             }
         });
         this.draw();
@@ -1120,11 +1128,13 @@ class Position {
         }
     }
 
-    editSymbol() {
+    editSymbol(allowedSymbols) {
         // Display a form or dialog box to edit shirtnum property 
         const newSymbol = prompt("Enter new symbol:", this.symbol);
         if (newSymbol !== null) {
-            this.symbol = newSymbol;
+            if (allowedSymbols.includes(newSymbol)) {
+                this.symbol = newSymbol;
+            }
         }
     }
 
