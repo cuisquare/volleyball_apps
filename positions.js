@@ -403,6 +403,18 @@ class Lineup {
         return shirtnums
     }
 
+    updateSymbols(newsymbols) {
+        var index = 0;
+        console.log("inside updateSymbols")
+        this.positions.forEach(pos => {
+            console.log("index:",index)
+            console.log("newsymbols[index]:",newsymbols[index])           
+            pos.symbol = newsymbols[index];
+            index ++;
+        })
+        console.log("reassigned all symbols")
+    }
+
     updatePositions(newshirtnums, newsymbols) {
         this.clearPositions();
         this.shirtnums = newshirtnums;
@@ -415,7 +427,7 @@ class Lineup {
         logmyobject("previous lineup positions after rotate forward",this.prevpositions);
     }
 
-    assignDefaultSymbols(pos,newdefaultsymbol = "S") {
+    assignDefaultSymbols(pos,newdefaultsymbol = "S",recreatePositions = false) {
         console.log("inside assignDefaultSymbols")
         if (this.defaultsymbols.includes(newdefaultsymbol)) {
             console.log(this.defaultsymbols," includes ", newdefaultsymbol)
@@ -434,9 +446,19 @@ class Lineup {
             }
             console.log("after rotating, newsymbols:", newsymbols)
             this.symbols = newsymbols;
-            this.clearPositions();
-            this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
-            this.addEventListeners();
+            if (recreatePositions) {
+                console.log("recreating positions")
+                this.clearPositions();
+                this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
+                this.addEventListeners();
+            } else {
+                console.log("NOT recreating positions")
+                this.updateSymbols(newsymbols);
+                console.log("let's redraw")
+                this.draw();
+                console.log("i have redrawn")
+            }
+
             logmyobject("lineup positions after reassigning default symbol",this.positions);
         } else {
             console.log("cannot assign default symbol as ", newdefaultsymbol, " is not a valid default symbol. " )
@@ -860,7 +882,7 @@ function logmyobject(desc ="myobj",myobj) {
 }
 
 class Position {
-    constructor(value, shirtnum, symbol = "P",poscontext,total_angle = 0) {
+    constructor(value, shirtnum, symbol = "P",poscontext,total_angle = 0,xpos = "default",ypos = "default") {
 
         if(!([1,2,3,4,5,6].includes(value))) {
             throw('value can only take any of the following values: [1,2,3,4,5,6], but value attempt was: '+ value.toString() );
@@ -908,21 +930,26 @@ class Position {
             this.hor = 2;
         }
 
-        if (this.isfrontrow) {
-            this.ypos = 0.5*window_height/3.0
-        } 
-        if (this.isbackrow) {
-            this.ypos = 0.666*window_height
+        if (ypos == "default") {
+            if (this.isfrontrow) {
+                this.ypos = 0.5*window_height/3.0
+            } 
+            if (this.isbackrow) {
+                this.ypos = 0.666*window_height
+            }
         }
-        if (this.isleftside) {
-            this.xpos = 0.25*window_width
-        } 
-        if (this.ismiddle) {
-            this.xpos = 0.5*window_width
-        } 
-        if (this.isrightside) {
-            this.xpos = 0.75*window_width
-        } 
+
+        if (xpos == "default") {
+            if (this.isleftside) {
+                this.xpos = 0.25*window_width
+            } 
+            if (this.ismiddle) {
+                this.xpos = 0.5*window_width
+            } 
+            if (this.isrightside) {
+                this.xpos = 0.75*window_width
+            } 
+        }
 
         this.prevxpos = this.xpos;
         this.prevypos = this.ypos;
