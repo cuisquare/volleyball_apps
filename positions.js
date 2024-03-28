@@ -434,6 +434,7 @@ class Lineup {
             }
             console.log("after rotating, newsymbols:", newsymbols)
             this.symbols = newsymbols;
+            this.clearPositions();
             this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
             this.addEventListeners();
             logmyobject("lineup positions after reassigning default symbol",this.positions);
