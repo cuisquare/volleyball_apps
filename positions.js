@@ -272,7 +272,12 @@ class Lineup {
             }
             if (pos.isInsideSymbol(mouseX,mouseY)) {
                 //TODO something that would assign all other positions based on this one position
-                pos.editSymbol(this.defaultsymbols)
+                //pos.editSymbol(this.defaultsymbols)
+                console.log("moomoo inside symbol of ", pos, "!");
+                console.log("second moomoo inside symbol of ", pos, "!");
+                const newSymbol = prompt("Enter new symbol (valid symbols are: "+ this.defaultsymbols +"):","S", this.symbol);
+                this.assignDefaultSymbols(pos, newSymbol); 
+                console.log("No, really, inside symbol of ", pos, "!");
             }
         });
         this.draw();
@@ -408,6 +413,35 @@ class Lineup {
         //this.updatePrevpos(n);
         logmyobject("lineup positions after rotate forward",this.positions);
         logmyobject("previous lineup positions after rotate forward",this.prevpositions);
+    }
+
+    assignDefaultSymbols(pos,newdefaultsymbol = "S") {
+        console.log("inside assignDefaultSymbols")
+        if (this.defaultsymbols.includes(newdefaultsymbol)) {
+            console.log(this.defaultsymbols," includes ", newdefaultsymbol)
+            var newsymbols = this.defaultsymbols;
+            console.log("before rotating, newsymbols:", newsymbols)            
+            var nb_rotations = 0;
+            console.log("nb_rotations: ",nb_rotations)
+            var posvalue = pos.value;
+            console.log("posvalue: ",posvalue)
+            console.log("newsymbols[posvalue-1]: ",newsymbols[posvalue-1])
+            while (newsymbols[posvalue-1] != newdefaultsymbol) {
+                newsymbols = arrayRotateN(newsymbols, false,1);
+                nb_rotations ++;
+                console.log("nb_rotations: ",nb_rotations)
+
+            }
+            console.log("after rotating, newsymbols:", newsymbols)
+            this.symbols = newsymbols;
+            this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
+            this.addEventListeners();
+            logmyobject("lineup positions after reassigning default symbol",this.positions);
+        } else {
+            console.log("cannot assign default symbol as ", newdefaultsymbol, " is not a valid default symbol. " )
+            console.log("valid default symbols are ", this.defaultsymbols)
+        }
+
     }
 
     rotateForward(n=1) {
@@ -1213,7 +1247,7 @@ if (!test_mode) {
     
     context.clearRect(0, 0, window_width , window_height)
 
-    mysymbols = getSymbolsFromSetterPosition(3);
+    mysymbols = getSymbolsFromSetterPosition(1);
     mylineup = new Lineup([5,9,45,23,12,7],mysymbols,context, total_angle = 0, leftcourt = true);
     mylineup.addShirtnum(4);
     mylineup.addShirtnum(10);
