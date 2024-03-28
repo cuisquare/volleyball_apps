@@ -1077,9 +1077,11 @@ class Position {
                y <= ymax;
     }
 
-    isInsideShirtNum(x,y) {
+    isInsideShirtNum(mouseX, mouseY) {
+        // Convert mouse coordinates to rotated canvas coordinates
+        const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle);
         return this.isInsideBox(
-            x,y,
+            rotatedCoords.x,rotatedCoords.y,
             this.xpos - 0.125 * this.width,
             this.xpos + 0.125 * this.width,
             this.ypos - 0.125 * this.width,
@@ -1087,9 +1089,14 @@ class Position {
             )
     }
 
-    isInsideSymbol(x,y) {
+    isInsideSymbol(mouseX, mouseY) {
+        const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle);
+        //TODO here code a save, then rotation of -total_angle
+        //basically it picks the right position considering the rotated position 
+        //however this is not where the symbol is because at the time of drawing the letter
+        //a rotation of -total_angle had been applied. 
         return this.isInsideBox(
-            x,y,
+            rotatedCoords.x,rotatedCoords.y,
             this.xpos - 0.5 * this.width,
             this.xpos - (0.125) * this.width,
             this.ypos + (0.5 - 0.25) * this.width,
