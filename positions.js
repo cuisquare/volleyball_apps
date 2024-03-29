@@ -270,7 +270,7 @@ class Lineup {
                 this.shirtnums = this.getShirtNums(this.positions)
                 //before TODO this does not edit shirtnums array and it must do so!
             }
-            if (pos.isInsideSymbol(mouseX,mouseY)) {
+            if (pos.isInsideSymbol(mouseX,mouseY, this.isUpright,this.leftcourt)) {
                 //TODO something that would assign all other positions based on this one position
                 //pos.editSymbol(this.defaultsymbols)
                 console.log("moomoo inside symbol of ", pos, "!");
@@ -1089,19 +1089,45 @@ class Position {
             )
     }
 
-    isInsideSymbol(mouseX, mouseY) {
-        const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle);
+    isInsideSymbol(mouseX, mouseY,isUpright,leftcourt) {
+        
         //TODO here code a save, then rotation of -total_angle
         //basically it picks the right position considering the rotated position 
         //however this is not where the symbol is because at the time of drawing the letter
         //a rotation of -total_angle had been applied. 
-        return this.isInsideBox(
-            rotatedCoords.x,rotatedCoords.y,
-            this.xpos - 0.5 * this.width,
-            this.xpos - (0.125) * this.width,
-            this.ypos + (0.5 - 0.25) * this.width,
-            this.ypos + 0.5 * this.width
-            )
+        const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle);
+        if (isUpright) {
+                var isinsidebox = this.isInsideBox(
+                    rotatedCoords.x,rotatedCoords.y,
+                    this.xpos - 0.5 * this.width,
+                    this.xpos - 0.125 * this.width,
+                    this.ypos + 0.25 * this.width,
+                    this.ypos + 0.5 * this.width
+                    )
+
+        } else {
+            if (leftcourt) {
+                var isinsidebox = this.isInsideBox(
+                    rotatedCoords.x,rotatedCoords.y,
+                    this.xpos + (0.5 - 0.25) * this.width,
+                    this.xpos +  0.5 * this.width,
+                    this.ypos + 0.125 * this.width,
+                    this.ypos + 0.5 * this.width
+                    )
+            } else {
+                var isinsidebox = this.isInsideBox(
+                    rotatedCoords.x,rotatedCoords.y,
+                    this.xpos - 0.5 * this.width,
+                    this.xpos - 0.25 * this.width,
+                    this.ypos - 0.5 * this.width,
+                    this.ypos - 0.125 * this.width
+                    )
+            }
+        }
+
+        //poscontext.restore(); // Restore the canvas state
+
+        return isinsidebox;
     }
 
     isInside(x,y) {
