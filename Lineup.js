@@ -227,10 +227,6 @@ class Lineup {
         })
     }
 
-
-
-
-
     rotateCanvasAntiClockWise() {
         this.#rotateCanvas(-Math.PI / 2)
     }
@@ -393,7 +389,6 @@ class Lineup {
         //this.updatePrevpos(n);
         logmyobject("lineup positions after rotate forward",this.positions);
         logmyobject("previous lineup positions after rotate forward",this.prevpositions);
-        counterdebugillegalposition = 0;
     }
 
     rotateBackward(n=1) {
@@ -407,7 +402,6 @@ class Lineup {
         //this.updatePrevpos(n, false);
         logmyobject("lineup positions after rotate backward",this.positions);
         logmyobject("previous lineup positions after rotate backward",this.prevpositions);
-        counterdebugillegalposition = 0;
     }
 
     isMoving() {
@@ -615,34 +609,6 @@ class Lineup {
             horlegal = lp_rightfeet_pos <= rp_rightfeet_pos;
         } 
         var output = vertlegal & horlegal;
-        if (!output) {
-            counterdebugillegalposition ++;
-            if (counterdebugillegalposition == 1) {
-                for (let step = 0; step < 100; step++) {
-                    console.log("***")
-                    console.log("SPECIAL DEBUG LOG")
-                }
-                logmyobject("pos1",pos1)
-                logmyobject("pos2",pos2)
-                logmyobject("bp_frontfeet_pos",bp_frontfeet_pos);
-                logmyobject("fp_frontfeet_pos",fp_frontfeet_pos);
-                logmyobject("vertlegal",vertlegal);
-                logmyobject("lp_rightfeet_pos",lp_rightfeet_pos);
-                logmyobject("rp_rightfeet_pos",rp_rightfeet_pos);
-                logmyobject("horlegal",horlegal);
-
-                logmyobject("this.draggingPositions",this.draggingPositions);
-                logmyobject("this.notDraggingPositions",this.notDraggingPositions);
-                logmyobject("this.positions",this.positions);
-
-                for (let step = 0; step < 100; step++) {
-                    console.log("SPECIAL DEBUG LOG")
-                    console.log("***")
-                }
-            }
-        }
-        //logmyobject("output",output);
-
         return output 
     }
 
@@ -683,34 +649,6 @@ class Lineup {
             //logmyobject("horlegal",horlegal);
         } 
         var output = vertlegal & horlegal;
-        if (!output) {
-            counterdebugillegalposition ++;
-            if (counterdebugillegalposition == 1) {
-                for (let step = 0; step < 100; step++) {
-                    console.log("***")
-                    console.log("SPECIAL DEBUG LOG")
-                }
-                logmyobject("pos1",pos1)
-                logmyobject("pos2",pos2)
-                logmyobject("bp_backfeet_pos",bp_backfeet_pos);
-                logmyobject("fp_frontfeet_pos",fp_frontfeet_pos);
-                logmyobject("vertlegal",vertlegal);
-                logmyobject("lp_leftfeet_pos",lp_leftfeet_pos);
-                logmyobject("rp_rightfeet_pos",rp_rightfeet_pos);
-                logmyobject("horlegal",horlegal);
-
-                logmyobject("this.draggingPositions",this.draggingPositions);
-                logmyobject("this.notDraggingPositions",this.notDraggingPositions);
-                logmyobject("this.positions",this.positions);
-
-                for (let step = 0; step < 100; step++) {
-                    console.log("SPECIAL DEBUG LOG")
-                    console.log("***")
-                }
-            }
-        }
-        //logmyobject("output",output);
-
         return output 
     }
 
