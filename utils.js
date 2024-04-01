@@ -6,7 +6,7 @@ export default function getSymbolsFromSetterPosition(setterpos = 2) {
     var symbols = ["S","O1","M1","Opp","O2","M2"]
     var index_increment = setterpos - 1;
     console.log("index_increment:",index_increment);
-    symbols2 = arrayRotateN(symbols,true,index_increment)
+    var symbols2 = arrayRotateN(symbols,true,index_increment)
     return symbols2
 }
 
