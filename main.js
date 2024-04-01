@@ -81,30 +81,6 @@ document.getElementById('bckright').addEventListener('click',function(){
     
 });
 
-
-
-// Function to convert mouse coordinates to rotated canvas coordinates
-function convertToRotatedCoords(x, y, rotationAngle,centerX = this.canvas.width / 2, centerY = this.canvas.height / 2) {
-    //const centerX = this.canvas.width / 2;
-    //const centerY = this.canvas.height / 2;
-
-    // Calculate the angle between the mouse position and the canvas center
-    const angle = Math.atan2((y - centerY), x - centerX) ;
-
-    // Calculate the distance between the mouse position and the canvas center
-    const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
-
-    // Adjust the angle based on the rotation angle of the canvas
-    const adjustedAngle = angle - rotationAngle;
-
-    // Calculate the rotated coordinates
-    const rotatedX = centerX + distance * Math.cos(adjustedAngle);
-    const rotatedY = centerY + distance * Math.sin(adjustedAngle);
-
-    return { x: rotatedX, y: rotatedY };
-}
-
-
 //let rotate_angle = -Math.PI/ 2;
 //var total_angle =0;
 
