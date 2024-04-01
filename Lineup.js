@@ -3,7 +3,7 @@ import {logmyobject, arrayRotateN} from './utils.js';
 import Position from './Position.js';
 
 class Lineup {
-    constructor(shirtnums = [15,16,17,18,19,20], symbols = [], lucontext, total_angle, leftcourt) {
+    constructor(shirtnums = [15,16,17,18,19,20], symbols = [], lucontext, total_angle, leftcourt,window_width, window_height) {
         this.shirtnums = shirtnums;
 
         this.defaultsymbols = ["S","O1","M1","Opp","O2","M2"];
@@ -724,8 +724,8 @@ class Lineup {
         lucontext.closePath();
 
         // Draw arrow
-        const arrowSize = 0.04*window_height;
-        const arrowX = window_width - arrowSize // Right top corner, 40 pixels from right edge
+        const arrowSize = 0.04*this.courtheight;
+        const arrowX = this.courtwidth - arrowSize // Right top corner, 40 pixels from right edge
         const arrowY = 0; // 20 pixels from top edge
         
         lucontext.beginPath();
@@ -764,7 +764,7 @@ class Lineup {
     }
 
     draw() {
-        this.context.clearRect(0, 0, window_width , window_height)
+        this.context.clearRect(0, 0, this.courtwidth , this.courtheight)
         this.drawcourt();
         this.positions.forEach( pos => {
             pos.draw();

@@ -29,7 +29,9 @@ var mylineup = new Lineup(
     mysymbols,
     context, 
     0, 
-    true);
+    true,
+    window_width,
+    window_height);
 mylineup.addShirtnum(4);
 mylineup.addShirtnum(10);
 mylineup.draw();
