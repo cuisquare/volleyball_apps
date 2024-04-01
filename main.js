@@ -23,7 +23,13 @@ canvas.style.background = "#FFFFFF";
 context.clearRect(0, 0, window_width , window_height)
 
 var mysymbols = getSymbolsFromSetterPosition(1);
-var mylineup = new Lineup([5,9,45,23,12,7],mysymbols,context, total_angle = 0, leftcourt = true);
+
+var mylineup = new Lineup(
+    shirtnums = [5,9,45,23,12,7],
+    symbols = mysymbols,
+    lucontext = context, 
+    total_angle = 0, 
+    leftcourt = true);
 mylineup.addShirtnum(4);
 mylineup.addShirtnum(10);
 mylineup.draw();
