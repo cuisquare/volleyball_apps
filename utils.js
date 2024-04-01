@@ -1,4 +1,4 @@
-function isCloseEnough(a,b,tolerance) {
+export function isCloseEnough(a,b,tolerance) {
     return Math.abs(a-b) < Math.abs(tolerance)
 }
 

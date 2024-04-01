@@ -1,6 +1,7 @@
-import {getSymbolsFromSetterPosition} from './utils.js';
 
 import Lineup from './Lineup.js';
+import getSymbolsFromSetterPosition from './utils.js';
+
 
 let canvas = document.getElementById("canvas");
 let context = canvas.getContext("2d");
