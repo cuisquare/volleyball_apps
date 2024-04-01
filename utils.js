@@ -31,7 +31,7 @@ export function arrayRotateN(arr, reverse,n) {
 }
 
 // Function to convert mouse coordinates to rotated canvas coordinates
-export function convertToRotatedCoords(x, y, rotationAngle,centerX = this.canvas.width / 2, centerY = this.canvas.height / 2) {
+export function convertToRotatedCoords(x, y, rotationAngle,centerX, centerY) {
     //const centerX = this.canvas.width / 2;
     //const centerY = this.canvas.height / 2;
 

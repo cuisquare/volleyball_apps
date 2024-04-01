@@ -201,7 +201,12 @@ class Position {
 
     isInsideShirtNum(mouseX, mouseY) {
         // Convert mouse coordinates to rotated canvas coordinates
-        const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle);
+        var centerX = this.canvas.width / 2;
+        var centerY = this.canvas.height / 2;
+        const rotatedCoords = convertToRotatedCoords(
+            mouseX, mouseY, this.total_angle,
+            centerX,centerY
+            );
         return this.isInsideBox(
             rotatedCoords.x,rotatedCoords.y,
             this.xpos - 0.125 * this.width,
@@ -217,7 +222,9 @@ class Position {
         //basically it picks the right position considering the rotated position 
         //however this is not where the symbol is because at the time of drawing the letter
         //a rotation of -total_angle had been applied. 
-        const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle);
+        var centerX = this.canvas.width / 2;
+        var centerY = this.canvas.height / 2;
+        const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle,centerX,centerY);
         if (isUpright) {
                 var isinsidebox = this.isInsideBox(
                     rotatedCoords.x,rotatedCoords.y,
@@ -268,7 +275,9 @@ class Position {
         const mouseY = event.clientY - rect.top;
 
         // Convert mouse coordinates to rotated canvas coordinates
-        const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle);
+        var centerX = this.canvas.width / 2;
+        var centerY = this.canvas.height / 2;
+        const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle,centerX,centerY);
 
         if (
             this.isInside(rotatedCoords.x, rotatedCoords.y)
@@ -286,7 +295,9 @@ class Position {
             const mouseY = event.clientY - rect.top;
 
             // Convert mouse coordinates to rotated canvas coordinates
-            const rotatedCoords = convertToRotatedCoords(mouseX, mouseY,this.total_angle);
+            var centerX = this.canvas.width / 2;
+        var centerY = this.canvas.height / 2;
+            const rotatedCoords = convertToRotatedCoords(mouseX, mouseY,this.total_angle,centerX,centerY);
 
             this.xpos = rotatedCoords.x - this.dragOffsetX;
             this.ypos = rotatedCoords.y - this.dragOffsetY;
