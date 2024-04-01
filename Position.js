@@ -1,5 +1,7 @@
 import {logmyobject} from './utils.js';
 
+import {convertToRotatedCoords} from './utils.js';
+
 
 class Position {
     constructor(value, shirtnum, symbol = "P",poscontext,total_angle = 0,xpos = "default",ypos = "default",window_width,window_height) {
