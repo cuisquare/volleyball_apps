@@ -25,11 +25,11 @@ context.clearRect(0, 0, window_width , window_height)
 var mysymbols = getSymbolsFromSetterPosition(1);
 
 var mylineup = new Lineup(
-    shirtnums = [5,9,45,23,12,7],
-    symbols = mysymbols,
-    lucontext = context, 
-    total_angle = 0, 
-    leftcourt = true);
+    [5,9,45,23,12,7],
+    mysymbols,
+    context, 
+    0, 
+    true);
 mylineup.addShirtnum(4);
 mylineup.addShirtnum(10);
 mylineup.draw();
@@ -46,7 +46,7 @@ contextright.clearRect(0, 0, window_width , window_height)
 //contextright.fillStyle = 'blue';
 //contextright.fillRect(0, 0, canvasright.width, canvasright.height);
 
-var mylineupright = new Lineup([3,10,8,7,13,4],mysymbols,contextright, total_angle = 0, leftcourt = false);
+var mylineupright = new Lineup([3,10,8,7,13,4],mysymbols,contextright, 0, false);
 mylineupright.draw();
 
 document.getElementById('fwd').addEventListener('click',function(){
