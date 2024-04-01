@@ -2,7 +2,7 @@ import {logmyobject} from './utils.js';
 
 
 class Position {
-    constructor(value, shirtnum, symbol = "P",poscontext,total_angle = 0,xpos = "default",ypos = "default") {
+    constructor(value, shirtnum, symbol = "P",poscontext,total_angle = 0,xpos = "default",ypos = "default",window_width,window_height) {
 
         if(!([1,2,3,4,5,6].includes(value))) {
             throw('value can only take any of the following values: [1,2,3,4,5,6], but value attempt was: '+ value.toString() );

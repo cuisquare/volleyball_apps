@@ -288,7 +288,15 @@ class Lineup {
             console.log("pos:", pos)
             console.log("shirtnum:", shirtnum)
             var symbol = symbols[shirtnums.indexOf(shirtnum)]
-            var updatedposition = new Position(pos, shirtnum,symbol,lucontext, this.total_angle)
+            var updatedposition = new Position(
+                pos, 
+                shirtnum,
+                symbol,
+                lucontext, 
+                this.total_angle,
+                this.courtwidth, 
+                this.courtheight
+                )
             positions.push(updatedposition);
             console.log("assigned shirtnum ",shirtnum, " to position ",pos," successfully")
             pos ++;
@@ -716,10 +724,10 @@ class Lineup {
         lucontext.strokeStyle = "black";
         lucontext.lineWidth = 8;
         //lucontext.moveTo(0, 0); // Move the pen to (30, 50)
-        lucontext.rect(0,0,window_width,window_height);
+        lucontext.rect(0,0,this.courtwidth,this.courtheight);
         lucontext.stroke();
         lucontext.lineWidth = 5;
-        lucontext.rect(0,0,window_width,window_height / 3.0);
+        lucontext.rect(0,0,this.courtwidth,this.courtheight / 3.0);
         lucontext.stroke();
         lucontext.closePath();
 
