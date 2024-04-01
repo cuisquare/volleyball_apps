@@ -2,7 +2,7 @@ export function isCloseEnough(a,b,tolerance) {
     return Math.abs(a-b) < Math.abs(tolerance)
 }
 
-export function getSymbolsFromSetterPosition(setterpos = 2) {
+export default function getSymbolsFromSetterPosition(setterpos = 2) {
     var symbols = ["S","O1","M1","Opp","O2","M2"]
     var index_increment = setterpos - 1;
     console.log("index_increment:",index_increment);
