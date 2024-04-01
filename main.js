@@ -6,14 +6,14 @@ import getSymbolsFromSetterPosition from './utils.js';
 let canvas = document.getElementById("canvas");
 let context = canvas.getContext("2d");
 
-max_court_width = Math.min(window.innerWidth,window.innerHeight)
-max_court_height = Math.min(window.innerWidth,window.innerHeight)
+var max_court_width = Math.min(window.innerWidth,window.innerHeight)
+var max_court_height = Math.min(window.innerWidth,window.innerHeight)
 
 //max_court_width = window.innerWidth;
 
-window_width = 0.80 * max_court_width ;
+var window_width = 0.80 * max_court_width ;
 //window_height = 0.80 * 2 * max_court_width;
-window_height = 0.80 * max_court_width;
+var window_height = 0.80 * max_court_width;
 
 canvas.width = window_width;
 canvas.height = window_height;
@@ -22,8 +22,8 @@ canvas.style.background = "#FFFFFF";
 
 context.clearRect(0, 0, window_width , window_height)
 
-mysymbols = getSymbolsFromSetterPosition(1);
-mylineup = new Lineup([5,9,45,23,12,7],mysymbols,context, total_angle = 0, leftcourt = true);
+var mysymbols = getSymbolsFromSetterPosition(1);
+var mylineup = new Lineup([5,9,45,23,12,7],mysymbols,context, total_angle = 0, leftcourt = true);
 mylineup.addShirtnum(4);
 mylineup.addShirtnum(10);
 mylineup.draw();
@@ -40,7 +40,7 @@ contextright.clearRect(0, 0, window_width , window_height)
 //contextright.fillStyle = 'blue';
 //contextright.fillRect(0, 0, canvasright.width, canvasright.height);
 
-mylineupright = new Lineup([3,10,8,7,13,4],mysymbols,contextright, total_angle = 0, leftcourt = false);
+var mylineupright = new Lineup([3,10,8,7,13,4],mysymbols,contextright, total_angle = 0, leftcourt = false);
 mylineupright.draw();
 
 document.getElementById('fwd').addEventListener('click',function(){
