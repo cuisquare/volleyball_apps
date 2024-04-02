@@ -3,7 +3,16 @@ import {logmyobject, arrayRotateN} from './utils.js';
 import Position from './Position.js';
 
 class Lineup {
-    constructor(shirtnums = [15,16,17,18,19,20], symbols = [], lucontext, total_angle, leftcourt,window_width, window_height) {
+    constructor(
+        shirtnums = [15,16,17,18,19,20], 
+        symbols = [], 
+        lucontext, 
+        total_angle, 
+        leftcourt,
+        window_width, 
+        window_height
+        ) {
+
         this.shirtnums = shirtnums;
 
         this.defaultsymbols = ["S","O1","M1","Opp","O2","M2"];
@@ -278,18 +287,23 @@ class Lineup {
     }
 
     getPositions(shirtnums, symbols,lucontext) {
-        var positions = []// [new Position(1),new Position(2),new Position(3),new Position(4),new Position(5),new Position(6),];
+        var positions = []
         var pos = 1;
         shirtnums.forEach(shirtnum => {
             console.log("pos:", pos)
             console.log("shirtnum:", shirtnum)
             var symbol = symbols[shirtnums.indexOf(shirtnum)]
+            console.log("creating new position")
+            console.log("this.courtwidth:",this.courtwidth)
+            console.log("this.courtheight:",this.courtheight)
             var updatedposition = new Position(
                 pos, 
                 shirtnum,
                 symbol,
                 lucontext, 
                 this.total_angle,
+                "default",
+                "default",
                 this.courtwidth, 
                 this.courtheight
                 )

@@ -48,7 +48,15 @@ contextright.clearRect(0, 0, window_width , window_height)
 //contextright.fillStyle = 'blue';
 //contextright.fillRect(0, 0, canvasright.width, canvasright.height);
 
-var mylineupright = new Lineup([3,10,8,7,13,4],mysymbols,contextright, 0, false);
+var mylineupright = new Lineup(
+    [3,10,8,7,13,4],
+    mysymbols,
+    contextright, 
+    0, 
+    false,
+    window_width,
+    window_height
+    );
 mylineupright.draw();
 
 document.getElementById('fwd').addEventListener('click',function(){
@@ -114,14 +122,6 @@ oldrulescheckbox.addEventListener('change',function(){
 });
 
 
-/*
-function animate(isOver = false) {
-    isOver = mylineup.draw(context);
-    if (!isOver) {
-        requestAnimationFrame(animate);
-    }
-}
-*/
 
 
 
