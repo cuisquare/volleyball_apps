@@ -16,16 +16,16 @@ class Position {
         window_height
         ) {
 
-        console.log("position constructor called with following arguments:")
-        console.log("value:", value)
-        console.log("shirtnum:", shirtnum)
-        console.log("symbol:", symbol)
-        console.log("poscontext:", poscontext)
-        console.log("total_angle:", total_angle)
-        console.log("xpos:", xpos)
-        console.log("ypos:", ypos)
-        console.log("window_width:", window_width)
-        console.log("window_height:", window_height)
+        //console.log("position constructor called with following arguments:")
+        //console.log("value:", value)
+        //console.log("shirtnum:", shirtnum)
+        //console.log("symbol:", symbol)
+        //console.log("poscontext:", poscontext)
+        //console.log("total_angle:", total_angle)
+        //console.log("xpos:", xpos)
+        //console.log("ypos:", ypos)
+        //console.log("window_width:", window_width)
+        //console.log("window_height:", window_height)
 
         if(!([1,2,3,4,5,6].includes(value))) {
             throw('value can only take any of the following values: [1,2,3,4,5,6], but value attempt was: '+ value.toString() );
@@ -172,7 +172,7 @@ class Position {
     }
 
     draw() {
-        console.log("drawing a position")
+        //console.log("drawing a position")
         var poscontext = this.context;
         poscontext.save(); // Save the current canvas state
     
@@ -202,9 +202,9 @@ class Position {
         poscontext.font = "15px Arial";
         poscontext.fillText(this.value, 0.45 * this.width, 0.45 * this.height); // Text position relative to the Position instance's coordinates
     
-        console.log("started drawing rectangle for position")
-        console.log("this.width: ", this.width)
-        console.log("this.height: ", this.height)
+        //console.log("started drawing rectangle for position")
+        //console.log("this.width: ", this.width)
+        //console.log("this.height: ", this.height)
         poscontext.rect(
             -0.5 * this.width, // Rectangle position relative to the Position instance's coordinates
             -0.5 * this.height,
@@ -213,10 +213,10 @@ class Position {
         );
         poscontext.stroke();
         poscontext.closePath();
-        console.log("finished drawing rectangle for position")
+        //console.log("finished drawing rectangle for position")
     
         poscontext.restore(); // Restore the canvas state
-        console.log("drawed a position")
+        //console.log("drawed a position")
     }
 
     isInsideBox(x, y,xmin,xmax,ymin,ymax) {     
@@ -308,18 +308,18 @@ class Position {
         const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle,centerX,centerY);
 
         if (this.isInside(rotatedCoords.x, rotatedCoords.y)) {
-            console.log("CLOCKED INSIDE POSITION SO WE ARE NOW DRAGGING")
+            //console.log("CLICKED INSIDE POSITION SO WE ARE NOW DRAGGING")
             this.isDragging = true;
             this.dragOffsetX = rotatedCoords.x - this.xpos;
             this.dragOffsetY = rotatedCoords.y - this.ypos;
         } else {
-            console.log("CLOCKED OUTSIDE POSITION SO DRAGGING NOT CHANGED")
+            //console.log("CLICKED OUTSIDE POSITION SO DRAGGING NOT CHANGED")
         }
     }
 
     onMouseMove(event) {
         if (this.isDragging) {
-            console.log("MOUSE MOVE WHILE DRAGGING")
+            //console.log("MOUSE MOVE WHILE DRAGGING")
             const rect = this.canvas.getBoundingClientRect();
             const mouseX = event.clientX - rect.left;
             const mouseY = event.clientY - rect.top;
@@ -335,7 +335,7 @@ class Position {
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.draw();
         } else {
-            console.log("MOUSE MOVE WHILE NOT DRAGGING SO WILL NOT DRAW POSITION")
+            //console.log("MOUSE MOVE WHILE NOT DRAGGING SO WILL NOT DRAW POSITION")
         }
     }
 
