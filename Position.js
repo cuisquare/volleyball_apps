@@ -297,6 +297,7 @@ class Position {
     }
 
     onMouseDown(event) {
+        console.log("MOUSE DOWN EVENT")
         const rect = this.canvas.getBoundingClientRect();
         const mouseX = event.clientX - rect.left;
         const mouseY = event.clientY - rect.top;
@@ -306,17 +307,19 @@ class Position {
         var centerY = this.canvas.height / 2;
         const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle,centerX,centerY);
 
-        if (
-            this.isInside(rotatedCoords.x, rotatedCoords.y)
-        ) {
+        if (this.isInside(rotatedCoords.x, rotatedCoords.y)) {
+            console.log("CLOCKED INSIDE POSITION SO WE ARE NOW DRAGGING")
             this.isDragging = true;
             this.dragOffsetX = rotatedCoords.x - this.xpos;
             this.dragOffsetY = rotatedCoords.y - this.ypos;
+        } else {
+            console.log("CLOCKED OUTSIDE POSITION SO DRAGGING NOT CHANGED")
         }
     }
 
     onMouseMove(event) {
         if (this.isDragging) {
+            console.log("MOUSE MOVE WHILE DRAGGING")
             const rect = this.canvas.getBoundingClientRect();
             const mouseX = event.clientX - rect.left;
             const mouseY = event.clientY - rect.top;
@@ -331,13 +334,13 @@ class Position {
 
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.draw();
+        } else {
+            console.log("MOUSE MOVE WHILE NOT DRAGGING SO WILL NOT DRAW POSITION")
         }
     }
 
     onMouseUp(event) {
-        if (this.isDragging) {
-            this.isDragging = false;
-        }
+        this.isDragging = false;
     }
 
 

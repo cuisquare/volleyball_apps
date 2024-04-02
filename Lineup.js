@@ -152,9 +152,7 @@ class Lineup {
             //logmyobject("calling mouseup on element index",index)
             pos.onMouseUp(event); // Call onMouseUp for each position
         });
-        if (this.isDragging) {
-            //this.checkPositionsLegality();
-        }
+
         //this.checkPositionsLegalityStatic(this.draggingPositions, this.notDraggingPositions);
         this.isDragging = false;
         this.draggingPositions = [];
