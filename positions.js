@@ -251,8 +251,9 @@ class Lineup {
         //console.log("I redrew because of mouse movement");
         if (this.isDragging) {
             this.checkPositionsLegalityStatic(this.draggingPositions, this.notDraggingPositions, this.oldRules);
+            this.draw();
         }
-        this.draw();
+        
     }
 
     onMouseRightClick(event) { 
@@ -1029,6 +1030,7 @@ class Position {
     }
 
     draw() {
+        console.log("drawing position")
         var poscontext = this.context;
         poscontext.save(); // Save the current canvas state
     
@@ -1158,7 +1160,10 @@ class Position {
     }
 
     onMouseMove(event) {
+        var message = "MOUSE MOVING EVENT OCCURRED"
+
         if (this.isDragging) {
+            message = message + " WITH DRAGGING ON"
             const rect = this.canvas.getBoundingClientRect();
             const mouseX = event.clientX - rect.left;
             const mouseY = event.clientY - rect.top;
@@ -1171,7 +1176,10 @@ class Position {
 
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.draw();
+        } else {
+            message = message + " WITHOUT DRAGGING"
         }
+        console.log(message)
     }
 
     onMouseUp(event) {
