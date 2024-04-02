@@ -165,8 +165,8 @@ class Lineup {
         //console.log("I redrew because of mouse movement");
         if (this.isDragging) {
             this.checkPositionsLegalityStatic(this.draggingPositions, this.notDraggingPositions, this.oldRules);
+            this.draw();
         }
-        this.draw();
     }
 
     onMouseRightClick(event) { 
