@@ -66,6 +66,13 @@ class Lineup {
         });
         */
 
+        this.touchStartTime = null;
+            // Get touch end time
+        this.touchEndTime = null;
+
+        // Calculate touch duration
+        this.touchDuration = null;
+
         this.isDragging = false;
         this.draggingPositions = [];
         this.notDraggingPositions = this.positions;
@@ -75,10 +82,11 @@ class Lineup {
         this.mmref = this.onMouseMove.bind(this);
         this.mlref = this.onMouseLeave.bind(this);
         this.mrcref = this.onMouseRightClick.bind(this);
+        this.tsref = this.onTouchStart.bind(this);
+        this.tmref = this.onTouchMove.bind(this);
+        this.teref = this.onTouchEnd.bind(this);
 
         this.addEventListeners();
-
-        //this.addPosListeners();
 
     }
 
@@ -96,31 +104,9 @@ class Lineup {
         this.canvas.addEventListener('mouseup', this.muref);
         this.canvas.addEventListener('mouseleave', this.mlref);
         this.canvas.addEventListener('contextmenu',this.mrcref);
-    }
-
-    addPosListeners() {
-        // Event listener for mouse down on the canvas
-        this.canvas.addEventListener('mousedown', (event) => {
-            this.positions.forEach((pos,index) => {
-                //logmyobject("calling mousedown on element index",index)
-                pos.onMouseDown(event); // Call onMouseDown for each position
-            });
-        });
-
-        // Event listener for mouse up on the canvas
-        this.canvas.addEventListener('mouseup', (event) => {
-            this.positions.forEach((pos,index) => {
-                //logmyobject("calling mouseup on element index",index)
-                pos.onMouseUp(event); // Call onMouseUp for each position
-            });
-        });
-
-        this.canvas.addEventListener('mouseleave', (event) => {
-            this.positions.forEach((pos,index) => {
-                //logmyobject("BECAUSE OF MOUSE LEAVE, calling mouseup on element index",index)
-                pos.onMouseLeave(event); // Call onMouseUp for each position
-            });
-        });
+        this.canvas.addEventListener('touchstart',this.tsref);
+        this.canvas.addEventListener('touchmove',this.tmref);
+        this.canvas.addEventListener('touchend',this.teref);
     }
 
     onMouseLeave(event) {
@@ -128,6 +114,12 @@ class Lineup {
             //logmyobject("BECAUSE OF MOUSE LEAVE, calling mouseup on element index",index)
             pos.onMouseUp(event); // Call onMouseDown for each position
         });        
+    }
+
+    onTouchStart(event) {
+            // Store touch start time and position
+        this.touchStartTime = Date.now();
+        this.onMouseDown(event);
     }
 
     onMouseDown(event) {
@@ -147,6 +139,43 @@ class Lineup {
         //this.checkPositionsLegalityStatic();
     }
 
+    onTouchEnd(event) {
+        event.preventDefault();
+        this.touchEndTime = Date.now();
+        this.touchDuration = this.touchEndTime - this.touchStartTime;
+            // Determine if it was a tap or a long press based on touch duration
+        console.log("Touch duration : ", this.touchDuration);
+        if (this.touchDuration < 300) { // Tap (less than 300ms)
+            console.log("TAP EVENT")
+            this.onMouseUp(event);
+            const rect = this.canvas.getBoundingClientRect();
+            const touchX = event.changedTouches[0].clientX - rect.left;
+            const touchY = event.changedTouches[0].clientY - rect.top;
+            this.positions.forEach(pos => {
+                if (pos.isInsideShirtNum(touchX,touchY)) {
+                    logmyobject("calling touch right click on element ",pos)
+                    logmyobject("editing positions with forbiddent values ",this.shirtnums)
+    
+                    pos.editShirtNum(this.shirtnums, this.fullshirtnums)
+                    this.shirtnums = this.getShirtNums(this.positions)
+                    //before TODO this does not edit shirtnums array and it must do so!
+                }
+                if (pos.isInsideSymbol(touchX,touchY, this.isUpright,this.leftcourt)) {
+                    //TODO something that would assign all other positions based on this one position
+                    //pos.editSymbol(this.defaultsymbols)
+                    console.log("moomoo inside symbol of ", pos, "!");
+                    console.log("second moomoo inside symbol of ", pos, "!");
+                    const newSymbol = prompt("Enter new symbol (valid symbols are: "+ this.defaultsymbols +"):","S", this.symbol);
+                    this.assignDefaultSymbols(pos, newSymbol); 
+                    console.log("No, really, inside symbol of ", pos, "!");
+                }
+            });
+            this.draw();
+        } else { // Long press
+            console.log("LONG PRESS EVENT")
+        }      
+    }
+
     onMouseUp(event) {
         this.positions.forEach(pos => {
             //logmyobject("calling mouseup on element index",index)
@@ -159,14 +188,6 @@ class Lineup {
         this.newIllegalPositions = [];
         this.notDraggingPositions = this.positions;
         
-    }
-
-    onMouseMove(event) {
-        //console.log("I redrew because of mouse movement");
-        if (this.isDragging) {
-            this.checkPositionsLegalityStatic(this.draggingPositions, this.notDraggingPositions, this.oldRules);
-            this.draw();
-        }
     }
 
     onMouseRightClick(event) { 
@@ -196,6 +217,20 @@ class Lineup {
         });
         this.draw();
     }
+
+    onTouchMove(event) {
+        this.onMouseMove(event);
+    }
+
+    onMouseMove(event) {
+        //console.log("I redrew because of mouse movement");
+        if (this.isDragging) {
+            this.checkPositionsLegalityStatic(this.draggingPositions, this.notDraggingPositions, this.oldRules);
+            this.draw();
+        }
+    }
+
+
 
     changeOrientationCanvas() {
         if (this.isUpright) {
@@ -273,11 +308,10 @@ class Lineup {
         this.canvas.removeEventListener('mouseup', this.muref);
         this.canvas.removeEventListener('mouseleave', this.mlref);
         this.canvas.removeEventListener('contextmenu', this.mrcref);
+        this.canvas.removeEventListener('touchstart',this.tsref);
+        this.canvas.removeEventListener('touchmove',this.tmref);
+        this.canvas.removeEventListener('touchend',this.teref);
         this.positions.forEach(pos => {
-            // Remove event listeners
-            //this.canvas.removeEventListener('mousedown', pos.onMouseDown);
-            //this.canvas.removeEventListener('mousemove', pos.onMouseMove);
-            //this.canvas.removeEventListener('mouseup', pos.onMouseUp);
             pos.removeEventListeners();
         });
 
@@ -343,7 +377,6 @@ class Lineup {
         this.shirtnums = newshirtnums;
         this.symbols = newsymbols;
         this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
-        //this.addPosListeners();
         this.addEventListeners();
         //this.updatePrevpos(n);
         logmyobject("lineup positions after rotate forward",this.positions);
@@ -396,7 +429,6 @@ class Lineup {
         this.shirtnums = arrayRotateN(this.shirtnums, false,n);
         this.symbols = arrayRotateN(this.symbols, false,n);
         this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
-        //this.addPosListeners();
         this.addEventListeners();
         //this.updatePrevpos(n);
         logmyobject("lineup positions after rotate forward",this.positions);
@@ -409,7 +441,6 @@ class Lineup {
         this.shirtnums = arrayRotateN(this.shirtnums, true,n);
         this.symbols = arrayRotateN(this.symbols, true,n);
         this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
-        //this.addPosListeners();
         this.addEventListeners();
         //this.updatePrevpos(n, false);
         logmyobject("lineup positions after rotate backward",this.positions);

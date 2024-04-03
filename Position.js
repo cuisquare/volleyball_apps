@@ -104,10 +104,21 @@ class Position {
         this.dragOffsetX = 0;
         this.dragOffsetY = 0;
 
+        this.touchStartTime = null;
+        // Get touch end time
+        this.touchEndTime = null;
+
+        // Calculate touch duration
+        this.touchDuration = null;
+
         this.mdref = this.onMouseDown.bind(this);
         this.muref = this.onMouseUp.bind(this);
         this.mmref = this.onMouseMove.bind(this);
         //this.mrcref = this.onMouseRightClick.bind(this);
+
+        this.tsref = this.onTouchStart.bind(this);
+        this.teref = this.onTouchEnd.bind(this);
+        this.tmref = this.onTouchMove.bind(this);
 
         this.addEventListeners();
 
@@ -118,6 +129,10 @@ class Position {
         this.canvas.addEventListener('mousedown', this.mdref);
         this.canvas.addEventListener('mousemove', this.mmref);
         this.canvas.addEventListener('mouseup', this.muref);
+        
+        this.canvas.addEventListener('touchstart',this.tsref);
+        this.canvas.addEventListener('touchmove',this.tmref);
+        this.canvas.addEventListener('touchend',this.teref);
         //this.canvas.addEventListener('contextmenu', this.mrcref);
     }
 
@@ -125,6 +140,10 @@ class Position {
         this.canvas.removeEventListener('mousedown', this.mdref);
         this.canvas.removeEventListener('mousemove', this.mmref);
         this.canvas.removeEventListener('mouseup', this.muref);
+        
+        this.canvas.removeEventListener('touchstart',this.tsref);
+        this.canvas.removeEventListener('touchmove',this.tmref);
+        this.canvas.removeEventListener('touchend',this.teref);
         //this.canvas.removeEventListener('contextmenu', this.mrcref);
     }
 
@@ -296,6 +315,29 @@ class Position {
             )
     }
 
+    onTouchStart(event) {
+        // Store touch start time and position
+        this.touchStartTime = Date.now();
+        // Get touch end position relative to the canvas
+        const rect = this.canvas.getBoundingClientRect();
+        const touchStartPositionX = event.changedTouches[0].clientX - rect.left;
+        const touchStartPositionY = event.changedTouches[0].clientY - rect.top;
+
+        var centerX = this.canvas.width / 2;
+        var centerY = this.canvas.height / 2;
+        const rotatedCoords = convertToRotatedCoords(touchStartPositionX, touchStartPositionY, this.total_angle,centerX,centerY);
+
+
+        if (this.isInside(rotatedCoords.x, rotatedCoords.y)) {
+            //console.log("CLICKED INSIDE POSITION SO WE ARE NOW DRAGGING")
+            this.isDragging = true;
+            this.dragOffsetX = rotatedCoords.x - this.xpos;
+            this.dragOffsetY = rotatedCoords.y - this.ypos;
+        } else {
+            //console.log("CLICKED OUTSIDE POSITION SO DRAGGING NOT CHANGED")
+        }
+    }
+
     onMouseDown(event) {
         console.log("MOUSE DOWN EVENT")
         const rect = this.canvas.getBoundingClientRect();
@@ -315,6 +357,27 @@ class Position {
         } else {
             //console.log("CLICKED OUTSIDE POSITION SO DRAGGING NOT CHANGED")
         }
+    }
+
+    onTouchMove(event) {
+        if (this.isDragging) {
+            //console.log("MOUSE MOVE WHILE DRAGGING")
+            const rect = this.canvas.getBoundingClientRect();
+            const touchStartPositionX = event.changedTouches[0].clientX - rect.left;
+            const touchStartPositionY = event.changedTouches[0].clientY - rect.top;
+    
+            var centerX = this.canvas.width / 2;
+            var centerY = this.canvas.height / 2;
+            const rotatedCoords = convertToRotatedCoords(touchStartPositionX, touchStartPositionY, this.total_angle,centerX,centerY);
+
+            this.xpos = rotatedCoords.x - this.dragOffsetX;
+            this.ypos = rotatedCoords.y - this.dragOffsetY;
+
+            this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.draw();
+        } else {
+            //console.log("MOUSE MOVE WHILE NOT DRAGGING SO WILL NOT DRAW POSITION")
+        }        
     }
 
     onMouseMove(event) {
@@ -337,6 +400,24 @@ class Position {
         } else {
             //console.log("MOUSE MOVE WHILE NOT DRAGGING SO WILL NOT DRAW POSITION")
         }
+    }
+
+    onTouchEnd(event) {
+        this.isDragging = false;
+        event.preventDefault();
+        this.touchEndTime = Date.now();
+        this.touchDuration = this.touchEndTime - this.touchStartTime;
+            // Determine if it was a tap or a long press based on touch duration
+        console.log("Touch duration : ", this.touchDuration);
+        if (this.touchDuration < 300) { // Tap (less than 300ms)
+            console.log("TAP EVENT")
+            this.onMouseUp(event);
+            console.log("RUNNING onMouseRightCLick(event)")
+            this.onMouseRightClick(event);
+        } else { // Long press
+            console.log("LONG PRESS EVENT")
+            //this.onMouseRightClick(event);
+        }   
     }
 
     onMouseUp(event) {
