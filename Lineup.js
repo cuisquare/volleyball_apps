@@ -749,18 +749,22 @@ class Lineup {
         this.drawcourt();
         //TODO draw in a certain order so that the shapes being dragged 
         //are on top
-        /*
-        this.positions.forEach( pos => {
-            pos.draw();
-        })*/
+        if (!this.isDragging) {
+            this.positions.forEach( pos => {
+                pos.draw();
+            })
+        } else {
+            this.notDraggingPositions.forEach( pos => {
+                pos.draw();
+            })
+    
+            this.draggingPositions.forEach( pos => {
+                pos.draw();
+            })
+        }
 
-        this.notDraggingPositions.forEach( pos => {
-            pos.draw();
-        })
 
-        this.draggingPositions.forEach( pos => {
-            pos.draw();
-        })
+
     }
 
 
