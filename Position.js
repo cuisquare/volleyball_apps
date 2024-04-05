@@ -40,6 +40,8 @@ class Position {
 
         this.total_angle = total_angle;
 
+        this.colorbackground = "#eee";
+
         this.color = "green";
 
         this.independentEdit = false;
@@ -203,10 +205,30 @@ class Position {
         poscontext.translate(this.xpos, this.ypos);
         poscontext.rotate(-this.total_angle); // Replace 'this.rotationAngle' with the desired rotation angle in radians
     
+        //console.log("started drawing rectangle for position")
+        //console.log("this.width: ", this.width)
+        //console.log("this.height: ", this.height)
+        poscontext.fillStyle = this.colorbackground;
+        poscontext.fillRect(            
+            -0.5 * this.width, // Rectangle position relative to the Position instance's coordinates
+            -0.5 * this.height,
+            this.width,
+            this.height);
+        poscontext.rect(
+            -0.5 * this.width, // Rectangle position relative to the Position instance's coordinates
+            -0.5 * this.height,
+            this.width,
+            this.height
+        );
+        poscontext.stroke();
+        poscontext.closePath();
+        //console.log("finished drawing rectangle for position")
+
         // Shirtnumber
         poscontext.textAlign = "center";
         poscontext.textBaseline = "middle"
         poscontext.font = "bold 20px Arial";
+        poscontext.fillStyle = "#000";
         poscontext.fillText(this.shirtnum, 0, 0); // Text position relative to the Position instance's coordinates
     
         // Symbol
@@ -220,19 +242,6 @@ class Position {
         poscontext.textBaseline = "bottom"
         poscontext.font = "15px Arial";
         poscontext.fillText(this.value, 0.45 * this.width, 0.45 * this.height); // Text position relative to the Position instance's coordinates
-    
-        //console.log("started drawing rectangle for position")
-        //console.log("this.width: ", this.width)
-        //console.log("this.height: ", this.height)
-        poscontext.rect(
-            -0.5 * this.width, // Rectangle position relative to the Position instance's coordinates
-            -0.5 * this.height,
-            this.width,
-            this.height
-        );
-        poscontext.stroke();
-        poscontext.closePath();
-        //console.log("finished drawing rectangle for position")
     
         poscontext.restore(); // Restore the canvas state
         //console.log("drawed a position")

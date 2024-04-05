@@ -3,6 +3,10 @@
     margin: 5;
   }
 
+html {
+    background-color: #009ca7;
+}
+
 body {
     left: 50%; /* Align button horizontally in the center */
 } 

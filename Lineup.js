@@ -13,6 +13,9 @@ class Lineup {
         window_height
         ) {
 
+        this.colorcourtline = "#eee";
+        this.colorcourtbackground = "#fe7a58";
+
         this.shirtnums = shirtnums;
 
         this.defaultsymbols = ["S","O1","M1","Opp","O2","M2"];
@@ -274,31 +277,18 @@ class Lineup {
     }
 
     #rotateCanvas(angle = this.rotate_angle) {
-        // Save the current context state
-        //context.save();
-    
         // Translate the canvas to the bottom-left corner
         this.context.translate(0, canvas.height);
     
         // Rotate the canvas counterclockwise by 90 degrees
         this.context.rotate(angle);
 
-        //this.draw();
-
         this.total_angle += angle;
 
         this.positions.forEach( pos => {
             pos.total_angle = this.total_angle;
         })
-    
-        // Draw your objects on the canvas (assuming you have a draw function for each object)
-        // Example:
-        // object1.draw();
-        // object2.draw();
-        // ...
 
-        // Restore the context to its original state
-        //context.restore();
     }
 
     // Function to remove all positions from the lineup
@@ -702,9 +692,11 @@ class Lineup {
 
         var lucontext = this.context
         lucontext.beginPath();
-        lucontext.strokeStyle = "black";
+        lucontext.strokeStyle = this.colorcourtline;
         lucontext.lineWidth = 8;
         //lucontext.moveTo(0, 0); // Move the pen to (30, 50)
+        lucontext.fillStyle = this.colorcourtbackground;
+        lucontext.fillRect(0,0,this.courtwidth,this.courtheight);
         lucontext.rect(0,0,this.courtwidth,this.courtheight);
         lucontext.stroke();
         lucontext.lineWidth = 5;
