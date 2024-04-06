@@ -278,7 +278,7 @@ class Lineup {
 
     #rotateCanvas(angle = this.rotate_angle) {
         // Translate the canvas to the bottom-left corner
-        this.context.translate(0, canvas.height);
+        this.context.translate(0, this.canvas.height);
     
         // Rotate the canvas counterclockwise by 90 degrees
         this.context.rotate(angle);
@@ -693,8 +693,7 @@ class Lineup {
         var lucontext = this.context
         lucontext.beginPath();
         lucontext.strokeStyle = this.colorcourtline;
-        lucontext.lineWidth = 8;
-        //lucontext.moveTo(0, 0); // Move the pen to (30, 50)
+        lucontext.lineWidth = 10;
         lucontext.fillStyle = this.colorcourtbackground;
         lucontext.fillRect(0,0,this.courtwidth,this.courtheight);
         lucontext.rect(0,0,this.courtwidth,this.courtheight);

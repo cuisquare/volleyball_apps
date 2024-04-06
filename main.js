@@ -3,7 +3,7 @@ import Lineup from './Lineup.js';
 import getSymbolsFromSetterPosition from './utils.js';
 
 
-let canvas = document.getElementById("canvas");
+let canvas = document.getElementById("canvasleft");
 let context = canvas.getContext("2d");
 
 var max_court_width = Math.min(window.innerWidth,window.innerHeight)
