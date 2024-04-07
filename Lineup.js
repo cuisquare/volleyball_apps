@@ -93,6 +93,14 @@ class Lineup {
 
     }
 
+    assignContext(newcontext) {
+        this.context = newcontext;
+        this.canvas = this.context.canvas;
+        this.clearPositions();
+        this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
+        this.addEventListeners();
+    }
+
     addShirtnum(newShirtNum) {
         if (!this.fullshirtnums.includes(newShirtNum)) {
             this.fullshirtnums.push(newShirtNum)

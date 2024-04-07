@@ -3,8 +3,8 @@ import Lineup from './Lineup.js';
 import getSymbolsFromSetterPosition from './utils.js';
 
 
-let canvas = document.getElementById("canvasleft");
-let context = canvas.getContext("2d");
+let canvasleft = document.getElementById("canvasleft");
+let contextleft = canvasleft.getContext("2d");
 
 var max_court_width = Math.min(window.innerWidth,window.innerHeight)
 var max_court_height = Math.min(window.innerWidth,window.innerHeight)
@@ -15,32 +15,35 @@ var window_width = 0.80 * max_court_width ;
 //window_height = 0.80 * 2 * max_court_width;
 var window_height = 0.80 * max_court_width;
 
-canvas.width = window_width;
-canvas.height = window_height;
+canvasleft.width = window_width;
+canvasleft.height = window_height;
 
-canvas.style.background = "#FFFFFF";
+canvasleft.style.background = "#FFFFFF";
 
-context.clearRect(0, 0, window_width , window_height)
+contextleft.clearRect(0, 0, window_width , window_height)
 
 var mysymbols = getSymbolsFromSetterPosition(1);
 
-var mylineup = new Lineup(
+var mylineupteamA = new Lineup(
     [5,9,45,23,12,7],
     mysymbols,
-    context, 
+    contextleft, 
     0, 
     true,
     window_width,
     window_height);
-mylineup.addShirtnum(4);
-mylineup.addShirtnum(10);
+mylineupteamA.team = "teamA";
+mylineupteamA.addShirtnum(4);
+mylineupteamA.addShirtnum(10);
+var mylineup = mylineupteamA;
 mylineup.draw();
 
 
 let canvasright = document.getElementById("canvasright");
+let contextright = canvasright.getContext("2d");
+
 canvasright.width = window_width;
 canvasright.height = window_height;
-let contextright = canvasright.getContext("2d");
 
 canvasright.style.background = "#FFFFFF";
 
@@ -48,7 +51,7 @@ contextright.clearRect(0, 0, window_width , window_height)
 //contextright.fillStyle = 'blue';
 //contextright.fillRect(0, 0, canvasright.width, canvasright.height);
 
-var mylineupright = new Lineup(
+var mylineupteamB = new Lineup(
     [3,10,8,7,13,4],
     mysymbols,
     contextright, 
@@ -57,6 +60,8 @@ var mylineupright = new Lineup(
     window_width,
     window_height
     );
+mylineupteamB.team = "teamB"
+var mylineupright = mylineupteamB;
 mylineupright.draw();
 
 document.getElementById('fwd').addEventListener('click',function(){
@@ -99,6 +104,44 @@ document.getElementById('changecourtsorientation').addEventListener('click', fun
     mylineupright.changeOrientationCanvas()
     mylineup.draw();
     mylineupright.draw();
+});
+
+document.getElementById('swapcourts').addEventListener('click', function() {
+
+    var courtsUpright = mylineup.isUpright
+
+    if (!courtsUpright) {
+        mylineup.changeOrientationCanvas()
+        mylineupright.changeOrientationCanvas()
+    }
+
+    if (mylineup.team == "teamA") {
+        console.log("Swapping courts with teamA originally on the left")
+        mylineup = mylineupteamB;
+        mylineupright = mylineupteamA;
+    } else {
+        console.log("Swapping courts with teamA originally on the right")
+        mylineup = mylineupteamA;
+        mylineupright = mylineupteamB;
+    }
+
+    mylineup.assignContext(contextleft);
+    mylineup.leftcourt = !mylineup.leftcourt;
+    mylineupright.assignContext(contextright);
+    mylineupright.leftcourt = !mylineupright.leftcourt;
+
+    var temptotal_angle = mylineup.total_angle;
+    mylineup.total_angle = mylineupright.total_angle ;
+    mylineupright.total_angle = temptotal_angle ;
+
+    if (!courtsUpright) {
+        mylineup.changeOrientationCanvas()
+        mylineupright.changeOrientationCanvas()
+    }
+
+    mylineup.draw();
+    mylineupright.draw();
+
 });
 
 const oldrulescheckbox = document.getElementById('oldrules-toggle-checkbox');
