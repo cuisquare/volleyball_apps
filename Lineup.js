@@ -711,7 +711,50 @@ class Lineup {
         lucontext.stroke();
         lucontext.closePath();
 
+        // Write team name
+        lucontext.textAlign = "left";
+        lucontext.textBaseline = "top"
+        lucontext.font = "bold 25px Arial";
+        var color_teamname = "black"; //"#eee";
+        lucontext.fillStyle = color_teamname;
+        var teamtext = "Team A";
+        if (this.team == "teamB") {
+            teamtext = "Team B"
+        }
+        //var lucontext = this.context;
+        lucontext.save(); // Save the current canvas state   
+        // Rotate the canvas around the Position instance's coordinates
+        //lucontext.translate(10, 10);
+        lucontext.translate(0.5*this.canvas.width, 0.5*this.canvas.height);
+        lucontext.rotate(-this.total_angle); // Replace 'this.rotationAngle' with the desired rotation angle in radians 
+        lucontext.translate(-0.5*this.canvas.width, -0.5*this.canvas.height);
+        /*
+        if (!this.isUpright & !this.leftcourt) {
+            console.log("the court is not upright and is not the left court!")
+            lucontext.textBaseline = "right";
+            lucontext.translate(this.canvas.width -100, 0)
+            lucontext.fillText(teamtext, 10, 10);
+        } else {
+            lucontext.textAlign = "top";
+            lucontext.textBaseline = "left";
+            lucontext.fillText(teamtext, 10, 10);
+            logmyobject("this.isupright", this.isUpright);
+            logmyobject("this.leftcourt", this.leftcourt);
+        } */
+
+        lucontext.textAlign = "bottom";
+        lucontext.textBaseline = "left";
+        lucontext.fillText(teamtext, 
+            0.025*lucontext.canvas.width, 
+            0.925*lucontext.canvas.height);
+        logmyobject("this.isupright", this.isUpright);
+        logmyobject("this.leftcourt", this.leftcourt);
+        
+        lucontext.restore(); // Restore the canvas state
+
         // Draw arrow
+        var color_arrow = "black"//"black"
+
         const arrowSize = 0.04*this.courtheight;
         const arrowX = this.courtwidth - arrowSize // Right top corner, 40 pixels from right edge
         const arrowY = 0; // 20 pixels from top edge
@@ -728,15 +771,15 @@ class Lineup {
         //lucontext.strokeStyle = "orange"
         lucontext.lineTo(arrowX - arrowSize / 2, arrowY + arrowSize);
         lucontext.stroke();
-        lucontext.fillStyle = "black";
+        lucontext.fillStyle = color_arrow;
         lucontext.fill();
         lucontext.closePath();
         lucontext.beginPath();
-        lucontext.strokeStyle = "black"
+        lucontext.strokeStyle = color_arrow
         lucontext.lineWidth = 1;
         lucontext.rect(arrowX-arrowSize/6, arrowY+ arrowSize,arrowSize/3,arrowSize/2)
         lucontext.stroke();
-        lucontext.fillStyle = "black";
+        lucontext.fillStyle = color_arrow;
         lucontext.fill();
         lucontext.closePath();
         /*
