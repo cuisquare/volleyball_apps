@@ -106,6 +106,7 @@ document.getElementById('changecourtsorientation').addEventListener('click', fun
     mylineupright.draw();
 });
 
+/*
 document.getElementById('swapcourts').addEventListener('click', function() {
 
     var courtsUpright = mylineup.isUpright
@@ -133,6 +134,57 @@ document.getElementById('swapcourts').addEventListener('click', function() {
     var temptotal_angle = mylineup.total_angle;
     mylineup.total_angle = mylineupright.total_angle ;
     mylineupright.total_angle = temptotal_angle ;
+
+    if (!courtsUpright) {
+        mylineup.changeOrientationCanvas()
+        mylineupright.changeOrientationCanvas()
+    }
+
+    mylineup.draw();
+    mylineupright.draw();
+
+}); */
+
+document.getElementById('swapcourts').addEventListener('click', function() {
+
+    var courtsUpright = mylineup.isUpright
+
+    if (!courtsUpright) {
+        mylineup.changeOrientationCanvas()
+        mylineupright.changeOrientationCanvas()
+    }
+
+    var templineup = mylineup;
+    mylineup = mylineupright;
+    mylineupright = templineup;
+
+    mylineup.assignContext(contextleft);
+    mylineup.leftcourt = !mylineup.leftcourt;
+    mylineupright.assignContext(contextright);
+    mylineupright.leftcourt = !mylineupright.leftcourt;
+
+    /* */
+    
+    mylineup.positions.forEach(pos => {
+        pos.removeEventListeners();
+    });
+    mylineup.removeEventListeners();
+    mylineup.positions.forEach(pos => {
+        pos.addEventListeners();
+    });
+    mylineup.addEventListeners();
+
+    
+    mylineupright.positions.forEach(pos => {
+        pos.removeEventListeners();
+    });
+    mylineupright.removeEventListeners();
+    mylineupright.positions.forEach(pos => {
+        pos.addEventListeners();
+    });
+    mylineupright.addEventListeners();
+
+
 
     if (!courtsUpright) {
         mylineup.changeOrientationCanvas()

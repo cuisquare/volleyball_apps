@@ -96,9 +96,19 @@ class Lineup {
     assignContext(newcontext) {
         this.context = newcontext;
         this.canvas = this.context.canvas;
-        this.clearPositions();
-        this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
-        this.addEventListeners();
+        this.positions.forEach(pos => {
+            pos.assignContext(newcontext);
+        })
+        //this.clearPositions();
+        //this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
+        //this.addEventListeners();
+    }
+
+    assignTotalAngle(new_total_angle) {
+        this.total_angle = new_total_angle;
+        this.positions.forEach(pos => {
+            pos.total_angle = new_total_angle;
+        })
     }
 
     addShirtnum(newShirtNum) {
@@ -118,6 +128,18 @@ class Lineup {
         this.canvas.addEventListener('touchstart',this.tsref);
         this.canvas.addEventListener('touchmove',this.tmref);
         this.canvas.addEventListener('touchend',this.teref);
+    }
+
+    removeEventListeners() {
+        // remove event listeners
+        this.canvas.removeEventListener('mousedown', this.mdref);
+        this.canvas.removeEventListener('mousemove', this.mmref);
+        this.canvas.removeEventListener('mouseup', this.muref);
+        this.canvas.removeEventListener('mouseleave', this.mlref);
+        this.canvas.removeEventListener('contextmenu',this.mrcref);
+        this.canvas.removeEventListener('touchstart',this.tsref);
+        this.canvas.removeEventListener('touchmove',this.tmref);
+        this.canvas.removeEventListener('touchend',this.teref);
     }
 
     onMouseLeave(event) {
@@ -301,14 +323,7 @@ class Lineup {
 
     // Function to remove all positions from the lineup
     clearPositions() {
-        this.canvas.removeEventListener('mousedown', this.mdref);
-        this.canvas.removeEventListener('mousemove', this.mmref);
-        this.canvas.removeEventListener('mouseup', this.muref);
-        this.canvas.removeEventListener('mouseleave', this.mlref);
-        this.canvas.removeEventListener('contextmenu', this.mrcref);
-        this.canvas.removeEventListener('touchstart',this.tsref);
-        this.canvas.removeEventListener('touchmove',this.tmref);
-        this.canvas.removeEventListener('touchend',this.teref);
+        this.removeEventListeners();
         this.positions.forEach(pos => {
             pos.removeEventListeners();
         });

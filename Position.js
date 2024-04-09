@@ -314,6 +314,11 @@ class Position {
         return isinsidebox;
     }
 
+    assignContext(newcontext) {
+        this.context = newcontext;
+        this.canvas = this.context.canvas;
+    }
+
     isInside(x,y) {
         return this.isInsideBox(
             x,y,
