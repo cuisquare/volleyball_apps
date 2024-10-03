@@ -35,16 +35,31 @@ canvas {
     transform: translateX(-50%); /* Adjust for center alignment */
 }
 
+
+
 .bottom-bar {
     position: absolute;
-    /*bottom: -0px;  Adjust button position below the canvas */
-    left: 50%; /* Align button horizontally in the center */
-    transform: translateX(-50%); /* Adjust for center alignment */
+    left: 50%; 
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px; /* Add space between buttons */
+}
+
+.bottom-bar-right {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Add space between items */
 }
 
 
 
 /*
+
+.bottom-bar {
+    position: absolute;
+    left: 50%; // Align button horizontally in the center 
+    transform: translateX(-50%); // Adjust for center alignment 
+}
 
 .canvas-container {
     display: flex;

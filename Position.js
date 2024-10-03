@@ -126,6 +126,65 @@ class Position {
 
     }
 
+    prevposition() {
+        var allvalues = [1,2,3,4,5,6]
+        var currindex = allvalues.indexOf(this.value)
+        var previndex = (currindex +1) % 6
+        return allvalues[previndex]
+    }
+ 
+    editShirtNum(currentShirtNums,fullShirtNums, mode = "override") {
+        // Display a form or dialog box to edit shirtnum property 
+        console.log("currentShirtNums: ",currentShirtNums)
+        console.log("fullShirtNums: ",fullShirtNums)
+        const newShirtNum = prompt("Enter new shirt number.", this.shirtnum);
+        //TODO change so that editing to an existing shirt number swaps number 
+        //TODO this can only be done at the lineup class level because the present
+        //class does not have access to the other position objects
+
+        if ((newShirtNum !== null )) {
+            if (mode == "ingame") {
+                console.log("mode == ingame in editShirtNum")
+                if (!(currentShirtNums.includes(parseInt(newShirtNum)))) {
+                    if (fullShirtNums.includes(parseInt(newShirtNum))) {
+                        this.shirtnum = parseInt(newShirtNum);
+                    }
+                }  
+            }
+            if (mode == "override") {
+                console.log("mode == override in editShirtNum")
+                this.shirtnum = parseInt(newShirtNum);
+            }
+        }
+    }
+
+    editSymbol(allowedSymbols) {
+        // Display a form or dialog box to edit shirtnum property 
+        const newSymbol = prompt("Enter new symbol:", this.symbol);
+        if (newSymbol !== null) {
+            if (allowedSymbols.includes(newSymbol)) {
+                this.symbol = newSymbol;
+            }
+        }
+    }
+
+    editPosition() {
+        // Display a form or dialog box to edit properties of 'pos'
+        // For example:
+        const newShirtNum = prompt("Enter new shirt number:", this.shirtnum);
+        if (newShirtNum !== null) {
+            this.shirtnum = newShirtNum;
+        }
+
+        const newValue = prompt("Enter new position value (1-6 only):", this.value);
+        if (newValue !== null) {
+            this.value = newValue;
+        }
+
+
+        // Repeat this process for other properties if needed
+    }
+
     addEventListeners() {
         // Add event listeners
         this.canvas.addEventListener('mousedown', this.mdref);
@@ -149,13 +208,6 @@ class Position {
         //this.canvas.removeEventListener('contextmenu', this.mrcref);
     }
 
-    prevposition() {
-        var allvalues = [1,2,3,4,5,6]
-        var currindex = allvalues.indexOf(this.value)
-        var previndex = (currindex +1) % 6
-        return allvalues[previndex]
-    }
- 
     moveFrom() {
 
         //var tolerance = 0.5
@@ -467,46 +519,7 @@ class Position {
 
     }
 
-    editShirtNum(currentShirtNums,fullShirtNums) {
-        // Display a form or dialog box to edit shirtnum property 
-        console.log("currentShirtNums: ",currentShirtNums)
-        console.log("fullShirtNums: ",fullShirtNums)
-        const newShirtNum = prompt("Enter new shirt number.", this.shirtnum);
-        if ((newShirtNum !== null )) {
-            if (!(currentShirtNums.includes(parseInt(newShirtNum)))) {
-                if (fullShirtNums.includes(parseInt(newShirtNum))) {
-                    this.shirtnum = parseInt(newShirtNum);
-                }
-            }  
-        }
-    }
-
-    editSymbol(allowedSymbols) {
-        // Display a form or dialog box to edit shirtnum property 
-        const newSymbol = prompt("Enter new symbol:", this.symbol);
-        if (newSymbol !== null) {
-            if (allowedSymbols.includes(newSymbol)) {
-                this.symbol = newSymbol;
-            }
-        }
-    }
-
-    editPosition() {
-        // Display a form or dialog box to edit properties of 'pos'
-        // For example:
-        const newShirtNum = prompt("Enter new shirt number:", this.shirtnum);
-        if (newShirtNum !== null) {
-            this.shirtnum = newShirtNum;
-        }
-
-        const newValue = prompt("Enter new position value (1-6 only):", this.value);
-        if (newValue !== null) {
-            this.value = newValue;
-        }
-
-
-        // Repeat this process for other properties if needed
-    }
+ 
 }
 
 // Export the class to make it accessible in other files

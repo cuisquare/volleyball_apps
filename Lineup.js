@@ -13,6 +13,8 @@ class Lineup {
         window_height
         ) {
 
+        this.editmode = "freeswap" //"freeswap", "override" , "ingame"
+
         this.colorcourtline = "#eee";
         this.colorcourtbackground = "#fe7a58";
 
@@ -184,12 +186,15 @@ class Lineup {
             const rect = this.canvas.getBoundingClientRect();
             const touchX = event.changedTouches[0].clientX - rect.left;
             const touchY = event.changedTouches[0].clientY - rect.top;
+            
             this.positions.forEach(pos => {
                 if (pos.isInsideShirtNum(touchX,touchY)) {
                     logmyobject("calling touch right click on element ",pos)
                     logmyobject("editing positions with forbiddent values ",this.shirtnums)
-    
-                    pos.editShirtNum(this.shirtnums, this.fullshirtnums)
+                    var allowedshirtnums =  this.getValidShirtNums(this.editmode)
+                    var allowedshirtnumsellipsis =  this.ellipsisArray(allowedshirtnums)
+                    const newshirtnum = parseInt(prompt("Enter new shirt number (valid numbers are: "+ allowedshirtnumsellipsis +"):", this.shirtnum));
+                    this.editShirtNum(pos, newshirtnum,this.editmode)
                     this.shirtnums = this.getShirtNums(this.positions)
                     //before TODO this does not edit shirtnums array and it must do so!
                 }
@@ -233,8 +238,10 @@ class Lineup {
             if (pos.isInsideShirtNum(mouseX,mouseY)) {
                 logmyobject("calling mouse right click on element ",pos)
                 logmyobject("editing positions with forbiddent values ",this.shirtnums)
-
-                pos.editShirtNum(this.shirtnums, this.fullshirtnums)
+                var allowedshirtnums =  this.getValidShirtNums(this.editmode)
+                var allowedshirtnumsellipsis =  this.ellipsisArray(allowedshirtnums)
+                const newshirtnum = parseInt(prompt("Enter new shirt number (valid numbers are: "+ allowedshirtnumsellipsis +"):", this.shirtnum));
+                this.editShirtNum(pos, newshirtnum,this.editmode)
                 this.shirtnums = this.getShirtNums(this.positions)
                 //before TODO this does not edit shirtnums array and it must do so!
             }
@@ -249,6 +256,92 @@ class Lineup {
             }
         });
         this.draw();
+    }
+
+    getValidShirtNums(mode = "override") {
+        //gets valid numbers
+        console.log("currentShirtNums: ",this.shirtnums)
+        console.log("fullShirtNums: ",this.fullshirtnums)
+        var validshirtnums = Array.from({ length: 99 }, (_, i) => i + 1);
+        if (mode == "freeswap") {
+            console.log("mode is freeswap, running this code")
+            validshirtnums = this.fullshirtnums
+        }
+        if (mode == "ingame") {
+            console.log("mode is ingame, running this code")
+            validshirtnums = this.fullshirtnums.filter(item => !this.shirtnums.includes(item))
+        }
+        console.log("valid shirtnums : " + validshirtnums)
+
+        return validshirtnums;
+    }
+
+    ellipsisArray(arr,maxnumdisplay=3, numstartellipsis = 14) {
+        if (arr.length <= numstartellipsis) {
+            var output = arr.join(',');
+        } else {
+            const firstThree = arr.slice(0, maxnumdisplay);      // Get the first maxnumdisplay elements
+            const lastThree = arr.slice(-maxnumdisplay);         // Get the last maxnumdisplay elements
+    
+            var output = [...firstThree, '...', ...lastThree].join(',');
+        }
+
+        console.log(output)
+    
+        return output;
+
+    }
+
+    findPositionByShirtNum(shirtnum) {
+        return this.positions.find(pos => pos.shirtnum === shirtnum);
+    }
+
+    editShirtNum(pos, newshirtnum, mode) {
+        // Display a form or dialog box to edit shirtnum property 
+        console.log("currentShirtNums: ",this.shirtnums)
+        console.log("fullShirtNums: ",this.fullshirtnums)
+
+        var validshirtnums =  this.getValidShirtNums(mode)
+
+        //TODO change so that editing to an existing shirt number swaps number 
+        //TODO this can only be done at the lineup class level because the present
+        //class does not have access to the other position objects
+
+        console.log("mode == "+ mode +" in editShirtNum")
+        if ((newshirtnum !== null )) {
+            console.log("validshirtnums:" + validshirtnums)
+            console.log("newshirtnum:" + newshirtnum)
+            console.log("validshirtnums.includes(newshirtnum) returns: " + validshirtnums.includes(newshirtnum))
+            if (validshirtnums.includes(newshirtnum)) {
+                console.log("the edit is allowed!")
+                
+                if (mode == "ingame") {
+                    pos.shirtnum = newshirtnum;
+                    //no extra action because you can only substitute something on the bench
+                    //TODO asctually it should also keep track of previous subs! 
+                }
+                if (mode == "freeswap") {
+                    //TODO extra operation : do a swap wiht the number if already on court
+                    if (this.shirtnums.includes(newshirtnum)) {
+                        //find the position with that number, assign 
+                        var postoswap = this.findPositionByShirtNum(newshirtnum)
+                        postoswap.shirtnum = pos.shirtnum;
+                    }
+                    pos.shirtnum = newshirtnum;
+                }
+                if (mode == "override") {
+                    //TODO maybe this should add the number it does not exist yet? 
+                    if (!this.fullshirtnums.includes(newshirtnum)) {
+                        this.fullshirtnums.push(newshirtnum)
+                    } 
+                    pos.shirtnum = newshirtnum;
+                }
+            } else {
+                console.log("the edit is not allowed because the chosen newshirtnum ("+ newshirtnum + ") is not in the allowed shirt numbers ("+ validshirtnums + ")")
+            }
+        } else {
+            console.log("the edit is not allowed because the chosen newshirtnum is not allowed")
+        }
     }
 
     onTouchMove(event) {

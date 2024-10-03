@@ -22,10 +22,20 @@
           </div>
       </div>
       <div class = "bottom-bar">
-        <button id='changecourtsorientation'>Rotate Courts</button>
+        <button id='changecourtsorientation'>Rotate Courts</button> 
         <button id='swapcourts'>Swap Courts</button>
-        <label for="oldrules-toggle-checkbox">Old Rules?</label>
-        <input type="checkbox" id="oldrules-toggle-checkbox">
+        <div class="bottom-bar-right">
+          <label for="oldrules-toggle-checkbox">Old Rules?</label>
+          <input type="checkbox" id="oldrules-toggle-checkbox">
+        </div>
+        <div class="bottom-bar-right">
+          <label for="lineupeditmode-dropdown">Lineup Edit Mode</label>
+          <select id="lineupeditmode-dropdown">
+            <option value="freeswap">Free Swap</option>
+            <option value="ingame">In Game</option>
+            <option value="override">Override</option>
+          </select>
+        </div>
       </div>
     </div>
     
