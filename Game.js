@@ -1,13 +1,21 @@
+//contains the actual point by point actions in the game + subs + timeouts
+//who won, who lost etc
 
 class Game {
-    constructor(venue,starttime,endtime,teamA,teamB) {
-        this.venue = venue;
-        this.starttime = starttime;
-        this.endtime = endtime;
-        this.teamA = teamA;
-        this.teamB = teamB;
+    constructor(fixture) {
+
+
+        this.fixture = fixture;
+
+        //default values
+        this.actualdate = this.fixture.officialdate;
+        this.actualstarttime = this.fixture.officialstarttime;
+        this.actualendtime = this.fixture.officialendtime;
+        this.teamA = fixture.hometeam;
+        this.teamB = fixture.awayteam;
         this.teamA.servingfirst = true;
         this.teamB.servingfirst = false;
+        this.rules = rules;
     }
 }
 
