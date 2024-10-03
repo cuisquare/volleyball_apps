@@ -1,4 +1,6 @@
-
+import Fixture from './Fixture.js';
+import Rules from './Rules.js';
+import Game from './Game.js';
 import Lineup from './Lineup.js';
 import getSymbolsFromSetterPosition from './utils.js';
 
@@ -215,6 +217,27 @@ oldrulescheckbox.addEventListener('change',function(){
     mylineupright.checkPositionsLegalityStatic();
     mylineupright.draw();
 });
+
+const lineupeditmodedropdown = document.getElementById('lineupeditmode-dropdown');
+
+lineupeditmodedropdown.addEventListener('change',function(){
+
+    const selectedMode = this.value; // Get the selected mode from dropdown
+    mylineup.editmode = selectedMode; // Set the mode in the Lineup instance
+    mylineupright.editmode = selectedMode; // Set the mode in the Lineup instance
+
+});
+
+game_id = "45"
+venue
+officialdate
+officialstarttime
+officialendtime
+hometeam
+awayteam
+const lvarules = new Rules()
+const myfixture = new Fixture(rules = myrules)
+const mygame = new Game();
 
 
 
