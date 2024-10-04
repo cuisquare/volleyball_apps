@@ -185,7 +185,6 @@ class Lineup {
         console.log("Touch duration : ", this.touchDuration);
         if (this.touchDuration < 300) { // Tap (less than 300ms)
             console.log("TAP EVENT")
-            this.onMouseUp(event);
             const rect = this.canvas.getBoundingClientRect();
             const touchX = event.changedTouches[0].clientX - rect.left;
             const touchY = event.changedTouches[0].clientY - rect.top;
@@ -214,7 +213,8 @@ class Lineup {
             this.draw();
         } else { // Long press
             console.log("LONG PRESS EVENT")
-        }      
+        }    
+        this.onMouseUp(event);  
     }
 
     onMouseUp(event) {
