@@ -10,10 +10,13 @@ class Position {
         symbol = "P",
         poscontext,
         total_angle = 0,
+        playerappearance,
         xpos = "default",
         ypos = "default",
         window_width,
-        window_height
+        window_height,
+        imageSrcGreen =  "./squarefeetgreyernobackgroundgreen.png",
+        imageSrcRed =  "./squarefeetgreyernobackgroundred.png"
         ) {
 
         if(!([1,2,3,4,5,6].includes(value))) {
@@ -32,6 +35,33 @@ class Position {
         this.colorbackground = "#eee";
 
         this.color = "green";
+
+        this.backgroundImageGreen = null;
+        if (imageSrcGreen) {
+            this.backgroundImageGreen = new Image();
+            this.backgroundImageGreen.src = imageSrcGreen;
+
+            // Ensure image is loaded before drawing
+            this.backgroundImageGreen.onload = () => {
+                this.draw();
+            };
+
+            this.backgroundImage= this.backgroundImageGreen;
+        }
+        this.backgroundImageRed = null;
+        if (imageSrcRed) {
+            this.backgroundImageRed = new Image();
+            this.backgroundImageRed.src = imageSrcRed;
+
+            // Ensure image is loaded before drawing
+            this.backgroundImageRed.onload = () => {
+                this.draw();
+            };
+        }
+
+        this.editPlayerAppearance(playerappearance);
+
+
 
         this.independentEdit = false;
 
@@ -84,6 +114,8 @@ class Position {
                 this.xpos = 0.75*window_width
             } 
         }
+
+
 
         this.prevxpos = this.xpos;
         this.prevypos = this.ypos;
@@ -174,6 +206,18 @@ class Position {
         // Repeat this process for other properties if needed
     }
 
+    editPlayerAppearance(playerappearance) {
+        this.playerappearance = playerappearance;
+        this.drawfeet = true;
+        this.drawsquare = true; 
+        if (this.playerappearance == "feet") {
+            this.drawsquare = false;
+        }
+        if (this.playerappearance == "square") {
+            this.drawfeet = false;
+        }
+    }
+
     addEventListeners() {
         // Add event listeners
         this.canvas.addEventListener('mousedown', this.mdref);
@@ -237,6 +281,8 @@ class Position {
         //console.log("drawing a position")
         var poscontext = this.context;
         poscontext.save(); // Save the current canvas state
+
+
     
         poscontext.beginPath();
         poscontext.strokeStyle = this.color;
@@ -249,21 +295,38 @@ class Position {
         //console.log("started drawing rectangle for position")
         //console.log("this.width: ", this.width)
         //console.log("this.height: ", this.height)
+        
         poscontext.fillStyle = this.colorbackground;
         poscontext.fillRect(            
             -0.5 * this.width, // Rectangle position relative to the Position instance's coordinates
             -0.5 * this.height,
             this.width,
             this.height);
-        poscontext.rect(
-            -0.5 * this.width, // Rectangle position relative to the Position instance's coordinates
-            -0.5 * this.height,
-            this.width,
-            this.height
-        );
-        poscontext.stroke();
+
+        if (this.drawsquare) {
+            poscontext.rect(
+                -0.5 * this.width, // Rectangle position relative to the Position instance's coordinates
+                -0.5 * this.height,
+                this.width,
+                this.height
+            );
+            poscontext.stroke();    
+        }
         poscontext.closePath();
         //console.log("finished drawing rectangle for position")
+
+        // Draw the background image if it exists
+        if (this.drawfeet) {
+            if (this.backgroundImage) {
+                poscontext.drawImage(
+                    this.backgroundImage, 
+                    - 0.5 * this.width, 
+                    - 0.5 * this.height, 
+                    this.width, 
+                    this.height
+                );
+            }
+        }
 
         // Shirtnumber
         poscontext.textAlign = "center";

@@ -15,6 +15,8 @@ class Lineup {
 
         this.editmode = "freeswap" //"freeswap", "override" , "ingame"
 
+        this.playerappearance = "square" //"feetandsquare", "feet" , "square"
+
         this.colorcourtline = "#eee";
         this.colorcourtbackground = "#fe7a58";
 
@@ -441,6 +443,7 @@ class Lineup {
                 symbol,
                 lucontext, 
                 this.total_angle,
+                this.playerappearance,
                 "default",
                 "default",
                 this.courtwidth, 
@@ -488,6 +491,12 @@ class Lineup {
         //this.updatePrevpos(n);
         logmyobject("lineup positions after rotate forward",this.positions);
         logmyobject("previous lineup positions after rotate forward",this.prevpositions);
+    }
+
+    updatePlayerAppearance() {
+        this.positions.forEach( pos => {
+            pos.editPlayerAppearance(this.playerappearance);
+        })
     }
 
     assignDefaultSymbols(pos,newdefaultsymbol = "S",recreatePositions = false) {
@@ -630,13 +639,16 @@ class Lineup {
             var pos1 = postuple[0];
             var pos2 = postuple[1];
             pos1.color = "red";
+            pos1.backgroundImage = pos1.backgroundImageRed;
             pos2.color = "red";
+            pos2.backgroundImage = pos2.backgroundImageRed;
             notIllegalPositions = this.removePosFromPosArray(pos1,notIllegalPositions)
             notIllegalPositions = this.removePosFromPosArray(pos2,notIllegalPositions)
         })
         notIllegalPositions.forEach( pos =>{
             console.log("turning green position ", pos.symbol)
             pos.color = "green";
+            pos.backgroundImage = pos.backgroundImageGreen;
         })
 
         if (this.illegalPositionTuples.length > 0) {
@@ -921,12 +933,7 @@ class Lineup {
                 pos.draw();
             })
         }
-
-
-
     }
-
-
 
 }
 

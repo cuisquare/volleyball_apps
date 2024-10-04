@@ -222,11 +222,24 @@ const lineupeditmodedropdown = document.getElementById('lineupeditmode-dropdown'
 
 lineupeditmodedropdown.addEventListener('change',function(){
 
-    const selectedMode = this.value; // Get the selected mode from dropdown
-    mylineup.editmode = selectedMode; // Set the mode in the Lineup instance
-    mylineupright.editmode = selectedMode; // Set the mode in the Lineup instance
+    const selectedMode = this.value; // Get the selected editmode from dropdown
+    mylineup.editmode = selectedMode; // Set the editmode in the Lineup instance
+    mylineupright.editmode = selectedMode; // Set the editmode in the Lineup instance
 
 });
+
+const playerappearancedropdown = document.getElementById('playerappearance-dropdown');
+playerappearancedropdown.addEventListener('change',function(){
+
+    const selectedMode = this.value; // Get the selected playerappearance from dropdown
+    mylineup.playerappearance = selectedMode; // Set the playerappearance in the Lineup instance
+    mylineupright.playerappearance= selectedMode; // Set the playerappearance in the Lineup instance
+    mylineup.updatePlayerAppearance() 
+    mylineup.draw();
+    mylineupright.updatePlayerAppearance() 
+    mylineupright.draw();
+});
+
 
 game_id = "45"
 venue
