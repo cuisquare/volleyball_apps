@@ -921,10 +921,12 @@ class Lineup {
         //TODO draw in a certain order so that the shapes being dragged 
         //are on top
         if (!this.isDragging) {
+            console.log("Not dragging, so drawing everything!")
             this.positions.forEach( pos => {
                 pos.draw();
             })
         } else {
+            console.log("Dragging, so drawing only what is being dragged!")
             this.notDraggingPositions.forEach( pos => {
                 pos.draw();
             })
