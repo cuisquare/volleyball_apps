@@ -30,6 +30,7 @@ class Lineup {
         
         this.fullshirtnums = this.shirtnums.slice()
 
+
         this.oldRules = false;
 
         this.context = lucontext;
@@ -403,7 +404,7 @@ class Lineup {
         // Translate the canvas to the bottom-left corner
         this.context.translate(0, this.canvas.height);
     
-        // Rotate the canvas counterclockwise by 90 degrees
+        // Rotate the canvas counterclockwise by angle degrees
         this.context.rotate(angle);
 
         this.total_angle += angle;

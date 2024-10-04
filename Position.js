@@ -16,17 +16,6 @@ class Position {
         window_height
         ) {
 
-        //console.log("position constructor called with following arguments:")
-        //console.log("value:", value)
-        //console.log("shirtnum:", shirtnum)
-        //console.log("symbol:", symbol)
-        //console.log("poscontext:", poscontext)
-        //console.log("total_angle:", total_angle)
-        //console.log("xpos:", xpos)
-        //console.log("ypos:", ypos)
-        //console.log("window_width:", window_width)
-        //console.log("window_height:", window_height)
-
         if(!([1,2,3,4,5,6].includes(value))) {
             throw('value can only take any of the following values: [1,2,3,4,5,6], but value attempt was: '+ value.toString() );
         }
@@ -426,7 +415,9 @@ class Position {
     }
 
     onTouchMove(event) {
+        
         if (this.isDragging) {
+            event.preventDefault();
             //console.log("MOUSE MOVE WHILE DRAGGING")
             const rect = this.canvas.getBoundingClientRect();
             const touchStartPositionX = event.changedTouches[0].clientX - rect.left;
