@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8" />
+    <title>Volleyball Positions</title>
+    <link rel="stylesheet" href="../styles_grid.css">
+  </head>
+  <body>
+    <div class="canvas-container">
+      <div class="canvas-wrapper">
+          <canvas class = "canvas" id="canvasleft"></canvas>
+          <div class="button-wrapper" id="canvasleft">
+            <button id='bck'>Prev</button>
+            <button id='fwd'>Next</button>
+          </div>
+      </div>
+      <div class="canvas-wrapper">
+          <canvas class = "canvas" id="canvasright"></canvas>
+          <div class="button-wrapper" id="canvasright">
+            <button id='bckright'>Prev</button>
+            <button id='fwdright'>Next</button>
+          </div>
+      </div>
+      <div class = "bottom-bar">
+        <button id='changecourtsorientation'>Rotate Courts</button> 
+        <button id='swapcourts'>Swap Courts</button>
+        <div class="bottom-bar-right">
+          <label for="oldrules-toggle-checkbox">Old Rules?</label>
+          <input type="checkbox" id="oldrules-toggle-checkbox">
+        </div>
+        <div class="bottom-bar-right">
+          <label for="lineupeditmode-dropdown">Lineup Edit Mode</label>
+          <select id="lineupeditmode-dropdown">
+            <option value="freeswap">Free Swap</option>
+            <option value="ingame">In Game</option>
+            <option value="override">Override</option>
+          </select>
+        </div>
+        <div class="bottom-bar-right">
+          <label for="playerappearance-dropdown">Player Appearance Mode</label>
+          <select id="playerappearance-dropdown">
+            <option value="square">Square only</option>
+            <option value="feetandsquare">Feet and Square</option>
+            <option value="feet">Feet only</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    
+
+  </body>
+  <script type="module"  src = "main.js"></script>
+</html>
