@@ -15,8 +15,8 @@ class Position {
         ypos = "default",
         window_width,
         window_height,
-        imageSrcGreen =  "./squarefeetgreyernobackgroundgreen.png",
-        imageSrcRed =  "./squarefeetgreyernobackgroundred.png"
+        imageSrcGreen =  "../assets/images/squarefeetgreyernobackgroundgreen.png",
+        imageSrcRed =  "../assets/images/squarefeetgreyernobackgroundred.png"
         ) {
 
         if(!([1,2,3,4,5,6].includes(value))) {
