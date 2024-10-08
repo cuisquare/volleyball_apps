@@ -1,21 +1,31 @@
 import Fixture from './Fixture.js';
 import Rules from './Rules.js';
 import Game from './Game.js';
-import Lineup from './Lineup.js';
+import LineupDev from './LineupDev.js';
 import getSymbolsFromSetterPosition from './utils.js';
+
+
+
+
+var max_court_width = Math.min(window.innerWidth,window.innerHeight)
+
+//max_court_width = window.innerWidth;
+
+function get_window_width() {
+    return 0.80 * max_court_width ;
+}
+
+function get_window_height() {
+    return 0.80 * max_court_width ;
+}
+
+var window_width = get_window_width() ;
+//window_height = 0.80 * 2 * max_court_width;
+var window_height = get_window_height();
 
 
 let canvasleft = document.getElementById("canvasleft");
 let contextleft = canvasleft.getContext("2d");
-
-var max_court_width = Math.min(window.innerWidth,window.innerHeight)
-var max_court_height = Math.min(window.innerWidth,window.innerHeight)
-
-//max_court_width = window.innerWidth;
-
-var window_width = 0.80 * max_court_width ;
-//window_height = 0.80 * 2 * max_court_width;
-var window_height = 0.80 * max_court_width;
 
 canvasleft.width = window_width;
 canvasleft.height = window_height;
@@ -26,7 +36,7 @@ contextleft.clearRect(0, 0, window_width , window_height)
 
 var mysymbols = getSymbolsFromSetterPosition(1);
 
-var mylineupteamA = new Lineup(
+var mylineupteamA = new LineupDev(
     [5,9,45,23,12,7],
     mysymbols,
     contextleft, 
@@ -53,7 +63,7 @@ contextright.clearRect(0, 0, window_width , window_height)
 //contextright.fillStyle = 'blue';
 //contextright.fillRect(0, 0, canvasright.width, canvasright.height);
 
-var mylineupteamB = new Lineup(
+var mylineupteamB = new LineupDev(
     [3,10,8,7,13,4],
     mysymbols,
     contextright, 
@@ -202,16 +212,16 @@ playerappearancedropdown.addEventListener('change',function(){
 });
 
 
-game_id = "45"
-venue
+var game_id = "45"
+/* venue
 officialdate
 officialstarttime
 officialendtime
 hometeam
-awayteam
+awayteam */
 const lvarules = new Rules()
-const myfixture = new Fixture(rules = myrules)
-const mygame = new Game();
+const myfixture = new Fixture()
+//const mygame = new Game();
 
 
 

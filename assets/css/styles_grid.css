@@ -159,4 +159,3 @@ input[type="checkbox"]:focus {
     outline: none;                   /* Remove default focus outline */
     border-color: #eee;              /* Change border color when focused */
 }
-
