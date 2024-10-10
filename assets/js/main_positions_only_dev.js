@@ -51,6 +51,9 @@ var mylineup = mylineupteamA;
 mylineup.draw();
 
 
+
+
+
 let canvasright = document.getElementById("canvasright");
 let contextright = canvasright.getContext("2d");
 
@@ -210,6 +213,36 @@ playerappearancedropdown.addEventListener('change',function(){
     mylineupright.updatePlayerAppearance() 
     mylineupright.draw();
 });
+
+// Call this function on window resize or when the canvas is rendered
+function adjustCanvasSize(canvasid, reason,thelineup) {
+    var canvas = document.getElementById(canvasid);
+    var styleWidth = canvas.getBoundingClientRect().width;
+    var styleHeight = canvas.getBoundingClientRect().height;
+
+    // Update the canvas internal size to match the visual size
+    canvas.width = styleWidth;
+    canvas.height = styleHeight;
+
+    // Redraw your canvas content after resizing if necessary
+    thelineup.refreshPositions()
+    thelineup.draw(reason);
+    
+}
+/* window.addEventListener('resize', 
+function(){
+    console.log("RESIZE EVENT FOR LEFT CANVAS")
+    adjustCanvasSize("canvasleft", "RESIZE EVENT",mylineup);
+    adjustCanvasSize("canvasright","RESIZE EVENT",mylineupright);
+}
+);
+window.addEventListener('load', 
+function(){
+    adjustCanvasSize("canvasleft", "LOAD EVENT",mylineup);
+    adjustCanvasSize("canvasright","LOAD EVENT",mylineupright);
+}
+); */
+
 
 
 var game_id = "45"

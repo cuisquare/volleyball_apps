@@ -1,6 +1,6 @@
 import {logmyobject, arrayRotateN} from './utils.js';
 
-import Position from './Position.js';
+import PositionDev from './PositionDev.js';
 
 class LineupDev {
     constructor(
@@ -55,13 +55,15 @@ class LineupDev {
         this.courtypos = 0;
 
 
-        //this.courtwidth = window_width;
-        //this.courtheight = window_height;
+
 
         this.perc_full_width = window_width/this.context.canvas.width;
+        this.static_courtwidth = this.context.canvas.width;
+        
         //this.courtwidth = this.getCourtWidth()
 
         this.perc_full_height = window_height/this.context.canvas.height;
+        this.static_courtheight = this.context.canvas.height;
         //this.courtheight = this.getCourtHeight()
   
 
@@ -469,7 +471,7 @@ class LineupDev {
             console.log("creating new position")
             console.log("this.courtwidth:",this.courtwidth)
             console.log("this.courtheight:",this.courtheight)
-            var updatedposition = new Position(
+            var updatedposition = new PositionDev(
                 pos, 
                 shirtnum,
                 symbol,
@@ -569,6 +571,31 @@ class LineupDev {
             console.log("valid default symbols are ", this.defaultsymbols)
         }
 
+    }
+
+    //this is hopefully going to update the values of pos.x and pos.y useful 
+    //following a redimensioning event of a canvas
+    refreshPositions(newcourtwidth, newcourtheight) {
+        console.log("ORIGINAL")
+        console.log("this.static_courtwidth: ", this.static_courtwidth)
+        console.log("this.static_courtheight: ", this.static_courtheight)
+        this.positions.forEach( pos => {
+            var xratio = pos.xpos / this.static_courtwidth
+            var yratio = pos.xpos / this.static_courtheight
+            pos.xpos = xratio * newcourtwidth;
+            pos.ypos = yratio * newcourtheight;
+        })
+        this.static_courtwidth = newcourtwidth;
+        this.static_courtheight= newcourtheight;
+        console.log("FINAL")
+        console.log("this.static_courtwidth: ", this.static_courtwidth)
+        console.log("this.static_courtheight: ", this.static_courtheight)
+    }
+
+    resetPositions() {
+        this.clearPositions();
+        this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
+        this.addEventListeners()
     }
 
     rotateForward(n=1) {
@@ -947,7 +974,10 @@ class LineupDev {
         //lucontext.closePath();
     }
 
-    draw() {
+    draw(reason = "no reason specified") {
+        if (reason != "no reason specified") {
+            console.log("Drawing lineup for the follwoing reason: ", reason)
+        }
         this.context.clearRect(0, 0, this.courtwidth , this.courtheight)
         this.drawcourt();
         //TODO draw in a certain order so that the shapes being dragged 
