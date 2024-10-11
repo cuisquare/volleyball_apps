@@ -153,51 +153,9 @@ input[type="checkbox"]:focus {
   border-color: #eee;              /* Change border color when focused */
 }
 
-/* 
-@media (max-width: 768px) {
+
+@media (max-width: 750px) {
   .canvas-container {
-    width: 100%; 
-    display: block;
-  }
-
-  .canvas {
-    width: 100%; 
-    height: auto; 
-  }
-  
-  .canvas-wrapper {
-    width: 100%;
-    display: block;
-    margin-left: 10px;
-    margin-right: 10px;
-
-  }  
-
-  .button-wrapper {
     flex-direction: column;
-    align-items: center;
   }
-
-  .bottom-bar {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .bottom-bar-right {
-    justify-content: center;
-    width: 100%; 
-    text-align: center;
-  }
-
-  button, select {
-    font-size: 14px;
-    padding: 8px 15px;
-    width: 90%; 
-    margin-bottom: 10px; 
-  }
-
-  input[type="checkbox"] {
-    width: 25px;
-    height: 25px;
-  }
-} */
+}

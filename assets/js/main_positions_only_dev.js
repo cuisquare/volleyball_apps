@@ -7,16 +7,16 @@ import getSymbolsFromSetterPosition from './utils.js';
 
 
 
-var max_court_width = Math.min(window.innerWidth,window.innerHeight)
+var max_court_width = 0.8 * Math.min(window.innerWidth,window.innerHeight)
 
 //max_court_width = window.innerWidth;
 
 function get_window_width() {
-    return 0.80 * max_court_width ;
+    return Math.min(max_court_width,600); // 0.80 * max_court_width ;
 }
 
 function get_window_height() {
-    return 0.80 * max_court_width ;
+    return Math.min(max_court_width,600); // 0.80 * max_court_width ;
 }
 
 var window_width = get_window_width() ;
