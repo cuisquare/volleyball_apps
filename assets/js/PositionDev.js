@@ -371,13 +371,13 @@ class PositionDev {
         poscontext.textAlign = "left";
         poscontext.textBaseline = "bottom"
         poscontext.font = "15px Arial";
-        poscontext.fillText(this.symbol, -0.45 * this.width, 0.45 * this.height); // Text position relative to the Position instance's coordinates
+        poscontext.fillText(this.symbol, -0.8 * this.width, 0.9 * this.height); // Text position relative to the Position instance's coordinates
     
         // Value
         poscontext.textAlign = "right";
         poscontext.textBaseline = "bottom"
         poscontext.font = "15px Arial";
-        poscontext.fillText(this.value, 0.45 * this.width, 0.45 * this.height); // Text position relative to the Position instance's coordinates
+        poscontext.fillText(this.value, 0.8 * this.width, 0.9 * this.height); // Text position relative to the Position instance's coordinates
     
         poscontext.restore(); // Restore the canvas state
         //console.log("drawed a position")
