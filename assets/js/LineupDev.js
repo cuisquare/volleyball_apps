@@ -4,6 +4,7 @@ import PositionDev from './PositionDev.js';
 
 class LineupDev {
     constructor(
+        lineupid,
         shirtnums = [15,16,17,18,19,20], 
         symbols = [], 
         lucontext, 
@@ -12,6 +13,8 @@ class LineupDev {
         window_width, 
         window_height
         ) {
+
+        this.id = lineupid;
 
         this.editmode = "freeswap" //"freeswap", "override" , "ingame"
 
@@ -156,6 +159,39 @@ class LineupDev {
         }
     }
 
+    // Save the state of this Lineup instance to sessionStorage
+    saveState() {
+        const lineupState = {
+            editmode: this.editmode,
+            playerappearance: this.playerappearance,
+            symbols: this.symbols,
+            shirtnums: this.shirtnums,
+            fullshirtnums: this.fullshirtnums
+        };
+        // Store the serialized state with a unique key (based on id)
+        sessionStorage.setItem(this.id, JSON.stringify(lineupState));
+
+        console.log("Saved state of ", this.id, "with value: ", lineupState);
+    }
+
+    // Load and restore the state of this Lineup instance from sessionStorage
+    loadState() {
+        console.log("attempting to load saved state for id", this.id)
+        const savedState = sessionStorage.getItem(this.id);
+        if (savedState) {
+            const { editmode,playerappearance,symbols, shirtnums, fullshirtnums} = JSON.parse(savedState);
+            this.editmode = editmode;
+            this.playerappearance = playerappearance;
+            this.symbols = symbols;
+            this.shirtnums = shirtnums;
+            this.fullshirtnums = fullshirtnums;
+            this.updateShirtnums(shirtnums) 
+            console.log("Loading saved state for id", this.id, "with value: ", savedState);
+        } else {
+            console.log("Did not find saved state with id", this.id)
+        }
+    }
+
 
     addEventListeners() {
         // Add event listeners
@@ -262,7 +298,7 @@ class LineupDev {
         this.draggingPositions = [];
         this.newIllegalPositions = [];
         this.notDraggingPositions = this.positions;
-        
+        this.saveState();
     }
 
     onMouseRightClick(event) { 
@@ -293,6 +329,7 @@ class LineupDev {
             }
         });
         this.draw();
+        this.saveState();
     }
 
     getValidShirtNums(mode = "override") {
@@ -502,6 +539,17 @@ class LineupDev {
             shirtnums.push(pos.shirtnum)
         })
         return shirtnums
+    }
+
+    updateShirtnums(shirtnumvals) {
+        if (shirtnumvals.length == 6) {
+            this.shirtnums = shirtnumvals;
+            var pos = 1;
+            shirtnumvals.forEach(shirtnum => {
+                this.positions[pos-1].shirtnum = shirtnum;
+                pos ++;
+            })
+        }
     }
 
     updateSymbols(newsymbols) {

@@ -36,7 +36,10 @@ contextleft.clearRect(0, 0, window_width , window_height)
 
 var mysymbols = getSymbolsFromSetterPosition(1);
 
+var mylineupteamA_id = "teamAlineup"
+
 var mylineupteamA = new LineupDev(
+    mylineupteamA_id,
     [5,9,45,23,12,7],
     mysymbols,
     contextleft, 
@@ -48,6 +51,7 @@ mylineupteamA.team = "teamA";
 mylineupteamA.addShirtnum(4);
 mylineupteamA.addShirtnum(10);
 var mylineup = mylineupteamA;
+mylineup.loadState(mylineupteamA_id)
 mylineup.draw();
 
 
@@ -66,7 +70,10 @@ contextright.clearRect(0, 0, window_width , window_height)
 //contextright.fillStyle = 'blue';
 //contextright.fillRect(0, 0, canvasright.width, canvasright.height);
 
+var mylineupteamB_id = "teamBlineup"
+
 var mylineupteamB = new LineupDev(
+    mylineupteamB_id,
     [3,10,8,7,13,4],
     mysymbols,
     contextright, 
@@ -77,6 +84,7 @@ var mylineupteamB = new LineupDev(
     );
 mylineupteamB.team = "teamB"
 var mylineupright = mylineupteamB;
+mylineupright.loadState(mylineupteamB_id)
 mylineupright.draw();
 
 document.getElementById('fwd').addEventListener('click',function(){
