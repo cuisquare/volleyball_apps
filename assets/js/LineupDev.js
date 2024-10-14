@@ -498,6 +498,9 @@ class LineupDev {
         this.positions = []; // Clear the positions array
     }
 
+    //for a given shirtnums, symbols list the logic is that
+    //they are in the order so that the positions 1 to 6 correpond to 
+    // them in that order.
     getPositions(shirtnums, symbols,lucontext) {
         var positions = []
         var pos = 1;
