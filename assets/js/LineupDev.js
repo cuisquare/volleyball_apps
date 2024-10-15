@@ -77,7 +77,7 @@ class LineupDev {
         console.log("this.perc_full_height : " , this.perc_full_height )
         console.log("this.getCourtHeight(this.perc_full_height): ",this.getCourtHeight(this.perc_full_height))
 
-        this.positions = this.getPositions(shirtnums, symbols,this.context, this.total_angle);
+        this.positions = this.getPositions(shirtnums, symbols,this.context);
         this.illegalPositions = [];
         this.illegalPositionTuples = [];
         this.notIllegalPositions = this.positions;
@@ -501,18 +501,26 @@ class LineupDev {
     //for a given shirtnums, symbols list the logic is that
     //they are in the order so that the positions 1 to 6 correpond to 
     // them in that order.
-    getPositions(shirtnums, symbols,lucontext) {
+    getPositions(shirtnums, symbols,lucontext,values= "default") {
         var positions = []
-        var pos = 1;
+        var val = 0;
+        console.log("values: ", values)
         shirtnums.forEach(shirtnum => {
-            console.log("pos:", pos)
+            if (values == "default") {
+                console.log("POSITIONS VALUES NOT PROVIDED")
+                val++;
+            } else {
+                console.log("POSITIONS VALUES PROVIDED")
+                val = values[shirtnums.indexOf(shirtnum)]
+            }
+            console.log("pos value:", val)
             console.log("shirtnum:", shirtnum)
             var symbol = symbols[shirtnums.indexOf(shirtnum)]
             console.log("creating new position")
             console.log("this.courtwidth:",this.courtwidth)
             console.log("this.courtheight:",this.courtheight)
             var updatedposition = new PositionDev(
-                pos, 
+                val, 
                 shirtnum,
                 symbol,
                 lucontext, 
@@ -524,11 +532,10 @@ class LineupDev {
                 this.courtheight
                 )
             positions.push(updatedposition);
-            console.log("assigned shirtnum ",shirtnum, " to position ",pos," successfully")
-            pos ++;
+            console.log("assigned shirtnum ",shirtnum, " to position value",val," successfully")
         })
         console.log("assigned all shirtnums to lineup successfully");
-        console.log("these are the positions");
+        console.log("these are the position values");
         positions.forEach(pos => {
             console.log(pos);
         })
@@ -659,6 +666,7 @@ class LineupDev {
         //this.updatePrevpos(n);
         logmyobject("lineup positions after rotate forward",this.positions);
         logmyobject("previous lineup positions after rotate forward",this.prevpositions);
+        this.saveState();
     }
 
     rotateBackward(n=1) {
@@ -671,6 +679,7 @@ class LineupDev {
         //this.updatePrevpos(n, false);
         logmyobject("lineup positions after rotate backward",this.positions);
         logmyobject("previous lineup positions after rotate backward",this.prevpositions);
+        this.saveState();
     }
 
     isMoving() {
