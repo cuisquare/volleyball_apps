@@ -333,6 +333,18 @@ class LineupDev {
         return this.positions.find(pos => pos.shirtnum === shirtnum);
     }
 
+    editValues(pos, newvalue) {
+        var newvalues = [1,2,3,4,5,6]
+        if (newvalues.includes(newvalue)) {
+            while (newvalues[pos.value-1] != newvalue) {
+                newvalues = arrayRotateN(newvalues, false,1);
+                nb_rotations ++;
+                console.log("nb_rotations: ",nb_rotations)
+            }
+            updatePositionValues(newvalues)
+        }
+    }
+
     editShirtNum(pos, newshirtnum, mode) {
         // Display a form or dialog box to edit shirtnum property 
         console.log("currentShirtNums: ",this.shirtnums)
@@ -502,6 +514,18 @@ class LineupDev {
             shirtnums.push(pos.shirtnum)
         })
         return shirtnums
+    }
+
+    updatePositionValues(newvalues) {
+        var index = 0;
+        console.log("inside updateValues")
+        this.positions.forEach(pos => {
+            console.log("index:",index)
+            console.log("newvalues[index]:",newvalues[index])           
+            pos.value = newvalues[index];
+            index ++;
+        })
+        console.log("reassigned all position values")
     }
 
     updateSymbols(newsymbols) {
