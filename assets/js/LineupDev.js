@@ -229,7 +229,7 @@ class LineupDev {
                     logmyobject("editing positions with forbiddent values ",this.shirtnums)
                     var allowedshirtnums =  this.getValidShirtNums(this.editmode)
                     var allowedshirtnumsellipsis =  this.ellipsisArray(allowedshirtnums)
-                    const newshirtnum = parseInt(prompt("Enter new shirt number (valid numbers are: "+ allowedshirtnumsellipsis +"):", this.shirtnum));
+                    const newshirtnum = parseInt(prompt("Enter new shirt number (valid numbers are: "+ allowedshirtnumsellipsis +"):", pos.shirtnum));
                     this.editShirtNum(pos, newshirtnum,this.editmode)
                     this.shirtnums = this.getShirtNums(this.positions)
                     //before TODO this does not edit shirtnums array and it must do so!
@@ -237,11 +237,20 @@ class LineupDev {
                 if (pos.isInsideSymbol(touchX,touchY, this.isUpright,this.leftcourt)) {
                     //TODO something that would assign all other positions based on this one position
                     //pos.editSymbol(this.defaultsymbols)
-                    console.log("moomoo inside symbol of ", pos, "!");
-                    console.log("second moomoo inside symbol of ", pos, "!");
-                    const newSymbol = prompt("Enter new symbol (valid symbols are: "+ this.defaultsymbols +"):","S", this.symbol);
+                    console.log("inside symbol of ", pos, "!");
+                    const newSymbol = prompt("Enter new symbol (valid symbols are: "+ this.defaultsymbols +"):","S");
                     this.assignDefaultSymbols(pos, newSymbol); 
                     console.log("No, really, inside symbol of ", pos, "!");
+                }
+                if (pos.isInsidePositionValue(touchX,touchY, this.isUpright,this.leftcourt)) {
+                    console.log("inside value of ",pos)
+                    console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
+                    console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
+                    console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
+                    const newvalue = parseInt(prompt("Enter new  value (valid values are: "+ [1,2,3,4,5,6] +"):",pos.value));
+                    console.log("new values: ", newvalue)
+                    this.editValues(pos, newvalue)
+                    //before TODO this does not edit shirtnums array and it must do so!
                 }
             });
             this.draw();
@@ -334,14 +343,21 @@ class LineupDev {
     }
 
     editValues(pos, newvalue) {
-        var newvalues = [1,2,3,4,5,6]
-        if (newvalues.includes(newvalue)) {
-            while (newvalues[pos.value-1] != newvalue) {
-                newvalues = arrayRotateN(newvalues, false,1);
+        const allowedvalues = [1,2,3,4,5,6];
+        var finalvalues = [1,2,3,4,5,6];
+        var nb_rotations = 0;
+        console.log("In editValues with newvalue", newvalue)
+        if (allowedvalues.includes(newvalue)) {
+            console.log("edit possible because new value " +  newvalue + " in allowed values (" +allowedvalues + ")")
+            while (finalvalues[pos.value-1] != newvalue) {
+                finalvalues = arrayRotateN(finalvalues, false,1);
                 nb_rotations ++;
                 console.log("nb_rotations: ",nb_rotations)
             }
-            updatePositionValues(newvalues)
+            console.log("finalvalues to match proposed edit: ", finalvalues)
+            this.updatePositionValues(finalvalues)
+        } else{
+            console.log("edit NOT possible because new value " +  newvalue + " NOT in allowed values (" +allowedvalues + ")")
         }
     }
 
@@ -518,7 +534,7 @@ class LineupDev {
 
     updatePositionValues(newvalues) {
         var index = 0;
-        console.log("inside updateValues")
+        console.log("inside updatePositionValues")
         this.positions.forEach(pos => {
             console.log("index:",index)
             console.log("newvalues[index]:",newvalues[index])           
