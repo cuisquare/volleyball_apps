@@ -456,6 +456,58 @@ class PositionDev {
         return isinsidebox;
     }
 
+    isInsidePositionValue(mouseX, mouseY,isUpright,leftcourt) {
+        //TODO here code a save, then rotation of -total_angle
+     //basically it picks the right position considering the rotated position 
+     //however this is not where the symbol is because at the time of drawing the letter
+     //a rotation of -total_angle had been applied. 
+
+     console.log("INSIDE  isInsideSymbol")
+     console.log("this.canvas: ", this.canvas)
+     console.log("this.canvas.width: ", this.canvas.width)
+     console.log("this.canvas.height: ", this.canvas.height)
+
+     var centerX = this.canvas.width / 2;
+     var centerY = this.canvas.height / 2;
+     var w1 = 0.125 * this.width;
+     var w2 = 0.25 * this.width;
+     var w3 = 0.5 * this.width;
+
+     const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle,centerX,centerY);
+     if (isUpright) {
+             var isinsidebox = this.isInsideBox(
+                 rotatedCoords.x,rotatedCoords.y,
+                 this.xpos + w1,
+                 this.xpos + w3,
+                 this.ypos + w2,
+                 this.ypos + w3
+                 )
+
+     } else {
+         if (leftcourt) {
+             var isinsidebox = this.isInsideBox(
+                 rotatedCoords.x,rotatedCoords.y,
+                 this.xpos + w2,
+                 this.xpos + w3,
+                 this.ypos - w3,
+                 this.ypos - w1
+                 )
+         } else {
+             var isinsidebox = this.isInsideBox(
+                 rotatedCoords.x,rotatedCoords.y,
+                 this.xpos - w3,
+                 this.xpos - w3,
+                 this.ypos + w1,
+                 this.ypos + w3
+                 )
+         }
+     }
+
+     //poscontext.restore(); // Restore the canvas state
+
+     return isinsidebox;
+ }
+
     assignContext(newcontext) {
         this.context = newcontext;
         //this.canvas = this.context.canvas;
@@ -603,6 +655,8 @@ class PositionDev {
             } else if (this.isInsideSymbol(mouseX, mouseY)) {
                 // Display form or dialog box to edit properties of 'pos'
                 this.editSymbol();
+            } else if (this.isInsidePositionValue(mouseX, mouseY)) {
+
             } else {
                 console.log("Nothing was picked as editable for mouseX = ",mouseX, " and mouseY = ",mouseY)
     
