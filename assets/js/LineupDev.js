@@ -74,7 +74,7 @@ class LineupDev {
         console.log("this.perc_full_height : " , this.perc_full_height )
         console.log("this.getCourtHeight(this.perc_full_height): ",this.getCourtHeight(this.perc_full_height))
 
-        this.positions = this.getPositions(shirtnums, symbols,this.context, this.total_angle);
+        this.positions = this.getPositions(shirtnums, symbols,this.context, this.defaultvalues);
         this.illegalPositions = [];
         this.illegalPositionTuples = [];
         this.notIllegalPositions = this.positions;
@@ -113,6 +113,27 @@ class LineupDev {
 
         this.addEventListeners();
 
+    }
+
+    _defaultvalues = [1,2,3,4,5,6];
+
+    get defaultvalues() {
+        console.log("I was in the getter for this.defaultvalues")
+        return this._defaultvalues;
+    }
+
+    set defaultvalues(newdefaultvalues) {
+        console.log("I was in the setter for this.defaultvalues")
+        console.log("attempted to set defaultvalues to " + newdefaultvalues + " but this is forbidden.")
+    }
+
+    get values() {
+        var actualvalues = []
+        this.positions.forEach(pos => {
+            actualvalues.push(pos.value);
+        })
+        console.log("values: "+ actualvalues)
+        return(actualvalues);
     }
 
     // Define the getter for court_width
@@ -253,6 +274,7 @@ class LineupDev {
                     //before TODO this does not edit shirtnums array and it must do so!
                 }
             });
+            this.checkPositionsLegality();
             this.draw();
         } else { // Long press
             console.log("LONG PRESS EVENT")
@@ -343,21 +365,36 @@ class LineupDev {
     }
 
     editValues(pos, newvalue) {
-        const allowedvalues = [1,2,3,4,5,6];
-        var finalvalues = [1,2,3,4,5,6];
+        var finalvalues = [...this.values];  // Spread operator for arrays
         var nb_rotations = 0;
+        const posindex = this.positions.findIndex(somepos => somepos.value === pos.value)
+
+        console.log("the index for pos selected to change all values:" + posindex)
+
         console.log("In editValues with newvalue", newvalue)
-        if (allowedvalues.includes(newvalue)) {
-            console.log("edit possible because new value " +  newvalue + " in allowed values (" +allowedvalues + ")")
-            while (finalvalues[pos.value-1] != newvalue) {
+        console.log("In editValues with var finalvalues", finalvalues)
+        console.log("In editValues with default values", this.defaultvalues)
+        console.log("In editValues with pos", pos)
+        if (this.defaultvalues.includes(newvalue)) {
+            console.log("edit possible because new value " +  newvalue + " in allowed values (" + this.defaultvalues + ")")
+            while (finalvalues[posindex] != newvalue) {
+                console.log("goal not reached yet with following values: ")
+                console.log("finalvalues: ", finalvalues)
+                console.log("pos.value: " + pos.value)
+                console.log("finalvalues[pos.value-1]: " + finalvalues[pos.value-1])
+                console.log("updating finalvalues")
                 finalvalues = arrayRotateN(finalvalues, false,1);
                 nb_rotations ++;
                 console.log("nb_rotations: ",nb_rotations)
             }
+            console.log("goal reached with following values:  ")
+            console.log("pos.value: " + pos.value)
+            console.log("finalvalues[pos.value-1]: " + finalvalues[pos.value-1])
+            console.log("nb_rotations final: ",nb_rotations)
             console.log("finalvalues to match proposed edit: ", finalvalues)
             this.updatePositionValues(finalvalues)
         } else{
-            console.log("edit NOT possible because new value " +  newvalue + " NOT in allowed values (" +allowedvalues + ")")
+            console.log("edit NOT possible because new value " +  newvalue + " NOT in allowed values (" +this.defaultsvalues + ")")
         }
     }
 
@@ -489,18 +526,26 @@ class LineupDev {
         this.positions = []; // Clear the positions array
     }
 
-    getPositions(shirtnums, symbols,lucontext) {
+    getPositions(shirtnums, symbols,lucontext,values= "default") {
         var positions = []
-        var pos = 1;
+        var val = 0;
+        console.log("values: ", values)
         shirtnums.forEach(shirtnum => {
-            console.log("pos:", pos)
+            if (values == "default") {
+                console.log("POSITIONS VALUES NOT PROVIDED")
+                val++;
+            } else {
+                console.log("POSITIONS VALUES PROVIDED")
+                val = values[shirtnums.indexOf(shirtnum)]
+            }
+            console.log("pos value:", val)
             console.log("shirtnum:", shirtnum)
             var symbol = symbols[shirtnums.indexOf(shirtnum)]
             console.log("creating new position")
             console.log("this.courtwidth:",this.courtwidth)
             console.log("this.courtheight:",this.courtheight)
             var updatedposition = new PositionDev(
-                pos, 
+                val, 
                 shirtnum,
                 symbol,
                 lucontext, 
@@ -512,11 +557,10 @@ class LineupDev {
                 this.courtheight
                 )
             positions.push(updatedposition);
-            console.log("assigned shirtnum ",shirtnum, " to position ",pos," successfully")
-            pos ++;
+            console.log("assigned shirtnum ",shirtnum, " to position value",val," successfully")
         })
         console.log("assigned all shirtnums to lineup successfully");
-        console.log("these are the positions");
+        console.log("these are the position values");
         positions.forEach(pos => {
             console.log(pos);
         })
@@ -536,9 +580,11 @@ class LineupDev {
         var index = 0;
         console.log("inside updatePositionValues")
         this.positions.forEach(pos => {
+            console.log("pos: " , pos)
             console.log("index:",index)
             console.log("newvalues[index]:",newvalues[index])           
             pos.value = newvalues[index];
+            pos.assignLaterality();
             index ++;
         })
         console.log("reassigned all position values")

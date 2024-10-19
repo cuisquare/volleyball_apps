@@ -75,28 +75,7 @@ class PositionDev {
         this.context = poscontext;
         /* this.canvas = this.context.canvas; */
 
-
-        this.isfrontrow = ([2,3,4].includes(value));
-        this.isbackrow = ([5,6,1].includes(value));
-        this.isleftside = ([4,5].includes(value));
-        this.ismiddle = ([3,6].includes(value));
-        this.isrightside = ([1,2].includes(value));
-
-        if (this.isfrontrow) {
-            this.vert = 1;
-        }
-        if (this.isbackrow) {
-            this.vert = 0;
-        }
-        if (this.isleftside) {
-            this.hor = 0;
-        }
-        if (this.ismiddle) {
-            this.hor = 1;
-        }
-        if (this.isrightside) {
-            this.hor = 2;
-        }
+        this.assignLaterality() 
 
         if (ypos == "default") {
             if (this.isfrontrow) {
@@ -177,6 +156,30 @@ class PositionDev {
 
     getPosHeight() {
         return(this.postocourtratio * this.courtheight)
+    }
+
+    assignLaterality() {
+        this.isfrontrow = ([2,3,4].includes(this.value));
+        this.isbackrow = ([5,6,1].includes(this.value));
+        this.isleftside = ([4,5].includes(this.value));
+        this.ismiddle = ([3,6].includes(this.value));
+        this.isrightside = ([1,2].includes(this.value));
+
+        if (this.isfrontrow) {
+            this.vert = 1;
+        }
+        if (this.isbackrow) {
+            this.vert = 0;
+        }
+        if (this.isleftside) {
+            this.hor = 0;
+        }
+        if (this.ismiddle) {
+            this.hor = 1;
+        }
+        if (this.isrightside) {
+            this.hor = 2;
+        }
     }
 
     prevposition() {
