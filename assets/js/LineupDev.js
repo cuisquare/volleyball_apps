@@ -321,7 +321,7 @@ class LineupDev {
                 this.assignDefaultSymbols(pos, newSymbol); 
                 console.log("No, really, inside symbol of ", pos, "!");
             }
-            if (pos.isInsidePositionValue(touchX,touchY, this.isUpright,this.leftcourt)) {
+            if (pos.isInsidePositionValue(mouseX,mouseY, this.isUpright,this.leftcourt)) {
                 console.log("inside value of ",pos)
                 console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
                 console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
