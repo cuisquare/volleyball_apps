@@ -274,7 +274,6 @@ class LineupDev {
                     //before TODO this does not edit shirtnums array and it must do so!
                 }
             });
-            this.checkPositionsLegality();
             this.draw();
         } else { // Long press
             console.log("LONG PRESS EVENT")
@@ -321,6 +320,16 @@ class LineupDev {
                 const newSymbol = prompt("Enter new symbol (valid symbols are: "+ this.defaultsymbols +"):","S", this.symbol);
                 this.assignDefaultSymbols(pos, newSymbol); 
                 console.log("No, really, inside symbol of ", pos, "!");
+            }
+            if (pos.isInsidePositionValue(touchX,touchY, this.isUpright,this.leftcourt)) {
+                console.log("inside value of ",pos)
+                console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
+                console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
+                console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
+                const newvalue = parseInt(prompt("Enter new  value (valid values are: "+ [1,2,3,4,5,6] +"):",pos.value));
+                console.log("new values: ", newvalue)
+                this.editValues(pos, newvalue)
+                //before TODO this does not edit shirtnums array and it must do so!
             }
         });
         this.draw();
@@ -393,6 +402,7 @@ class LineupDev {
             console.log("nb_rotations final: ",nb_rotations)
             console.log("finalvalues to match proposed edit: ", finalvalues)
             this.updatePositionValues(finalvalues)
+            this.checkPositionsLegalityStatic();
         } else{
             console.log("edit NOT possible because new value " +  newvalue + " NOT in allowed values (" +this.defaultsvalues + ")")
         }
@@ -620,6 +630,7 @@ class LineupDev {
     }
 
     assignDefaultSymbols(pos,newdefaultsymbol = "S",recreatePositions = false) {
+        const posindex = this.positions.findIndex(somepos => somepos.value === pos.value)
         console.log("inside assignDefaultSymbols")
         if (this.defaultsymbols.includes(newdefaultsymbol)) {
             console.log(this.defaultsymbols," includes ", newdefaultsymbol)
@@ -630,7 +641,7 @@ class LineupDev {
             var posvalue = pos.value;
             console.log("posvalue: ",posvalue)
             console.log("newsymbols[posvalue-1]: ",newsymbols[posvalue-1])
-            while (newsymbols[posvalue-1] != newdefaultsymbol) {
+            while (newsymbols[posindex] != newdefaultsymbol) {
                 newsymbols = arrayRotateN(newsymbols, false,1);
                 nb_rotations ++;
                 console.log("nb_rotations: ",nb_rotations)
@@ -834,6 +845,9 @@ class LineupDev {
     }
 
     checkPositionsLegality(checkedpositions = this.positions, otherPositions = this.positions) { 
+        //TODO BUG
+        //this works well if a single position is incorrect however where there are incorrect positions
+        //followeed by correct position this might remove the incorrect positions. 
         var posillegal = false;
         checkedpositions.forEach( pos1 => {
             otherPositions.forEach( pos2 => {
