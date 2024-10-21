@@ -422,6 +422,10 @@ class PositionDev {
         //however this is not where the symbol is because at the time of drawing the letter
         //a rotation of -total_angle had been applied. 
 
+        var w1 = 0.5*this.width ; //value now outside of square //0.125 * this.width; //value when it was in the corner
+        var w2 = 0.25 * this.width;
+        var w3 = 1.25 *this.width; //value now outside of square //0.5 * this.width; //value when it was in the corner
+
         console.log("INSIDE  isInsideSymbol")
         console.log("this.canvas: ", this.canvas)
         console.log("this.canvas.width: ", this.canvas.width)
@@ -433,28 +437,28 @@ class PositionDev {
         if (isUpright) {
                 var isinsidebox = this.isInsideBox(
                     rotatedCoords.x,rotatedCoords.y,
-                    this.xpos - 0.5 * this.width,
-                    this.xpos - 0.125 * this.width,
-                    this.ypos + 0.25 * this.width,
-                    this.ypos + 0.5 * this.width
+                    this.xpos - w3,
+                    this.xpos - w1,
+                    this.ypos + w2,
+                    this.ypos + w3
                     )
 
         } else {
             if (leftcourt) {
                 var isinsidebox = this.isInsideBox(
                     rotatedCoords.x,rotatedCoords.y,
-                    this.xpos + (0.5 - 0.25) * this.width,
-                    this.xpos +  0.5 * this.width,
-                    this.ypos + 0.125 * this.width,
-                    this.ypos + 0.5 * this.width
+                    this.xpos + w2,
+                    this.xpos + w3,
+                    this.ypos + w1,
+                    this.ypos + w3
                     )
             } else {
                 var isinsidebox = this.isInsideBox(
                     rotatedCoords.x,rotatedCoords.y,
-                    this.xpos - 0.5 * this.width,
-                    this.xpos - 0.25 * this.width,
-                    this.ypos - 0.5 * this.width,
-                    this.ypos - 0.125 * this.width
+                    this.xpos - w3,
+                    this.xpos - w2,
+                    this.ypos - w3,
+                    this.ypos - w1
                     )
             }
         }
@@ -481,9 +485,9 @@ class PositionDev {
 
      var centerX = this.canvas.width / 2;
      var centerY = this.canvas.height / 2;
-     var w1 = 0.125 * this.width;
+     var w1 = 0.5*this.width ; //value now outside of square //0.125 * this.width; //value when it was in the corner
      var w2 = 0.25 * this.width;
-     var w3 = 0.5 * this.width;
+     var w3 = 1.25 *this.width; //value now outside of square //0.5 * this.width; //value when it was in the corner
 
      const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle,centerX,centerY);
      if (isUpright) {

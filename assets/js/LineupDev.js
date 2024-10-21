@@ -848,6 +848,7 @@ class LineupDev {
         //TODO BUG
         //this works well if a single position is incorrect however where there are incorrect positions
         //followeed by correct position this might remove the incorrect positions. 
+        //HOWEVER not used anywhere.
         var posillegal = false;
         checkedpositions.forEach( pos1 => {
             otherPositions.forEach( pos2 => {
