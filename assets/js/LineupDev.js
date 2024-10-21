@@ -373,6 +373,25 @@ class LineupDev {
         return this.positions.find(pos => pos.shirtnum === shirtnum);
     }
 
+    //because we can now update values independently from underlying pos.symbols and pos.shirtnums,
+    // there can be a discrepancy which causes issue when any function that relies on the default order 
+    //of starting with the position 1 is used. 
+    //this synvs symbols to match the current order of positions to this.symbols
+    syncSymbolsAndShirtnums() {
+        var newsymbols = [];
+        var newShirtnums = [];
+        for (let posval = 1; posval < 7; posval++) {
+            var posindexatvalue = this.positions.findIndex(somepos => somepos.value === posval)
+            console.log("found position with value" + posval + " at element index " + posindexatvalue)
+            var relpos= this.positions[posindexatvalue]
+            console.log("relpos: ", relpos)
+            newsymbols.push(relpos.symbol)
+            newShirtnums.push(relpos.shirtnum);
+        }
+        this.symbols = newsymbols;
+        this.shirtnums = newShirtnums;
+    }
+
     editValues(pos, newvalue) {
         var finalvalues = [...this.values];  // Spread operator for arrays
         var nb_rotations = 0;
@@ -402,6 +421,7 @@ class LineupDev {
             console.log("nb_rotations final: ",nb_rotations)
             console.log("finalvalues to match proposed edit: ", finalvalues)
             this.updatePositionValues(finalvalues)
+            //TODO this should update this.shirtnums and this.symbols based on changed values
             this.checkPositionsLegalityStatic();
         } else{
             console.log("edit NOT possible because new value " +  newvalue + " NOT in allowed values (" +this.defaultsvalues + ")")
@@ -597,6 +617,7 @@ class LineupDev {
             pos.assignLaterality();
             index ++;
         })
+        this.syncSymbolsAndShirtnums();
         console.log("reassigned all position values")
     }
 
