@@ -399,19 +399,20 @@ class PositionDev {
     }
 
     isInsideShirtNum(mouseX, mouseY) {
+
+        var w4 = 0.375 * this.width;
+
         // Convert mouse coordinates to rotated canvas coordinates
         var centerX = this.canvas.width / 2;
         var centerY = this.canvas.height / 2;
-        const rotatedCoords = convertToRotatedCoords(
-            mouseX, mouseY, this.total_angle,
-            centerX,centerY
-            );
+        const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle,centerX,centerY);
+
         return this.isInsideBox(
             rotatedCoords.x,rotatedCoords.y,
-            this.xpos - 0.125 * this.width,
-            this.xpos + 0.125 * this.width,
-            this.ypos - 0.125 * this.width,
-            this.ypos + 0.125 * this.width
+            this.xpos - w4 * this.width,
+            this.xpos + w4 * this.width,
+            this.ypos - w4 * this.width,
+            this.ypos + w4 * this.width
             )
     }
 
