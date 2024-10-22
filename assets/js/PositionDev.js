@@ -409,10 +409,10 @@ class PositionDev {
 
         return this.isInsideBox(
             rotatedCoords.x,rotatedCoords.y,
-            this.xpos - w4 * this.width,
-            this.xpos + w4 * this.width,
-            this.ypos - w4 * this.width,
-            this.ypos + w4 * this.width
+            this.xpos - w4 ,
+            this.xpos + w4 ,
+            this.ypos - w4 ,
+            this.ypos + w4 
             )
     }
 
