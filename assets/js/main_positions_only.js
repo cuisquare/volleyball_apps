@@ -5,17 +5,27 @@ import Lineup from './Lineup.js';
 import getSymbolsFromSetterPosition from './utils.js';
 
 
-let canvasleft = document.getElementById("canvasleft");
-let contextleft = canvasleft.getContext("2d");
 
-var max_court_width = Math.min(window.innerWidth,window.innerHeight)
-var max_court_height = Math.min(window.innerWidth,window.innerHeight)
+
+var max_court_width = 0.8 * Math.min(window.innerWidth,window.innerHeight)
 
 //max_court_width = window.innerWidth;
 
-var window_width = 0.80 * max_court_width ;
+function get_window_width() {
+    return Math.min(max_court_width,600); // 0.80 * max_court_width ;
+}
+
+function get_window_height() {
+    return Math.min(max_court_width,600); // 0.80 * max_court_width ;
+}
+
+var window_width = get_window_width() ;
 //window_height = 0.80 * 2 * max_court_width;
-var window_height = 0.80 * max_court_width;
+var window_height = get_window_height();
+
+
+let canvasleft = document.getElementById("canvasleft");
+let contextleft = canvasleft.getContext("2d");
 
 canvasleft.width = window_width;
 canvasleft.height = window_height;
@@ -26,7 +36,10 @@ contextleft.clearRect(0, 0, window_width , window_height)
 
 var mysymbols = getSymbolsFromSetterPosition(1);
 
+var mylineupteamA_id = "teamAlineup"
+
 var mylineupteamA = new Lineup(
+    mylineupteamA_id,
     [5,9,45,23,12,7],
     mysymbols,
     contextleft, 
@@ -38,7 +51,11 @@ mylineupteamA.team = "teamA";
 mylineupteamA.addShirtnum(4);
 mylineupteamA.addShirtnum(10);
 var mylineup = mylineupteamA;
+mylineup.loadState(mylineupteamA_id)
 mylineup.draw();
+
+
+
 
 
 let canvasright = document.getElementById("canvasright");
@@ -53,7 +70,10 @@ contextright.clearRect(0, 0, window_width , window_height)
 //contextright.fillStyle = 'blue';
 //contextright.fillRect(0, 0, canvasright.width, canvasright.height);
 
+var mylineupteamB_id = "teamBlineup"
+
 var mylineupteamB = new Lineup(
+    mylineupteamB_id,
     [3,10,8,7,13,4],
     mysymbols,
     contextright, 
@@ -64,6 +84,7 @@ var mylineupteamB = new Lineup(
     );
 mylineupteamB.team = "teamB"
 var mylineupright = mylineupteamB;
+mylineupright.loadState(mylineupteamB_id)
 mylineupright.draw();
 
 document.getElementById('fwd').addEventListener('click',function(){
@@ -201,17 +222,47 @@ playerappearancedropdown.addEventListener('change',function(){
     mylineupright.draw();
 });
 
+// Call this function on window resize or when the canvas is rendered
+function adjustCanvasSize(canvasid, reason,thelineup) {
+    var canvas = document.getElementById(canvasid);
+    var styleWidth = canvas.getBoundingClientRect().width;
+    var styleHeight = canvas.getBoundingClientRect().height;
 
-game_id = "45"
-venue
+    // Update the canvas internal size to match the visual size
+    canvas.width = styleWidth;
+    canvas.height = styleHeight;
+
+    // Redraw your canvas content after resizing if necessary
+    thelineup.refreshPositions()
+    thelineup.draw(reason);
+    
+}
+/* window.addEventListener('resize', 
+function(){
+    console.log("RESIZE EVENT FOR LEFT CANVAS")
+    adjustCanvasSize("canvasleft", "RESIZE EVENT",mylineup);
+    adjustCanvasSize("canvasright","RESIZE EVENT",mylineupright);
+}
+);
+window.addEventListener('load', 
+function(){
+    adjustCanvasSize("canvasleft", "LOAD EVENT",mylineup);
+    adjustCanvasSize("canvasright","LOAD EVENT",mylineupright);
+}
+); */
+
+
+
+var game_id = "45"
+/* venue
 officialdate
 officialstarttime
 officialendtime
 hometeam
-awayteam
+awayteam */
 const lvarules = new Rules()
-const myfixture = new Fixture(rules = myrules)
-const mygame = new Game();
+const myfixture = new Fixture()
+//const mygame = new Game();
 
 
 

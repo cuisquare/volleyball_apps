@@ -13,8 +13,8 @@ class Position {
         playerappearance,
         xpos = "default",
         ypos = "default",
-        window_width,
-        window_height,
+        courtwidth,
+        courtheight,
         imageSrcGreen =  "../assets/images/squarefeetgreyernobackgroundgreen.png",
         imageSrcRed =  "../assets/images/squarefeetgreyernobackgroundred.png"
         ) {
@@ -27,8 +27,12 @@ class Position {
         this.shirtnum = shirtnum;
         this.symbol = symbol;
 
-        this.width = 0.1*window_width;
-        this.height = 0.1*window_height; 
+        this.postocourtratio = 0.1;
+        this.courtwidth = courtwidth;
+        this.courtheight = courtheight;
+
+/*         this.width = 0.1*window_width;
+        this.height = 0.1*window_height;  */
 
         this.total_angle = total_angle;
 
@@ -69,49 +73,28 @@ class Position {
 
 
         this.context = poscontext;
-        this.canvas = this.context.canvas;
+        /* this.canvas = this.context.canvas; */
 
-
-        this.isfrontrow = ([2,3,4].includes(value));
-        this.isbackrow = ([5,6,1].includes(value));
-        this.isleftside = ([4,5].includes(value));
-        this.ismiddle = ([3,6].includes(value));
-        this.isrightside = ([1,2].includes(value));
-
-        if (this.isfrontrow) {
-            this.vert = 1;
-        }
-        if (this.isbackrow) {
-            this.vert = 0;
-        }
-        if (this.isleftside) {
-            this.hor = 0;
-        }
-        if (this.ismiddle) {
-            this.hor = 1;
-        }
-        if (this.isrightside) {
-            this.hor = 2;
-        }
+        this.assignLaterality() 
 
         if (ypos == "default") {
             if (this.isfrontrow) {
-                this.ypos = 0.5*window_height/3.0
+                this.ypos = 0.5*this.courtheight/3.0
             } 
             if (this.isbackrow) {
-                this.ypos = 0.666*window_height
+                this.ypos = 0.666*this.courtheight
             }
         }
 
         if (xpos == "default") {
             if (this.isleftside) {
-                this.xpos = 0.25*window_width
+                this.xpos = 0.25*this.courtwidth
             } 
             if (this.ismiddle) {
-                this.xpos = 0.5*window_width
+                this.xpos = 0.5*this.courtwidth
             } 
             if (this.isrightside) {
-                this.xpos = 0.75*window_width
+                this.xpos = 0.75*this.courtwidth
             } 
         }
 
@@ -145,6 +128,58 @@ class Position {
 
         this.addEventListeners();
 
+    }
+
+    get canvas() {
+        return(this.getCanvas())
+    }
+
+    set canvas(mycanvas) {
+        this.context.canvas = mycanvas;
+    }
+
+    getCanvas() {
+        return(this.context.canvas)
+    }
+
+    get width() {
+        return (this.getPosWidth())
+    }
+
+    getPosWidth() {
+        return(this.postocourtratio * this.courtwidth)
+    }
+
+    get height() {
+       return (this.getPosHeight())
+    }
+
+    getPosHeight() {
+        return(this.postocourtratio * this.courtheight)
+    }
+
+    assignLaterality() {
+        this.isfrontrow = ([2,3,4].includes(this.value));
+        this.isbackrow = ([5,6,1].includes(this.value));
+        this.isleftside = ([4,5].includes(this.value));
+        this.ismiddle = ([3,6].includes(this.value));
+        this.isrightside = ([1,2].includes(this.value));
+
+        if (this.isfrontrow) {
+            this.vert = 1;
+        }
+        if (this.isbackrow) {
+            this.vert = 0;
+        }
+        if (this.isleftside) {
+            this.hor = 0;
+        }
+        if (this.ismiddle) {
+            this.hor = 1;
+        }
+        if (this.isrightside) {
+            this.hor = 2;
+        }
     }
 
     prevposition() {
@@ -339,39 +374,45 @@ class Position {
         poscontext.textAlign = "left";
         poscontext.textBaseline = "bottom"
         poscontext.font = "15px Arial";
-        poscontext.fillText(this.symbol, -0.45 * this.width, 0.45 * this.height); // Text position relative to the Position instance's coordinates
+        poscontext.fillText(this.symbol, -0.8 * this.width, 0.9 * this.height); // Text position relative to the Position instance's coordinates
     
         // Value
         poscontext.textAlign = "right";
         poscontext.textBaseline = "bottom"
         poscontext.font = "15px Arial";
-        poscontext.fillText(this.value, 0.45 * this.width, 0.45 * this.height); // Text position relative to the Position instance's coordinates
+        poscontext.fillText(this.value, 0.8 * this.width, 0.9 * this.height); // Text position relative to the Position instance's coordinates
     
         poscontext.restore(); // Restore the canvas state
         //console.log("drawed a position")
     }
 
     isInsideBox(x, y,xmin,xmax,ymin,ymax) {     
-        return x >= xmin &&
-               x <= xmax &&
-               y >= ymin &&
-               y <= ymax;
+        console.log("in isInsideBox")
+        console.log("x, y,xmin,xmax,ymin,ymax: ",x,", ", y,", ",xmin,", ",xmax,", ",ymin,", ",ymax)
+        var output = x >= xmin &&
+                     x <= xmax &&
+                     y >= ymin &&
+                     y <= ymax
+
+        if (output) {console.log("!!!!! IS INSIDE BOX !!!!")} else {console.log("!!!!! is NOT inside box !!!!")}
+        return output;
     }
 
     isInsideShirtNum(mouseX, mouseY) {
+
+        var w4 = 0.375 * this.width;
+
         // Convert mouse coordinates to rotated canvas coordinates
         var centerX = this.canvas.width / 2;
         var centerY = this.canvas.height / 2;
-        const rotatedCoords = convertToRotatedCoords(
-            mouseX, mouseY, this.total_angle,
-            centerX,centerY
-            );
+        const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle,centerX,centerY);
+
         return this.isInsideBox(
             rotatedCoords.x,rotatedCoords.y,
-            this.xpos - 0.125 * this.width,
-            this.xpos + 0.125 * this.width,
-            this.ypos - 0.125 * this.width,
-            this.ypos + 0.125 * this.width
+            this.xpos - w4 ,
+            this.xpos + w4 ,
+            this.ypos - w4 ,
+            this.ypos + w4 
             )
     }
 
@@ -381,34 +422,44 @@ class Position {
         //basically it picks the right position considering the rotated position 
         //however this is not where the symbol is because at the time of drawing the letter
         //a rotation of -total_angle had been applied. 
+
+        var w1 = 0.5*this.width ; //value now outside of square //0.125 * this.width; //value when it was in the corner
+        var w2 = 0.25 * this.width;
+        var w3 = 1.25 *this.width; //value now outside of square //0.5 * this.width; //value when it was in the corner
+
+        console.log("INSIDE  isInsideSymbol")
+        console.log("this.canvas: ", this.canvas)
+        console.log("this.canvas.width: ", this.canvas.width)
+        console.log("this.canvas.height: ", this.canvas.height)
+
         var centerX = this.canvas.width / 2;
         var centerY = this.canvas.height / 2;
         const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle,centerX,centerY);
         if (isUpright) {
                 var isinsidebox = this.isInsideBox(
                     rotatedCoords.x,rotatedCoords.y,
-                    this.xpos - 0.5 * this.width,
-                    this.xpos - 0.125 * this.width,
-                    this.ypos + 0.25 * this.width,
-                    this.ypos + 0.5 * this.width
+                    this.xpos - w3,
+                    this.xpos - w1,
+                    this.ypos + w2,
+                    this.ypos + w3
                     )
 
         } else {
             if (leftcourt) {
                 var isinsidebox = this.isInsideBox(
                     rotatedCoords.x,rotatedCoords.y,
-                    this.xpos + (0.5 - 0.25) * this.width,
-                    this.xpos +  0.5 * this.width,
-                    this.ypos + 0.125 * this.width,
-                    this.ypos + 0.5 * this.width
+                    this.xpos + w2,
+                    this.xpos + w3,
+                    this.ypos + w1,
+                    this.ypos + w3
                     )
             } else {
                 var isinsidebox = this.isInsideBox(
                     rotatedCoords.x,rotatedCoords.y,
-                    this.xpos - 0.5 * this.width,
-                    this.xpos - 0.25 * this.width,
-                    this.ypos - 0.5 * this.width,
-                    this.ypos - 0.125 * this.width
+                    this.xpos - w3,
+                    this.xpos - w2,
+                    this.ypos - w3,
+                    this.ypos - w1
                     )
             }
         }
@@ -418,9 +469,68 @@ class Position {
         return isinsidebox;
     }
 
+    isInsidePositionValue(mouseX, mouseY,isUpright,leftcourt) {
+        //TODO here code a save, then rotation of -total_angle
+     //basically it picks the right position considering the rotated position 
+     //however this is not where the symbol is because at the time of drawing the letter
+     //a rotation of -total_angle had been applied. 
+
+     console.log("INSIDE  isInsidePositionValue")
+     console.log("isUpright:"+ isUpright)
+     console.log("leftcourt:"+ leftcourt)
+     console.log("this.canvas: ", this.canvas)
+     console.log("this.canvas.width: ", this.canvas.width)
+     console.log("this.canvas.height: ", this.canvas.height)
+
+     console.log("posL " + this)
+
+     var centerX = this.canvas.width / 2;
+     var centerY = this.canvas.height / 2;
+     var w1 = 0.5*this.width ; //value now outside of square //0.125 * this.width; //value when it was in the corner
+     var w2 = 0.25 * this.width;
+     var w3 = 1.25 *this.width; //value now outside of square //0.5 * this.width; //value when it was in the corner
+
+     const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle,centerX,centerY);
+     if (isUpright) {
+        console.log("upright court")
+             var isinsidebox = this.isInsideBox(
+                 rotatedCoords.x,rotatedCoords.y,
+                 this.xpos + w1,
+                 this.xpos + w3,
+                 this.ypos + w2,
+                 this.ypos + w3
+                 )
+
+     } else {
+         if (leftcourt) {
+            console.log("sideway left court")
+            var isinsidebox = this.isInsideBox(
+                rotatedCoords.x,rotatedCoords.y,
+                this.xpos + w2,
+                this.xpos + w3,
+                this.ypos - w3,
+                this.ypos - w1
+                )
+         } else {
+            console.log("sideway right court")
+            var isinsidebox = this.isInsideBox(
+                rotatedCoords.x,rotatedCoords.y,
+                this.xpos - w3,
+                this.xpos - w2,
+                this.ypos + w1,
+                this.ypos + w3
+                )
+        }
+     }
+
+     //poscontext.restore(); // Restore the canvas state
+
+     return isinsidebox;
+ }
+
     assignContext(newcontext) {
         this.context = newcontext;
-        this.canvas = this.context.canvas;
+        //this.canvas = this.context.canvas;
     }
 
     isInside(x,y) {
@@ -565,6 +675,8 @@ class Position {
             } else if (this.isInsideSymbol(mouseX, mouseY)) {
                 // Display form or dialog box to edit properties of 'pos'
                 this.editSymbol();
+            } else if (this.isInsidePositionValue(mouseX, mouseY)) {
+
             } else {
                 console.log("Nothing was picked as editable for mouseX = ",mouseX, " and mouseY = ",mouseY)
     
