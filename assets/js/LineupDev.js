@@ -77,7 +77,7 @@ class LineupDev {
         console.log("this.perc_full_height : " , this.perc_full_height )
         console.log("this.getCourtHeight(this.perc_full_height): ",this.getCourtHeight(this.perc_full_height))
 
-        this.positions = this.getPositions(shirtnums, symbols,this.context);
+        this.positions = this.getPositions(shirtnums, symbols,this.context, this.defaultvalues);
         this.illegalPositions = [];
         this.illegalPositionTuples = [];
         this.notIllegalPositions = this.positions;
@@ -116,6 +116,27 @@ class LineupDev {
 
         this.addEventListeners();
 
+    }
+
+    _defaultvalues = [1,2,3,4,5,6];
+
+    get defaultvalues() {
+        console.log("I was in the getter for this.defaultvalues")
+        return this._defaultvalues;
+    }
+
+    set defaultvalues(newdefaultvalues) {
+        console.log("I was in the setter for this.defaultvalues")
+        console.log("attempted to set defaultvalues to " + newdefaultvalues + " but this is forbidden.")
+    }
+
+    get values() {
+        var actualvalues = []
+        this.positions.forEach(pos => {
+            actualvalues.push(pos.value);
+        })
+        console.log("values: "+ actualvalues)
+        return(actualvalues);
     }
 
     // Define the getter for court_width
@@ -265,7 +286,7 @@ class LineupDev {
                     logmyobject("editing positions with forbiddent values ",this.shirtnums)
                     var allowedshirtnums =  this.getValidShirtNums(this.editmode)
                     var allowedshirtnumsellipsis =  this.ellipsisArray(allowedshirtnums)
-                    const newshirtnum = parseInt(prompt("Enter new shirt number (valid numbers are: "+ allowedshirtnumsellipsis +"):", this.shirtnum));
+                    const newshirtnum = parseInt(prompt("Enter new shirt number (valid numbers are: "+ allowedshirtnumsellipsis +"):", pos.shirtnum));
                     this.editShirtNum(pos, newshirtnum,this.editmode)
                     this.shirtnums = this.getShirtNums(this.positions)
                     //before TODO this does not edit shirtnums array and it must do so!
@@ -273,11 +294,20 @@ class LineupDev {
                 if (pos.isInsideSymbol(touchX,touchY, this.isUpright,this.leftcourt)) {
                     //TODO something that would assign all other positions based on this one position
                     //pos.editSymbol(this.defaultsymbols)
-                    console.log("moomoo inside symbol of ", pos, "!");
-                    console.log("second moomoo inside symbol of ", pos, "!");
-                    const newSymbol = prompt("Enter new symbol (valid symbols are: "+ this.defaultsymbols +"):","S", this.symbol);
+                    console.log("inside symbol of ", pos, "!");
+                    const newSymbol = prompt("Enter new symbol (valid symbols are: "+ this.defaultsymbols +"):","S");
                     this.assignDefaultSymbols(pos, newSymbol); 
                     console.log("No, really, inside symbol of ", pos, "!");
+                }
+                if (pos.isInsidePositionValue(touchX,touchY, this.isUpright,this.leftcourt)) {
+                    console.log("inside value of ",pos)
+                    console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
+                    console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
+                    console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
+                    const newvalue = parseInt(prompt("Enter new  value (valid values are: "+ [1,2,3,4,5,6] +"):",pos.value));
+                    console.log("new values: ", newvalue)
+                    this.editValues(pos, newvalue)
+                    //before TODO this does not edit shirtnums array and it must do so!
                 }
             });
             this.draw();
@@ -327,6 +357,16 @@ class LineupDev {
                 this.assignDefaultSymbols(pos, newSymbol); 
                 console.log("No, really, inside symbol of ", pos, "!");
             }
+            if (pos.isInsidePositionValue(mouseX,mouseY, this.isUpright,this.leftcourt)) {
+                console.log("inside value of ",pos)
+                console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
+                console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
+                console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
+                const newvalue = parseInt(prompt("Enter new  value (valid values are: "+ [1,2,3,4,5,6] +"):",pos.value));
+                console.log("new values: ", newvalue)
+                this.editValues(pos, newvalue)
+                //before TODO this does not edit shirtnums array and it must do so!
+            }
         });
         this.draw();
         this.saveState();
@@ -368,6 +408,61 @@ class LineupDev {
 
     findPositionByShirtNum(shirtnum) {
         return this.positions.find(pos => pos.shirtnum === shirtnum);
+    }
+
+    //because we can now update values independently from underlying pos.symbols and pos.shirtnums,
+    // there can be a discrepancy which causes issue when any function that relies on the default order 
+    //of starting with the position 1 is used. 
+    //this synvs symbols to match the current order of positions to this.symbols
+    syncSymbolsAndShirtnums() {
+        var newsymbols = [];
+        var newShirtnums = [];
+        for (let posval = 1; posval < 7; posval++) {
+            var posindexatvalue = this.positions.findIndex(somepos => somepos.value === posval)
+            console.log("found position with value" + posval + " at element index " + posindexatvalue)
+            var relpos= this.positions[posindexatvalue]
+            console.log("relpos: ", relpos)
+            newsymbols.push(relpos.symbol)
+            newShirtnums.push(relpos.shirtnum);
+        }
+        this.symbols = newsymbols;
+        this.shirtnums = newShirtnums;
+    }
+
+    editValues(pos, newvalue) {
+        var finalvalues = [...this.values];  // Spread operator for arrays
+        var nb_rotations = 0;
+        const posindex = this.positions.findIndex(somepos => somepos.value === pos.value)
+
+        console.log("the index for pos selected to change all values:" + posindex)
+
+        console.log("In editValues with newvalue", newvalue)
+        console.log("In editValues with var finalvalues", finalvalues)
+        console.log("In editValues with default values", this.defaultvalues)
+        console.log("In editValues with pos", pos)
+        if (this.defaultvalues.includes(newvalue)) {
+            console.log("edit possible because new value " +  newvalue + " in allowed values (" + this.defaultvalues + ")")
+            while (finalvalues[posindex] != newvalue) {
+                console.log("goal not reached yet with following values: ")
+                console.log("finalvalues: ", finalvalues)
+                console.log("pos.value: " + pos.value)
+                console.log("finalvalues[pos.value-1]: " + finalvalues[pos.value-1])
+                console.log("updating finalvalues")
+                finalvalues = arrayRotateN(finalvalues, false,1);
+                nb_rotations ++;
+                console.log("nb_rotations: ",nb_rotations)
+            }
+            console.log("goal reached with following values:  ")
+            console.log("pos.value: " + pos.value)
+            console.log("finalvalues[pos.value-1]: " + finalvalues[pos.value-1])
+            console.log("nb_rotations final: ",nb_rotations)
+            console.log("finalvalues to match proposed edit: ", finalvalues)
+            this.updatePositionValues(finalvalues)
+            //TODO this should update this.shirtnums and this.symbols based on changed values
+            this.checkPositionsLegalityStatic();
+        } else{
+            console.log("edit NOT possible because new value " +  newvalue + " NOT in allowed values (" +this.defaultsvalues + ")")
+        }
     }
 
     editShirtNum(pos, newshirtnum, mode) {
@@ -562,6 +657,21 @@ class LineupDev {
         }
     }
 
+    updatePositionValues(newvalues) {
+        var index = 0;
+        console.log("inside updatePositionValues")
+        this.positions.forEach(pos => {
+            console.log("pos: " , pos)
+            console.log("index:",index)
+            console.log("newvalues[index]:",newvalues[index])           
+            pos.value = newvalues[index];
+            pos.assignLaterality();
+            index ++;
+        })
+        this.syncSymbolsAndShirtnums();
+        console.log("reassigned all position values")
+    }
+
     updateSymbols(newsymbols) {
         var index = 0;
         console.log("inside updateSymbols")
@@ -592,6 +702,7 @@ class LineupDev {
     }
 
     assignDefaultSymbols(pos,newdefaultsymbol = "S",recreatePositions = false) {
+        const posindex = this.positions.findIndex(somepos => somepos.value === pos.value)
         console.log("inside assignDefaultSymbols")
         if (this.defaultsymbols.includes(newdefaultsymbol)) {
             console.log(this.defaultsymbols," includes ", newdefaultsymbol)
@@ -602,7 +713,7 @@ class LineupDev {
             var posvalue = pos.value;
             console.log("posvalue: ",posvalue)
             console.log("newsymbols[posvalue-1]: ",newsymbols[posvalue-1])
-            while (newsymbols[posvalue-1] != newdefaultsymbol) {
+            while (newsymbols[posindex] != newdefaultsymbol) {
                 newsymbols = arrayRotateN(newsymbols, false,1);
                 nb_rotations ++;
                 console.log("nb_rotations: ",nb_rotations)
@@ -808,6 +919,10 @@ class LineupDev {
     }
 
     checkPositionsLegality(checkedpositions = this.positions, otherPositions = this.positions) { 
+        //TODO BUG
+        //this works well if a single position is incorrect however where there are incorrect positions
+        //followeed by correct position this might remove the incorrect positions. 
+        //HOWEVER not used anywhere.
         var posillegal = false;
         checkedpositions.forEach( pos1 => {
             otherPositions.forEach( pos2 => {
