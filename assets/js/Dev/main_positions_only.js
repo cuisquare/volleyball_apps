@@ -1,11 +1,11 @@
-import Fixture from './Fixture.js';
-import Rules from './Rules.js';
-import Game from './Game.js';
-import LineupDev from './LineupDev.js';
-import getSymbolsFromSetterPosition from './utils.js';
 
 
+import Fixture from '../Fixture.js';
+import Rules from '../Rules.js';
+import Lineup from './Lineup.js';
+import getSymbolsFromSetterPosition from '../utils.js';
 
+console.log("after imports")
 
 var max_court_width = 0.8 * Math.min(window.innerWidth,window.innerHeight)
 
@@ -38,7 +38,7 @@ var mysymbols = getSymbolsFromSetterPosition(1);
 
 var mylineupteamA_id = "teamAlineup"
 
-var mylineupteamA = new LineupDev(
+var mylineupteamA = new Lineup(
     mylineupteamA_id,
     [5,9,45,23,12,7],
     mysymbols,
@@ -72,7 +72,7 @@ contextright.clearRect(0, 0, window_width , window_height)
 
 var mylineupteamB_id = "teamBlineup"
 
-var mylineupteamB = new LineupDev(
+var mylineupteamB = new Lineup(
     mylineupteamB_id,
     [3,10,8,7,13,4],
     mysymbols,

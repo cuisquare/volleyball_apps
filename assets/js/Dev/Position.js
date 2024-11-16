@@ -1,9 +1,9 @@
-import {logmyobject} from './utils.js';
+import {logmyobject} from '../utils.js';
 
-import {convertToRotatedCoords} from './utils.js';
+import {convertToRotatedCoords} from '../utils.js';
 
 
-class PositionDev {
+class Position {
     constructor(
         value, 
         shirtnum, 
@@ -689,4 +689,4 @@ class PositionDev {
 }
 
 // Export the class to make it accessible in other files
-export default PositionDev;
+export default Position;

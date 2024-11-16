@@ -1,8 +1,8 @@
-import {logmyobject, arrayRotateN} from './utils.js';
+import {logmyobject, arrayRotateN} from '../utils.js';
 
-import PositionDev from './PositionDev.js';
+import Position from './Position.js';
 
-class LineupDev {
+class Lineup {
     constructor(
         lineupid,
         shirtnums = [15,16,17,18,19,20], 
@@ -614,7 +614,7 @@ class LineupDev {
             console.log("creating new position")
             console.log("this.courtwidth:",this.courtwidth)
             console.log("this.courtheight:",this.courtheight)
-            var updatedposition = new PositionDev(
+            var updatedposition = new Position(
                 val, 
                 shirtnum,
                 symbol,
@@ -1177,4 +1177,4 @@ class LineupDev {
 }
 
 // Export the class to make it accessible in other files
-export default LineupDev;
+export default Lineup;
