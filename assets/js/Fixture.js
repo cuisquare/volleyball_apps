@@ -1,7 +1,14 @@
 import Rules from './Rules.js';
 
 class Fixture {
-    constructor(game_id,venue, officialdate,officialstarttime,officialendtime,hometeam,awayteam,rules = new Rules()) {
+    constructor(game_id,venue, 
+        officialdate,
+        officialstarttime,
+        officialendtime,
+        hometeam,
+        awayteam,
+        rules = new Rules()) {
+        console.log("I got inside Fixture constructor haha")
         this.game_id = game_id;
         this.venue = venue;
         this.officialdate = officialdate;
