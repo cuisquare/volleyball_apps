@@ -5,8 +5,8 @@ class Fixture {
         officialdate,
         officialstarttime,
         officialendtime,
-        hometeam,
-        awayteam,
+        hometeam_name,
+        awayteam_name,
         rules = new Rules()) {
         console.log("I got inside Fixture constructor haha")
         this.game_id = game_id;
@@ -15,8 +15,8 @@ class Fixture {
         this.officialstarttime = officialstarttime;
         this.officialendtime = officialendtime;
 
-        this.hometeam = hometeam;
-        this.awayteam = awayteam;
+        this.hometeam_name = hometeam_name;
+        this.awayteam_name = awayteam_name;
         this.rules = rules;
     }
 

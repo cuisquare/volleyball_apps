@@ -50,3 +50,8 @@ export function convertToRotatedCoords(x, y, rotationAngle,centerX, centerY) {
 
     return { x: rotatedX, y: rotatedY };
 }
+
+export  function console_plus_popup_warn(warning_message) {
+    console.warn(warning_message);
+    alert(warning_message);
+}

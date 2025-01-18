@@ -1,6 +1,8 @@
 //contains the actual point by point actions in the game + subs + timeouts
 //who won, who lost etc
 
+import {console_plus_popup_warn} from './utils.js';
+
 class Game {
     constructor(
         fixture, 
@@ -8,11 +10,14 @@ class Game {
 
         this.fixture = fixture;
 
-
         //points and sets update
         this.sets = [];
         this.currentSet = { teamA: 0, teamB: 0 };
         this.setWins = { teamA: 0, teamB: 0 };
+        this.totalPoints = { teamA: 0, teamB: 0 };
+
+        //game interrupted
+        this.game_interrupted = false;
         
         //game state
         this.currentSetAcceptingMorePoints = true;
@@ -82,6 +87,23 @@ class Game {
         return this._team_serving_currently;
     }
 
+    //teamA name from fixture
+    getTeamName(team) {
+        var homeoraway;
+        if (team === "teamA") {
+            homeoraway = this.teamA
+        } else if (team === "teamB") {
+            homeoraway = this.teamB
+        } else {
+            console.warn("Invalid team. Use 'teamA' or 'teamB'.");
+            return
+        }
+        if (homeoraway == "home") {
+            return this.fixture.hometeam_name;
+        } else {
+            return this.fixture.awayteam_name;
+        }
+    }
 
     //points tracking
     getOtherTeamScore(team) {
@@ -97,17 +119,17 @@ class Game {
     updateScore(team, points) {
 
         if (!(this.currentSetAcceptingMorePoints) & (points>0)) {
-            console.warn("current set cannot accept more points")
+            console_plus_popup_warn("current set cannot accept more points")
             return
         }
 
         if (this.isGameOver) {
-            console.warn("game is over, cannot update scores.")
+            console_plus_popup_warn("game is over, cannot update scores.")
             return
         }
 
         if (!(team === "teamA" || team === "teamB")) {
-            console.warn("Invalid team. Use 'teamA' or 'teamB'.");
+            console_plus_popup_warn("Invalid team. Use 'teamA' or 'teamB'.");
             return
         }
 
@@ -117,7 +139,7 @@ class Game {
         var futurepoints_thisteam = this.currentSet[team] + points
 
         if (futurepoints_thisteam < 0) {
-            console.warn(`Invalid number of points ${points} bringing negative score of ${futurepoints_thisteam}. Will remove points only up to zero.`);
+            console_plus_popup_warn(`Invalid number of points ${points} bringing negative score of ${futurepoints_thisteam}. Will remove points only up to zero.`);
             points = - this.currentSet[team];
             futurepoints_thisteam = this.currentSet[team] + points
         }
@@ -125,7 +147,7 @@ class Game {
         var futurepoints_difference = futurepoints_thisteam - points_otherteam;
 
         if (futurepoints_thisteam > this.fixture.rules.regsetpts & futurepoints_difference >2) {
-            console.warn("Invalid number of points. Maximum number of points is 25.");
+            console_plus_popup_warn("Invalid number of points. Maximum number of points is 25.");
             points = this.fixture.rules.regsetpts - this.currentSet[team];
             futurepoints_thisteam = this.currentSet[team] + points
             futurepoints_difference = futurepoints_thisteam - points_otherteam;
@@ -146,7 +168,7 @@ class Game {
     completeSet() {
 
         if (this.isGameOver) {
-            console.warn("cannot complete set as game already over.")
+            console_plus_popup_warn("cannot complete set as game already over.")
             return
         }
 
@@ -154,13 +176,11 @@ class Game {
         this.sets.push({ teamA, teamB });
 
         // Update set wins
-        var setWinner = "Unknown"
-        if (teamA > teamB) {
+        if ((teamA >= teamB +2)) {
             this.setWins.teamA += 1;
-            setWinner = "teamA";
-        } else {
+        } 
+        if ((teamB >= teamA +2)) {
             this.setWins.teamB += 1;
-            setWinner = "teamB";
         }
 
         // Reset current set
@@ -169,12 +189,60 @@ class Game {
         //Allow point to be added in that currentset
         this.currentSetAcceptingMorePoints = true;
 
+        this.totalPoints = this.getTotalPoints()
+
+        this.determineGameWinner();
+
+    }
+
+    determineGameWinner() {
+        this.gameWinner = "Unknown"
+
         //if game is over set it as such
-        this.isGameOver = (Math.max(this.setWins.teamA, this.setWins.teamB) == this.fixture.rules.nbsetswin )
+        var max_number_sets_played = (this.sets.length == 2 * this.fixture.rules.nbsetswin-1)
+        var team_won_nbssetswin = (Math.max(this.setWins.teamA, this.setWins.teamB) == this.fixture.rules.nbsetswin ) 
+        this.isGameOver = max_number_sets_played | team_won_nbssetswin | this.game_interrupted;
+
         if (this.isGameOver) {
-            this.gameWinner = setWinner;
+            
+            if (this.setWins["teamA"] > this.setWins["teamB"]) {
+                this.gameWinner = "teamA"
+            }
+            if (this.setWins["teamB"] > this.setWins["teamA"]) {
+                this.gameWinner = "teamB"
+            }
+            if (this.gameWinner == "Unknown") {
+                console.warn("Game Winner determined by Points Count")
+                //if equal number of sets, winner is team with most points
+                this.gameWinner = "Draw"
+                console.warn(`total points teamA: ${this.totalPoints["teamA"]}`)
+                console.warn(`total points teamB: ${this.totalPoints["teamB"]}`)
+                if (this.totalPoints["teamA"] > this.totalPoints["teamB"]) {
+                    console.warn("teamA has more points than teamB")
+                    this.gameWinner = "teamA"
+                }
+                if (this.totalPoints["teamB"] > this.totalPoints["teamA"]) {
+                    console.warn("teamB has more points than teamA")
+                    this.gameWinner = "teamB"
+                }
+                console.warn(`Game Winner: ${this.gameWinner}`)
+            }
             this.currentSetAcceptingMorePoints = false;
         }
+    }
+
+    getTotalPoints() {
+        // Calculate total points for teamA and teamB
+        const totalPoints = this.sets.reduce(
+            (totals, set) => {
+            totals.teamA += set.teamA;
+            totals.teamB += set.teamB;
+            return totals;
+            },
+            { teamA: 0, teamB: 0 } // Initial value
+        );
+
+        return totalPoints
     }
 
     getMatchStatus() {
@@ -182,6 +250,7 @@ class Game {
             sets: this.sets,
             currentSet: this.currentSet,
             setWins: this.setWins,
+            totalPoints: this.totalPoints,
             isGameOver: this.isGameOver,
             gameWinner: this.gameWinner
         };

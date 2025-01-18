@@ -22,41 +22,18 @@ const mygame = new Game(myfixture);
 
 mygame.teamA = "home"
 
+var nameteamAElement = document.getElementById(`name-teamA`);
+nameteamAElement.textContent = mygame.getTeamName("teamA");
+
+var nameteamBElement = document.getElementById(`name-teamB`);
+nameteamBElement.textContent = mygame.getTeamName("teamB");
+
 console.log("mygame successfully created!")
 console.log(mygame)
 console.log("initially state of game is: ")
 console.log(mygame.getMatchStatus())
 
-// console.log("adding 10 points to teamA")
-// mygame.updateScore("teamA",10)
 
-// console.log("state of game is: ")
-// console.log(mygame.getMatchStatus())
-
-// console.log("adding 15 points to teamB")
-// mygame.updateScore("teamB",15)
-// console.log("state of game is: ")
-// console.log(mygame.getMatchStatus())
-
-// console.log("adding 15 points to teama")
-// mygame.updateScore("teamA",15)
-// console.log("state of game is: ")
-// console.log(mygame.getMatchStatus())
-
-// console.log("adding 25 points to teamB")
-// mygame.updateScore("teamB",25)
-// console.log("state of game is: ")
-// console.log(mygame.getMatchStatus())
-
-// console.log("adding 25 points to teamA")
-// mygame.updateScore("teamA",25)
-// console.log("state of game is: ")
-// console.log(mygame.getMatchStatus())
-
-// console.log("adding 25 points to teamA")
-// mygame.updateScore("teamA",25)
-// console.log("state of game is: ")
-// console.log(mygame.getMatchStatus())
 
 function updateSetsElements() {
     var scoreElement = document.getElementById(`score-teamA`);
@@ -94,3 +71,4 @@ document.getElementById('decrease-score-teamB').addEventListener('click', functi
     mygame.updateScore("teamB", -1);
     updateSetsElements();
 });
+
