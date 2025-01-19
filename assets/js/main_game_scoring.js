@@ -20,7 +20,9 @@ console.log(myfixture)
 
 const mygame = new Game(myfixture);
 
+//things decided after toss
 mygame.teamA = "home"
+mygame.team_serving_startset = "teamB"
 
 var nameteamAElement = document.getElementById(`name-teamA`);
 nameteamAElement.textContent = mygame.getTeamName("teamA");
@@ -40,12 +42,24 @@ function updateSetsElements() {
     scoreElement.textContent = mygame.currentSet["teamA"];
     var setElement = document.getElementById(`sets-teamA`);
     setElement.textContent = mygame.setWins["teamA"];
+    var pointsElement = document.getElementById(`points-teamA`);
+    pointsElement.textContent = mygame.totalPoints["teamA"];
     scoreElement = document.getElementById(`score-teamB`);
     scoreElement.textContent = mygame.currentSet["teamB"];
     setElement = document.getElementById(`sets-teamB`);
     setElement.textContent = mygame.setWins["teamB"];
+    pointsElement = document.getElementById(`points-teamB`);
+    pointsElement.textContent = mygame.totalPoints["teamB"];
+    var servingstateElement = document.getElementById("servingstate-teamA");
+    servingstateElement.textContent = mygame.servingstate["teamA"] 
+    servingstateElement = document.getElementById("servingstate-teamB");
+    servingstateElement.textContent =  mygame.servingstate["teamB"]; 
+    var gameStatusElement = document.getElementById("game-status");
+    gameStatusElement.textContent =  mygame.getGameStatus();  
     console.log(mygame.getMatchStatus())
 }
+
+updateSetsElements();
 
 document.getElementById('completeSet').addEventListener('click', function() {
     mygame.completeSet();

@@ -18,6 +18,10 @@ class Game {
 
         //game interrupted
         this.game_interrupted = false;
+
+        //servingstuff
+        this.servingstate = { teamA: "Unknown", teamB: "Unknown" };
+        this.team_serving_before = "Unknown"
         
         //game state
         this.currentSetAcceptingMorePoints = true;
@@ -54,6 +58,7 @@ class Game {
     set team_serving_startset(value) {
         if (value === "teamA" || value === "teamB") {
             this._team_serving_startset= value;
+            this.team_serving_currently = value;
         } else {
             throw new Error('Invalid value Allowed values are "teamA" or "teamB".');
         }
@@ -66,6 +71,7 @@ class Game {
     set team_serving_deciderset(value) {
         if (value === "teamA" || value === "teamB") {
             this._team_serving_deciderset= value;
+            this.team_serving_currently = value;
         } else {
             throw new Error('Invalid value Allowed values are "teamA" or "teamB".');
         }
@@ -78,6 +84,8 @@ class Game {
     set team_serving_currently(value) {
         if (value === "teamA" || value === "teamB") {
             this._team_serving_currently= value;
+            this.servingstate[value] = this.getServingState(value)
+            this.servingstate[this.getOtherTeam(value)] = this.getServingState(this.getOtherTeam(value))
         } else {
             throw new Error('Invalid value Allowed values are "teamA" or "teamB".');
         }
@@ -102,6 +110,27 @@ class Game {
             return this.fixture.hometeam_name;
         } else {
             return this.fixture.awayteam_name;
+        }
+    }
+
+    getServingState(team) {
+        var servingstate = ""
+        if (this.team_serving_currently == team) {
+            servingstate = "Serving";
+        } else {
+            servingstate = "Receiving";
+        }
+        return servingstate;
+    }
+
+    //otherteam
+    getOtherTeam(team) {
+        if (team === "teamA") {
+            return "teamB";
+        } else if (team === "teamB") {
+            return "teamA";
+        } else {
+            throw new Error("Invalid team. Use 'teamA' or 'teamB'.");
         }
     }
 
@@ -146,23 +175,42 @@ class Game {
 
         var futurepoints_difference = futurepoints_thisteam - points_otherteam;
 
-        if (futurepoints_thisteam > this.fixture.rules.regsetpts & futurepoints_difference >2) {
+        var maxsetpts = this.fixture.rules.regsetpts;
+        if (this.sets.length == 4) {maxsetpts = 15}
+
+        if (futurepoints_thisteam > maxsetpts & futurepoints_difference >2) {
             console_plus_popup_warn("Invalid number of points. Maximum number of points is 25.");
-            points = this.fixture.rules.regsetpts - this.currentSet[team];
+            points = maxsetpts - this.currentSet[team];
             futurepoints_thisteam = this.currentSet[team] + points
             futurepoints_difference = futurepoints_thisteam - points_otherteam;
         }
 
         this.currentSet[team] += points;
 
+        //updating the serving team
+        if (points ==1) {
+            //keeping track of who was last serving
+            this.team_serving_before = this.team_serving_currently;
+            this.team_serving_currently = team;
+        }
+        if ((points == -1) & (this.team_serving_before  != this.team_serving_currently) & (this.team_serving_before != "Unknown")) {
+            this.team_serving_currently = this.team_serving_before;
+            this.team_serving_before = "Unknown"
+            //here add something so that there can only be 1 point removed and anything else requires manual edit. 
+            //or, that there can be only one negative / positive amount applied ?
+
+        }
+
         var twopointsdifferenceormore = (futurepoints_difference >= 2) 
-        var minimumptstoendsetreached = futurepoints_thisteam >= this.fixture.rules.regsetpts
+        var minimumptstoendsetreached = futurepoints_thisteam >= maxsetpts
         if (twopointsdifferenceormore & minimumptstoendsetreached) {
             //this.completeSet()
             this.currentSetAcceptingMorePoints = false;
         } else {
             this.currentSetAcceptingMorePoints = true;
         }
+
+
     }
 
     completeSet() {
@@ -192,6 +240,18 @@ class Game {
         this.totalPoints = this.getTotalPoints()
 
         this.determineGameWinner();
+
+        if (!this.isGameOver) {
+            if (this.sets.length == 1 | this.sets.length == 3) {
+                this.team_serving_currently = this.getOtherTeam(this.team_serving_startset)
+            } 
+            if (this.sets.length == 2) {
+                this.team_serving_currently = this.team_serving_startset
+            } 
+            if (this.sets.length == 4) {
+                console_plus_popup_warn("server for 5th set tbc following toss.")
+            } 
+        }
 
     }
 
@@ -247,6 +307,9 @@ class Game {
 
     getMatchStatus() {
         return {
+            servingteam: this.team_serving_currently,
+            servingstateteamA: this.getServingState("teamA"),
+            servingstateteamB: this.getServingState("teamB"),
             sets: this.sets,
             currentSet: this.currentSet,
             setWins: this.setWins,
@@ -254,6 +317,34 @@ class Game {
             isGameOver: this.isGameOver,
             gameWinner: this.gameWinner
         };
+    }
+
+    getCurrentSet() {
+        var output = this.sets.length +1
+        if (this.isGameOver) {
+            output = 0
+        }
+        return output
+    }
+
+    getGameStatus() {
+        var output = "Set " + this.getCurrentSet();
+        
+        if (this.isGameOver) {
+            output = "Game Over";
+            output = output + " - " + this.gameWinner
+            if (this.gameWinner != "Draw") {
+                output = output  + " wins by "
+                if (this.setWins["teamA"] != this.setWins["teamB"]) {
+                    var sornot = ""
+                    if (this.setWins[this.gameWinner] > 1) {sornot = "s"}
+                    output = output  + this.setWins[this.gameWinner] + " set" + sornot + " to " + this.setWins[this.getOtherTeam(this.gameWinner)]
+                } else {
+                    output = output  + " by " + this.totalPoints[this.gameWinner] + " points to " + this.totalPoints[this.getOtherTeam(this.gameWinner)]
+                }
+            }
+        }
+        return output
     }
 
 
