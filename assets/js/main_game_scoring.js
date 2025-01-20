@@ -56,6 +56,16 @@ function updateSetsElements() {
     servingstateElement.textContent =  mygame.servingstate["teamB"]; 
     var gameStatusElement = document.getElementById("game-status");
     gameStatusElement.textContent =  mygame.getGameStatus();  
+    //updating UI elements visibility
+    if (mygame.isGameOver) {
+        var completeSetElement = document.getElementById("completeSet");
+        completeSetElement.style.display = "none";
+        servingstateElement = document.getElementById("servingstate-teamA");
+        servingstateElement.style.display = "none";
+        servingstateElement = document.getElementById("servingstate-teamB");
+        servingstateElement.style.display = "none";
+    }
+
     console.log(mygame.getMatchStatus())
 }
 

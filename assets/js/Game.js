@@ -340,7 +340,7 @@ class Game {
                     if (this.setWins[this.gameWinner] > 1) {sornot = "s"}
                     output = output  + this.setWins[this.gameWinner] + " set" + sornot + " to " + this.setWins[this.getOtherTeam(this.gameWinner)]
                 } else {
-                    output = output  + " by " + this.totalPoints[this.gameWinner] + " points to " + this.totalPoints[this.getOtherTeam(this.gameWinner)]
+                    output = output  + this.totalPoints[this.gameWinner] + " points to " + this.totalPoints[this.getOtherTeam(this.gameWinner)]
                 }
             }
         }
