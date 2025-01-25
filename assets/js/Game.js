@@ -260,7 +260,9 @@ class Game {
                 this.team_serving_currently = this.team_serving_startset
             } 
             if (this.sets.length == 4) {
-                //console_plus_popup_warn("server for 5th set tbc following toss.")
+                this._team_serving_currently = "Unknown";
+                this.servingstate["teamA"] = "Unknown";
+                this.servingstate["teamB"] = "Unknown";
             } 
         }
 
