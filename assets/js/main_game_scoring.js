@@ -22,7 +22,7 @@ const mygame = new Game(myfixture);
 
 //things decided after toss
 mygame.teamA = "home"
-mygame.team_serving_startset = "teamB"
+//mygame.team_serving_startset = "teamB"
 
 var nameteamAElement = document.getElementById(`name-teamA`);
 nameteamAElement.textContent = mygame.getTeamName("teamA");
@@ -65,6 +65,15 @@ function updateSetsElements() {
         servingstateElement = document.getElementById("servingstate-teamB");
         servingstateElement.style.display = "none";
     }
+    var startordeciderset = mygame.isPreGameToss | mygame.isPreDeciderToss;
+    if (!startordeciderset) {
+        var completeSetElement = document.getElementById("servingTeam");
+        completeSetElement.style.display = "none";
+    }
+    if (startordeciderset) {
+        var completeSetElement = document.getElementById("servingTeam");
+        completeSetElement.style.display = "";
+    }
 
     console.log(mygame.getMatchStatus())
 }
@@ -73,6 +82,19 @@ updateSetsElements();
 
 document.getElementById('completeSet').addEventListener('click', function() {
     mygame.completeSet();
+    updateSetsElements();
+});
+
+document.getElementById('servingTeam').addEventListener('click', function() {
+    var currset = mygame.getCurrentSet();
+    var servingTeam = prompt(`Enter the serving team (teamA or teamB) for set ${currset}:`);
+    if (currset == 1) {
+        mygame.team_serving_startset = servingTeam;
+    } 
+    if (currset == 5) {
+        mygame.team_serving_deciderset = servingTeam;
+    }    
+
     updateSetsElements();
 });
 

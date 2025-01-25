@@ -26,8 +26,19 @@ class Game {
         //game state
         this.currentSetAcceptingMorePoints = true;
         this.gameWinner = "Unknown";
+        this._team_serving_startset= "Unknown";
+        this._team_serving_deciderset = "Unknown"
         this.isGameOver = false;
     }
+
+    get isPreGameToss() {
+        return (this.getCurrentSet() == 1 & this.team_serving_startset == "Unknown");
+    }
+
+    get isPreDeciderToss() {
+        return(this.getCurrentSet() == 5 & this.team_serving_deciderset == "Unknown");
+    }
+
 
     set teamA(value) {
         if (value === "home" || value === "away") {
@@ -249,7 +260,7 @@ class Game {
                 this.team_serving_currently = this.team_serving_startset
             } 
             if (this.sets.length == 4) {
-                console_plus_popup_warn("server for 5th set tbc following toss.")
+                //console_plus_popup_warn("server for 5th set tbc following toss.")
             } 
         }
 
