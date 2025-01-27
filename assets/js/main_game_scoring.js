@@ -61,6 +61,8 @@ function updateSetsElements() {
     if (mygame.isGameOver) {
         var completeSetElement = document.getElementById("completeSet");
         completeSetElement.style.display = "none";
+        var completeGameElement = document.getElementById("completeGame");
+        completeGameElement.style.display = "none";
         servingstateElement = document.getElementById("servingstate-teamA");
         servingstateElement.style.display = "none";
         servingstateElement = document.getElementById("servingstate-teamB");
@@ -70,10 +72,18 @@ function updateSetsElements() {
     if (!startordeciderset) {
         var completeSetElement = document.getElementById("servingTeam");
         completeSetElement.style.display = "none";
+        servingstateElement = document.getElementById("servingstate-teamA");
+        servingstateElement.style.display = "";
+        servingstateElement = document.getElementById("servingstate-teamB");
+        servingstateElement.style.display = "";
     }
     if (startordeciderset) {
         var completeSetElement = document.getElementById("servingTeam");
         completeSetElement.style.display = "";
+        servingstateElement = document.getElementById("servingstate-teamA");
+        servingstateElement.style.display = "none";
+        servingstateElement = document.getElementById("servingstate-teamB");
+        servingstateElement.style.display = "none";
     }
 
     console.log(mygame.getMatchStatus())
@@ -85,6 +95,12 @@ document.getElementById('completeSet').addEventListener('click', function() {
     mygame.completeSet();
     updateSetsElements();
 });
+
+document.getElementById('completeGame').addEventListener('click', function() {
+    mygame.completeGame();
+    updateSetsElements();
+});
+
 
 document.getElementById('servingTeam').addEventListener('click', function() {
     var currset = mygame.getCurrentSet();

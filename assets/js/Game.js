@@ -26,9 +26,7 @@ class Game {
         //game state
         this.currentSetAcceptingMorePoints = true;
         this.gameWinner = "Unknown";
-        this._team_serving_currently="Unknown";
-        this._team_serving_startset= "Unknown";
-        this._team_serving_deciderset = "Unknown"
+        this.resetCurrentServingState();
         this.isGameOver = false;
     }
 
@@ -241,27 +239,57 @@ class Game {
         } else {
             this.currentSetAcceptingMorePoints = true;
         }
+    }
 
+    resetCurrentServingState() {
+        this._team_serving_currently = "Unknown";
+        this.servingstate["teamA"] = "Unknown";
+        this.servingstate["teamB"] = "Unknown";
+    }
+
+    updateTeamServingCurrentlyAtStartSet() {
+        //next set number is even
+        if (this.sets.length%2 == 1) {
+            this.team_serving_currently = this.getOtherTeam(this.team_serving_startset)
+        } 
+        //next set number is odd
+        if (this.sets.length%2 == 0) {
+            this.team_serving_currently = this.team_serving_startset
+        } 
+        //ONGOING decider set
+        if (this.isDeciderSet()) {
+            this.resetCurrentServingState();
+        } 
 
     }
 
-    completeSet() {
-        //TODO only option to complete set which is not completed point wise is to complete game
-        //TODO create complete game function and UI button 
-
-        if (this.isGameOver) {
-            console_plus_popup_warn("cannot complete set as game already over.")
-            return
-        }
-
+    setLegallyOver() {
         const { teamA, teamB } = this.currentSet;
         //DONE make completing set impossible if the set is not completed point wise considering rules
         var setLegallyOver = ((teamA >= teamB +2) | (teamB >= teamA +2)) & ((teamB >= this.getNbSetPts()) | (teamA >= this.getNbSetPts()))
-        if (!setLegallyOver) {
-            console_plus_popup_warn("Cannot complete set because invalid number of points. Complete Game if game complete for reasons other than points. ")
-            return
+        return setLegallyOver;
+    }
+
+    //function called when actively completing a set. 
+    //only runs if the set is valid to be completed. 
+    completeSet(setLegalitysafeguards = true) {
+        //TODO only option to complete set which is not completed point wise is to complete game
+        //TODO create complete game function and UI button 
+
+        if (setLegalitysafeguards) {
+            if (this.isGameOver) {
+                console_plus_popup_warn("cannot complete set as game already over.")
+                return
+            }
+    
+            if (!this.setLegallyOver()) {
+                console_plus_popup_warn("Cannot complete set because invalid number of points. Complete Game if game complete for reasons other than points. ")
+                return
+            }
         }
 
+
+        const { teamA, teamB } = this.currentSet;
         this.sets.push({ teamA, teamB });
 
         // Update set wins
@@ -280,35 +308,30 @@ class Game {
 
         this.totalPoints = this.getTotalPoints()
 
-        this.determineGameWinner();
+        this.determineGameWinner(!setLegalitysafeguards);
 
         if (!this.isGameOver) {
-            //next set number is even
-            if (this.sets.length%2 == 1) {
-                this.team_serving_currently = this.getOtherTeam(this.team_serving_startset)
-            } 
-            //next set number is odd
-            if (this.sets.length%2 == 0) {
-                this.team_serving_currently = this.team_serving_startset
-            } 
-            //ONGOING decider set
-            if (this.isDeciderSet()) {
-                this._team_serving_currently = "Unknown";
-                this.servingstate["teamA"] = "Unknown";
-                this.servingstate["teamB"] = "Unknown";
-            } 
+            this.updateTeamServingCurrentlyAtStartSet();
         }
 
     }
 
-    determineGameWinner() {
+    completeGame() {
+        this.isGameOver = true;
+        this.resetCurrentServingState();
+        this.completeSet(false);
+    }
+
+    determineGameWinner(gameEndedManually = false) {
         this.gameWinner = "Unknown"
 
         //if game is over set it as such
         var max_number_sets_played = (this.sets.length == 2 * this.fixture.rules.nbsetswin-1)
         var team_won_nbssetswin = (Math.max(this.setWins.teamA, this.setWins.teamB) == this.fixture.rules.nbsetswin ) 
-        this.isGameOver = max_number_sets_played | team_won_nbssetswin | this.game_interrupted;
-
+        if (!gameEndedManually ) {
+            this.isGameOver = max_number_sets_played | team_won_nbssetswin | this.game_interrupted;
+        }
+        
         if (this.isGameOver) {
             
             if (this.setWins["teamA"] > this.setWins["teamB"]) {
@@ -354,6 +377,9 @@ class Game {
     getMatchStatus() {
         return {
             rules: this.fixture.rules,
+            team_serving_startset: this.team_serving_startset,
+            isPreGameToss: this.isPreGameToss,
+            isPreDeciderToss: this.isPreDeciderToss,
             nbsetpoints: this.getNbSetPts(),
             teamservingcurrently: this.team_serving_currently,
             servingstateteamA: this.getServingState("teamA"),
