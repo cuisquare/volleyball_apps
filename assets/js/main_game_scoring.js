@@ -2,7 +2,8 @@ import Fixture from './Fixture.js';
 import Rules from './Rules.js';
 import Game from './Game.js';
 
-var lvarules = new Rules()
+var lvarules = new Rules(21, 3,14,1, 15)
+
 console.log("rules successfully created!")
 console.log(lvarules)
 var my_fixture_date = new Date('2025-02-02T16:00:00');

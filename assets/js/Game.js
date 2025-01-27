@@ -26,6 +26,7 @@ class Game {
         //game state
         this.currentSetAcceptingMorePoints = true;
         this.gameWinner = "Unknown";
+        this._team_serving_currently="Unknown";
         this._team_serving_startset= "Unknown";
         this._team_serving_deciderset = "Unknown"
         this.isGameOver = false;
@@ -36,7 +37,7 @@ class Game {
     }
 
     get isPreDeciderToss() {
-        return(this.getCurrentSet() == 5 & this.team_serving_deciderset == "Unknown");
+        return((this.setWins["teamA"] == (this.fixture.rules.nbsetswin -1)) & (this.setWins["teamB"] == (this.fixture.rules.nbsetswin -1)) & this.team_serving_deciderset == "Unknown");
     }
 
 
@@ -128,8 +129,12 @@ class Game {
         var servingstate = ""
         if (this.team_serving_currently == team) {
             servingstate = "Serving";
-        } else {
+        } 
+        if (this.team_serving_currently == this.getOtherTeam(team)) {
             servingstate = "Receiving";
+        }        
+        if (this.team_serving_currently == "Unknown") {
+            servingstate = "Unknown";
         }
         return servingstate;
     }
@@ -156,7 +161,26 @@ class Game {
         }
     }
 
+    isDeciderSet() {
+        return ((this.setWins["teamA"] == (this.fixture.rules.nbsetswin -1)) & (this.setWins["teamB"] == (this.fixture.rules.nbsetswin -1)))
+    }
+
+    getNbSetPts() {
+        var nbsetpts = this.fixture.rules.regsetpts;
+        if (this.isDeciderSet()) {
+            nbsetpts = this.fixture.rules.decidersetpts;
+        }
+        return nbsetpts
+    }
+
     updateScore(team, points) {
+
+        //DONE do not allow points to be updated if the current server is unknown
+        if (this.team_serving_currently == "Unknown") {
+            console_plus_popup_warn("select serving team before points can be added. ")
+            return
+        }
+
 
         if (!(this.currentSetAcceptingMorePoints) & (points>0)) {
             console_plus_popup_warn("current set cannot accept more points")
@@ -186,12 +210,9 @@ class Game {
 
         var futurepoints_difference = futurepoints_thisteam - points_otherteam;
 
-        var maxsetpts = this.fixture.rules.regsetpts;
-        if (this.sets.length == 4) {maxsetpts = 15}
-
-        if (futurepoints_thisteam > maxsetpts & futurepoints_difference >2) {
-            console_plus_popup_warn("Invalid number of points. Maximum number of points is 25.");
-            points = maxsetpts - this.currentSet[team];
+        if (futurepoints_thisteam > this.getNbSetPts() & futurepoints_difference >2) {
+            console_plus_popup_warn(`Invalid number of points. Maximum number of points is ${this.getNbSetPts()}.`);
+            points = this.getNbSetPts() - this.currentSet[team];
             futurepoints_thisteam = this.currentSet[team] + points
             futurepoints_difference = futurepoints_thisteam - points_otherteam;
         }
@@ -213,7 +234,7 @@ class Game {
         }
 
         var twopointsdifferenceormore = (futurepoints_difference >= 2) 
-        var minimumptstoendsetreached = futurepoints_thisteam >= maxsetpts
+        var minimumptstoendsetreached = futurepoints_thisteam >= this.getNbSetPts()
         if (twopointsdifferenceormore & minimumptstoendsetreached) {
             //this.completeSet()
             this.currentSetAcceptingMorePoints = false;
@@ -225,6 +246,8 @@ class Game {
     }
 
     completeSet() {
+        //TODO only option to complete set which is not completed point wise is to complete game
+        //TODO create complete game function and UI button 
 
         if (this.isGameOver) {
             console_plus_popup_warn("cannot complete set as game already over.")
@@ -232,6 +255,13 @@ class Game {
         }
 
         const { teamA, teamB } = this.currentSet;
+        //DONE make completing set impossible if the set is not completed point wise considering rules
+        var setLegallyOver = ((teamA >= teamB +2) | (teamB >= teamA +2)) & ((teamB >= this.getNbSetPts()) | (teamA >= this.getNbSetPts()))
+        if (!setLegallyOver) {
+            console_plus_popup_warn("Cannot complete set because invalid number of points. Complete Game if game complete for reasons other than points. ")
+            return
+        }
+
         this.sets.push({ teamA, teamB });
 
         // Update set wins
@@ -253,13 +283,16 @@ class Game {
         this.determineGameWinner();
 
         if (!this.isGameOver) {
-            if (this.sets.length == 1 | this.sets.length == 3) {
+            //next set number is even
+            if (this.sets.length%2 == 1) {
                 this.team_serving_currently = this.getOtherTeam(this.team_serving_startset)
             } 
-            if (this.sets.length == 2) {
+            //next set number is odd
+            if (this.sets.length%2 == 0) {
                 this.team_serving_currently = this.team_serving_startset
             } 
-            if (this.sets.length == 4) {
+            //ONGOING decider set
+            if (this.isDeciderSet()) {
                 this._team_serving_currently = "Unknown";
                 this.servingstate["teamA"] = "Unknown";
                 this.servingstate["teamB"] = "Unknown";
@@ -320,7 +353,9 @@ class Game {
 
     getMatchStatus() {
         return {
-            servingteam: this.team_serving_currently,
+            rules: this.fixture.rules,
+            nbsetpoints: this.getNbSetPts(),
+            teamservingcurrently: this.team_serving_currently,
             servingstateteamA: this.getServingState("teamA"),
             servingstateteamB: this.getServingState("teamB"),
             sets: this.sets,
