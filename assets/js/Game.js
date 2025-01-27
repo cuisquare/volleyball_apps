@@ -22,11 +22,13 @@ class Game {
         //servingstuff
         this.servingstate = { teamA: "Unknown", teamB: "Unknown" };
         this.team_serving_before = "Unknown"
+        this._team_serving_startset = "Unknown";
+        this._team_serving_deciderset = "Unknown";
+        this.resetCurrentServingState();
         
         //game state
         this.currentSetAcceptingMorePoints = true;
         this.gameWinner = "Unknown";
-        this.resetCurrentServingState();
         this.isGameOver = false;
     }
 
@@ -318,6 +320,7 @@ class Game {
 
     completeGame() {
         this.isGameOver = true;
+        this._team_serving_deciderset = "Game_interrupted";
         this.resetCurrentServingState();
         this.completeSet(false);
     }
