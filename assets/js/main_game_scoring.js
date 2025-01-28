@@ -2,7 +2,7 @@ import Fixture from './Fixture.js';
 import Rules from './Rules.js';
 import Game from './Game.js';
 
-var lvarules = new Rules(21, 3,14,1, 15)
+var lvarules = new Rules(21, 3,14,1, 15,2,2)
 
 console.log("rules successfully created!")
 console.log(lvarules)

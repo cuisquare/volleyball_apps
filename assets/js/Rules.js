@@ -1,5 +1,5 @@
 class Rules {
-    constructor(regsetpts=25, nbsetswin=3,maxnumberplayers=14,minliberoifthirteen=2, decidersetpts= 15, ptsdiffwinpts = 2, ptsdiffwinset) {
+    constructor(regsetpts=25, nbsetswin=3,maxnumberplayers=14,minliberoifthirteen=2, decidersetpts= 15, ptsdiffwinpts = 1, ptsdiffwinset=2) {
         this.regsetpts = regsetpts;
         this.nbsetswin = nbsetswin;
         this.maxnumberplayers = maxnumberplayers;
@@ -7,8 +7,8 @@ class Rules {
 
         this.decidersetpts = decidersetpts;
 
-        this.ptsdiffwinpts = 2;
-        this.ptsdiffwinset = 2;
+        this.ptsdiffwinpts = ptsdiffwinpts;
+        this.ptsdiffwinset = ptsdiffwinset;
 
 
         this.maxlibero = 2;

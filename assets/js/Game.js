@@ -175,7 +175,7 @@ class Game {
 
     updateScore(team, points) {
 
-        //DONE do not allow points to be updated if the current server is unknown
+        //do not allow points to be updated if the current server is unknown
         if (this.team_serving_currently == "Unknown") {
             console_plus_popup_warn("select serving team before points can be added. ")
             return
@@ -258,7 +258,7 @@ class Game {
         if (this.sets.length%2 == 0) {
             this.team_serving_currently = this.team_serving_startset
         } 
-        //ONGOING decider set
+        //decider set
         if (this.isDeciderSet()) {
             this.resetCurrentServingState();
         } 
@@ -267,7 +267,6 @@ class Game {
 
     setLegallyOver() {
         const { teamA, teamB } = this.currentSet;
-        //DONE make completing set impossible if the set is not completed point wise considering rules
         var setLegallyOver = ((teamA >= teamB +2) | (teamB >= teamA +2)) & ((teamB >= this.getNbSetPts()) | (teamA >= this.getNbSetPts()))
         return setLegallyOver;
     }
@@ -275,9 +274,6 @@ class Game {
     //function called when actively completing a set. 
     //only runs if the set is valid to be completed. 
     completeSet(setLegalitysafeguards = true) {
-        //TODO only option to complete set which is not completed point wise is to complete game
-        //TODO create complete game function and UI button 
-
         if (setLegalitysafeguards) {
             if (this.isGameOver) {
                 console_plus_popup_warn("cannot complete set as game already over.")
@@ -295,10 +291,10 @@ class Game {
         this.sets.push({ teamA, teamB });
 
         // Update set wins
-        if ((teamA >= teamB +2)) {
+        if (teamA >= (teamB +this.fixture.rules.ptsdiffwinset)) {
             this.setWins.teamA += 1;
         } 
-        if ((teamB >= teamA +2)) {
+        if (teamB >= (teamA +this.fixture.rules.ptsdiffwinset)) {
             this.setWins.teamB += 1;
         }
 
@@ -310,7 +306,7 @@ class Game {
 
         this.totalPoints = this.getTotalPoints()
 
-        this.determineGameWinner(!setLegalitysafeguards);
+        this.determineGameWinner();
 
         if (!this.isGameOver) {
             this.updateTeamServingCurrentlyAtStartSet();
@@ -319,21 +315,22 @@ class Game {
     }
 
     completeGame() {
+        this.game_interrupted = true;
         this.isGameOver = true;
         this._team_serving_deciderset = "Game_interrupted";
         this.resetCurrentServingState();
         this.completeSet(false);
     }
 
-    determineGameWinner(gameEndedManually = false) {
+    determineGameWinner() {
         this.gameWinner = "Unknown"
 
         //if game is over set it as such
         var max_number_sets_played = (this.sets.length == 2 * this.fixture.rules.nbsetswin-1)
         var team_won_nbssetswin = (Math.max(this.setWins.teamA, this.setWins.teamB) == this.fixture.rules.nbsetswin ) 
-        if (!gameEndedManually ) {
-            this.isGameOver = max_number_sets_played | team_won_nbssetswin | this.game_interrupted;
-        }
+
+        this.isGameOver = max_number_sets_played | team_won_nbssetswin | this.game_interrupted;
+
         
         if (this.isGameOver) {
             
@@ -349,12 +346,12 @@ class Game {
                 this.gameWinner = "Draw"
                 console.warn(`total points teamA: ${this.totalPoints["teamA"]}`)
                 console.warn(`total points teamB: ${this.totalPoints["teamB"]}`)
-                if (this.totalPoints["teamA"] > this.totalPoints["teamB"]) {
-                    console.warn("teamA has more points than teamB")
+                if (this.totalPoints["teamA"] >= this.totalPoints["teamB"] + this.fixture.rules.ptsdiffwinpts ) {
+                    console.warn(`teamA has ${this.fixture.rules.ptsdiffwinpts} points or more than teamB`)
                     this.gameWinner = "teamA"
                 }
-                if (this.totalPoints["teamB"] > this.totalPoints["teamA"]) {
-                    console.warn("teamB has more points than teamA")
+                if (this.totalPoints["teamB"] >= this.totalPoints["teamA"] +  this.fixture.rules.ptsdiffwinpts) {
+                    console.warn(`teamB has ${this.fixture.rules.ptsdiffwinpts} points or more than teamA`)
                     this.gameWinner = "teamB"
                 }
                 console.warn(`Game Winner: ${this.gameWinner}`)
