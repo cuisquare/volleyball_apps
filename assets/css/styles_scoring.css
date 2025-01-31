@@ -59,3 +59,24 @@ body {
       flex-direction: column;
     }
   }
+
+
+/* Dark Mode */
+.dark-mode {
+  background-color: #121212;
+  color: #f1f1f1;
+}
+
+.dark-mode .scoreboard {
+  background-color: #1e1e1e;
+  border: 1px solid #444;
+}
+
+.dark-mode button {
+  background-color: #444;
+  color: white;
+}
+
+.dark-mode button:hover {
+  background-color: #666;
+}

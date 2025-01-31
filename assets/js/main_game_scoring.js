@@ -2,6 +2,26 @@ import Fixture from './Fixture.js';
 import Rules from './Rules.js';
 import Game from './Game.js';
 
+document.addEventListener("DOMContentLoaded", () => {
+    const toggleButton = document.getElementById("dark-mode-toggle");
+    
+    // Check for saved theme preference
+    if (localStorage.getItem("darkMode") === "enabled") {
+        document.body.classList.add("dark-mode");
+    }
+
+    toggleButton.addEventListener("click", () => {
+        document.body.classList.toggle("dark-mode");
+
+        // Save preference to local storage
+        if (document.body.classList.contains("dark-mode")) {
+            localStorage.setItem("darkMode", "enabled");
+        } else {
+            localStorage.setItem("darkMode", "disabled");
+        }
+    });
+});
+
 var lvarules = new Rules(21, 3,14,1, 15,2,2)
 
 console.log("rules successfully created!")
