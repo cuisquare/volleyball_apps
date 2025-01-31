@@ -72,6 +72,10 @@ function updateSetsElements() {
     if (!startordeciderset) {
         var completeSetElement = document.getElementById("servingTeam");
         completeSetElement.style.display = "none";
+        completeSetElement = document.getElementById("servingTeamChoiceTeamA");
+        completeSetElement.style.display = "none";
+        completeSetElement = document.getElementById("servingTeamChoiceTeamB");
+        completeSetElement.style.display = "none";
         servingstateElement = document.getElementById("servingstate-teamA");
         servingstateElement.style.display = "";
         servingstateElement = document.getElementById("servingstate-teamB");
@@ -79,6 +83,10 @@ function updateSetsElements() {
     }
     if (startordeciderset) {
         var completeSetElement = document.getElementById("servingTeam");
+        completeSetElement.style.display = "";
+        completeSetElement = document.getElementById("servingTeamChoiceTeamA");
+        completeSetElement.style.display = "";
+        completeSetElement = document.getElementById("servingTeamChoiceTeamB");
         completeSetElement.style.display = "";
         servingstateElement = document.getElementById("servingstate-teamA");
         servingstateElement.style.display = "none";
@@ -103,13 +111,15 @@ document.getElementById('completeGame').addEventListener('click', function() {
 
 
 document.getElementById('servingTeam').addEventListener('click', function() {
-    var currset = mygame.getCurrentSet();
-    var servingTeam = prompt(`Enter the serving team (teamA or teamB) for set ${currset}:`);
-    if (currset == 1) {
-        mygame.team_serving_startset = servingTeam;
+
+    //var servingTeam = prompt(`Enter the serving team (teamA or teamB) for set ${mygame.getCurrentSet()}:`);
+    var servingTeamElement = document.querySelector('input[name="team"]:checked');
+    console.warn(`team to serve value is ${servingTeamElement.value}`)
+    if (mygame.isPreGameToss) {
+        mygame.team_serving_startset = servingTeamElement.value;
     } 
-    if (currset == 5) {
-        mygame.team_serving_deciderset = servingTeam;
+    if (mygame.isPreDeciderToss) {
+        mygame.team_serving_deciderset = servingTeamElement.value;
     }    
 
     updateSetsElements();
