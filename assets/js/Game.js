@@ -25,6 +25,9 @@ class Game {
         this._team_serving_startset = "Unknown";
         this._team_serving_deciderset = "Unknown";
         this.resetCurrentServingState();
+
+        //teampositionstuff
+        this.onLeft = true; // whether teamA is on left side from the point of view of scorer
         
         //game state
         this.currentSetAcceptingMorePoints = true;
@@ -249,6 +252,21 @@ class Game {
         this.servingstate["teamB"] = "Unknown";
     }
 
+    updateTeamSides() {
+        //next set number is even
+        if (this.sets.length%2 == 1) {
+            this.onLeft = false;
+        } 
+        //next set number is odd
+        if (this.sets.length%2 == 0) {
+            this.onLeft = true;
+        } 
+        //decider set
+        if (this.isDeciderSet()) {
+            this.onLeft = "Unknown";
+        } 
+    }
+
     updateTeamServingCurrentlyAtStartSet() {
         //next set number is even
         if (this.sets.length%2 == 1) {
@@ -310,6 +328,7 @@ class Game {
 
         if (!this.isGameOver) {
             this.updateTeamServingCurrentlyAtStartSet();
+            this.updateTeamSides();
         }
 
     }

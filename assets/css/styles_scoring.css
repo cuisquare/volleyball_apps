@@ -17,6 +17,27 @@ body {
     border: 1px solid #ddd;
     padding: 20px;
   }
+
+  .teams-container {
+    display: flex;
+    gap: 20px;
+  }
+  
+  /* Default - Team A on left */
+  .left .team:first-child {
+    order: 1;
+  }
+  .left .team:last-child {
+    order: 2;
+  }
+  
+  /* Swap positions - Team A on right */
+  .right .team:first-child {
+    order: 2;
+  }
+  .right .team:last-child {
+    order: 1;
+  }
   
   .team {
     text-align: center;

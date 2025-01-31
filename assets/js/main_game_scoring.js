@@ -36,9 +36,19 @@ console.log(mygame)
 console.log("initially state of game is: ")
 console.log(mygame.getMatchStatus())
 
-
+function updateTeamPosition() {
+    const container = document.querySelector('.teams-container');
+    if (mygame.onLeft) {
+      container.classList.add('left');
+      container.classList.remove('right');
+    } else {
+      container.classList.add('right');
+      container.classList.remove('left');
+    }
+}
 
 function updateSetsElements() {
+    updateTeamPosition();
     var scoreElement = document.getElementById(`score-teamA`);
     scoreElement.textContent = mygame.currentSet["teamA"];
     var setElement = document.getElementById(`sets-teamA`);
