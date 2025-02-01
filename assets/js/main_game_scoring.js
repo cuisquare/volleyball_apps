@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-var lvarules = new Rules(21, 3,14,1, 15,2,2)
+var lvarules = new Rules(5, 3,14,1, 3,2,2)
 
 console.log("rules successfully created!")
 console.log(lvarules)
@@ -100,12 +100,23 @@ function updateUIElementsVisibility() {
     var teamStartingLeftChoiceElement = document.getElementById("teamStartingLeftChoice");
     var servingTeamChoiceElement = document.getElementById("servingTeamChoice");
 
+    var ongoingSetStateTeamAElement = document.getElementById("ongoingSetStateTeamA");
+    var ongoingSetStateTeamBElement = document.getElementById("ongoingSetStateTeamB");
+    var accruedSetsPointsTeamAElement = document.getElementById("accruedSetsPointsTeamA");
+    var accruedSetsPointsTeamBElement = document.getElementById("accruedSetsPointsTeamB");
+
+
+
     if (mygame.isGameOver) {
         completeButtonsElement.style.display = "none";
-        servingstateElement = document.getElementById("servingstate-teamA");
-        servingstateElement.style.display = "none";
-        servingstateElement = document.getElementById("servingstate-teamB");
-        servingstateElement.style.display = "none";
+        // servingstateElement = document.getElementById("servingstate-teamA");
+        // servingstateElement.style.display = "none";
+        // servingstateElement = document.getElementById("servingstate-teamB");
+        // servingstateElement.style.display = "none";
+        ongoingSetStateTeamAElement.style.display = "none";
+        //accruedSetsPointsTeamAElement.style.display = "none";
+        ongoingSetStateTeamBElement.style.display = "none";
+        //accruedSetsPointsTeamBElement.style.display = "none";
     }
 
     if (!mygame.isPreGameToss) {
