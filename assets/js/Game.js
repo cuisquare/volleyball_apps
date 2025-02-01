@@ -25,6 +25,10 @@ class Game {
         this._team_serving_startset = "Unknown";
         this._team_serving_deciderset = "Unknown";
         this.resetCurrentServingState();
+        
+        //position stuff
+        this._teamA = "Unknown"
+        this._teamB = "Unknown"
 
         //teampositionstuff
         this.onLeft = true; // whether teamA is on left side from the point of view of scorer
@@ -36,11 +40,11 @@ class Game {
     }
 
     get isPreGameToss() {
-        return (this.getCurrentSet() == 1 & this.team_serving_startset == "Unknown");
+        return ((this.getCurrentSet() == 1 & this.team_serving_startset == "Unknown") | (this.teamA == "Unknown"));
     }
 
     get isPreDeciderToss() {
-        return((this.setWins["teamA"] == (this.fixture.rules.nbsetswin -1)) & (this.setWins["teamB"] == (this.fixture.rules.nbsetswin -1)) & this.team_serving_deciderset == "Unknown");
+        return((this.setWins["teamA"] == (this.fixture.rules.nbsetswin -1)) & (this.setWins["teamB"] == (this.fixture.rules.nbsetswin -1)) & this.team_serving_deciderset == "Unknown" );
     }
 
 
@@ -119,13 +123,15 @@ class Game {
             homeoraway = this.teamB
         } else {
             console.warn("Invalid team. Use 'teamA' or 'teamB'.");
-            return
+            return "Unknown"
         }
         if (homeoraway == "home") {
             return this.fixture.hometeam_name;
-        } else {
+        }        
+        if (homeoraway == "away") {
             return this.fixture.awayteam_name;
         }
+        return "Unknown"
     }
 
     getServingState(team) {
@@ -400,6 +406,10 @@ class Game {
             isPreGameToss: this.isPreGameToss,
             isPreDeciderToss: this.isPreDeciderToss,
             nbsetpoints: this.getNbSetPts(),
+            teamA: this.teamA,
+            teamB: this.teamB,
+            teamAName: this.getTeamName("teamA"),
+            teamBName: this.getTeamName("teamB"),
             teamservingcurrently: this.team_serving_currently,
             servingstateteamA: this.getServingState("teamA"),
             servingstateteamB: this.getServingState("teamB"),

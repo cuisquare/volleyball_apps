@@ -36,27 +36,42 @@
       </div>
     </div>
     <div class = "game-inputs">
-      <h2>Game Inputs</h2>
-      <button id = "completeGame">Complete Game</button>
-      <h2></h2>
-      <button id = "completeSet">Complete Set</button>
-      <h2></h2>
-      <label id="homeTeamNameForTeamA">
-        <input type="radio" name="homeeorawayteamA" value="home" > <span id="servingTeamChoiceTeamAHome">home team name</span>
-      </label><br>
-      <label id="awayTeamNameForTeamA">
-        <input type="radio" name="homeeorawayteamA" value="away" ><span id="servingTeamChoiceTeamAAway">away team name</span> 
-      </label><br>
-      <button id="nameTeamA">Confirm team A</button>
-      <h2></h2>
-      <label id="servingTeamChoiceTeamA">
-        <input type="radio" name="team" value="teamA" id="servingTeamChoiceTeamA"> Team A
-      </label><br>
-      <label id="servingTeamChoiceTeamB">
-        <input type="radio" name="team" value="teamB" id="servingTeamChoiceTeamB"> Team B
-      </label><br>
-      <button id="servingTeam">Confirm serving team</button>
-      <h2></h2>
+      <div id = "completeButtons">
+        <h2>Game Inputs</h2>
+        <button id = "completeGame">Complete Game</button>
+        <h2></h2>
+        <button id = "completeSet">Complete Set</button>
+        <h2></h2>
+      </div>
+      <div id = "homeTeamNameChoice">
+        <label id="homeTeamNameForTeamA">
+          <input type="radio" name="homeeorawayteamA" value="home" > <span id="servingTeamChoiceTeamAHome">home team name</span>
+        </label><br>
+        <label id="awayTeamNameForTeamA">
+          <input type="radio" name="homeeorawayteamA" value="away" ><span id="servingTeamChoiceTeamAAway">away team name</span> 
+        </label><br>
+        <button id="nameTeamA">Confirm teamA</button>
+      </div>
+      <div id = "teamStartingLeftChoice">
+        <label id="teamAStartingLeft">
+          <input type="radio" name="teamAorBStartingLeft" value="teamA" > <span id="servingTeamChoiceTeamAHome">teamA</span>
+        </label><br>
+        <label id="teamBStartingLeft">
+          <input type="radio" name="teamAorBStartingLeft" value="teamB" ><span id="servingTeamChoiceTeamAAway">teamB</span> 
+        </label><br>
+        <button id="nameTeamStartingLeft">Confirm team starting Left</button>
+      </div>
+      <div id = "servingTeamChoice">
+        <h2></h2>
+        <label id="servingTeamChoiceTeamA">
+          <input type="radio" name="team" value="teamA" id="servingTeamChoiceTeamA"> Team A
+        </label><br>
+        <label id="servingTeamChoiceTeamB">
+          <input type="radio" name="team" value="teamB" id="servingTeamChoiceTeamB"> Team B
+        </label><br>
+        <button id="servingTeam">Confirm serving team</button>
+        <h2></h2>
+      </div>      
     </div>
     <div class = "game-status">
       <h2>Game Status:</h2>

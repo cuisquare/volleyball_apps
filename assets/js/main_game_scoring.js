@@ -45,6 +45,7 @@ const mygame = new Game(myfixture);
 //mygame.teamA = "home"
 //mygame.team_serving_startset = "teamB"
 
+//team A choices
 var servingTeamChoiceTeamAHomeElement = document.getElementById("servingTeamChoiceTeamAHome")
 servingTeamChoiceTeamAHomeElement.textContent =  mygame.fixture.hometeam_name;
 var servingTeamChoiceTeamAAwayElement = document.getElementById("servingTeamChoiceTeamAAway")
@@ -67,8 +68,11 @@ function updateTeamPosition() {
     }
 }
 
-function updateSetsElements() {
-    updateTeamPosition();
+function updateScoringServingValues() {
+    var nameteamAElement = document.getElementById(`name-teamA`);
+    nameteamAElement.textContent = mygame.getTeamName("teamA");
+    var nameteamBElement = document.getElementById(`name-teamB`);
+    nameteamBElement.textContent = mygame.getTeamName("teamB");
     var scoreElement = document.getElementById(`score-teamA`);
     scoreElement.textContent = mygame.currentSet["teamA"];
     var setElement = document.getElementById(`sets-teamA`);
@@ -87,12 +91,17 @@ function updateSetsElements() {
     servingstateElement.textContent =  mygame.servingstate["teamB"]; 
     var gameStatusElement = document.getElementById("game-status");
     gameStatusElement.textContent =  mygame.getGameStatus();  
-    //updating UI elements visibility
+}
+
+function updateUIElementsVisibility() {
+
+    var completeButtonsElement = document.getElementById("completeButtons");
+    var homeTeamNameChoiceElement = document.getElementById("homeTeamNameChoice");
+    var teamStartingLeftChoiceElement = document.getElementById("teamStartingLeftChoice");
+    var servingTeamChoiceElement = document.getElementById("servingTeamChoice");
+
     if (mygame.isGameOver) {
-        var completeSetElement = document.getElementById("completeSet");
-        completeSetElement.style.display = "none";
-        var completeGameElement = document.getElementById("completeGame");
-        completeGameElement.style.display = "none";
+        completeButtonsElement.style.display = "none";
         servingstateElement = document.getElementById("servingstate-teamA");
         servingstateElement.style.display = "none";
         servingstateElement = document.getElementById("servingstate-teamB");
@@ -100,40 +109,53 @@ function updateSetsElements() {
     }
 
     if (!mygame.isPreGameToss) {
-        var completeSetElement = document.getElementById("nameTeamA");
-        completeSetElement.style.display = "none";
-        completeSetElement = document.getElementById("homeTeamNameForTeamA");
-        completeSetElement.style.display = "none";
-        completeSetElement = document.getElementById("awayTeamNameForTeamA");
-        completeSetElement.style.display = "none";
+        homeTeamNameChoiceElement.style.display = "none";
+
+        var servingstateElement = document.getElementById("servingstate-teamA");
+        servingstateElement.style.display = "none";
+        servingstateElement = document.getElementById("servingstate-teamB");
+        servingstateElement.style.display = "none";
+    }
+
+    if (!mygame.isPreDeciderToss) {
+        teamStartingLeftChoiceElement.style.display = "none";
+        var servingstateElement = document.getElementById("servingstate-teamA");
+        servingstateElement.style.display = "none";
+        servingstateElement = document.getElementById("servingstate-teamB");
+        servingstateElement.style.display = "none";
+    }
+
+    if (mygame.isPreDeciderToss) {
+        teamStartingLeftChoiceElement.style.display = "";
+        var servingstateElement = document.getElementById("servingstate-teamA");
+        servingstateElement.style.display = "";
+        servingstateElement = document.getElementById("servingstate-teamB");
+        servingstateElement.style.display = "";
     }
 
     var startordeciderset = mygame.isPreGameToss | mygame.isPreDeciderToss;
 
     if (!startordeciderset) {
-        var completeSetElement = document.getElementById("servingTeam");
-        completeSetElement.style.display = "none";
-        completeSetElement = document.getElementById("servingTeamChoiceTeamA");
-        completeSetElement.style.display = "none";
-        completeSetElement = document.getElementById("servingTeamChoiceTeamB");
-        completeSetElement.style.display = "none";
+        servingTeamChoiceElement.style.display = "none";
         servingstateElement = document.getElementById("servingstate-teamA");
         servingstateElement.style.display = "";
         servingstateElement = document.getElementById("servingstate-teamB");
         servingstateElement.style.display = "";
     }
     if (startordeciderset) {
-        var completeSetElement = document.getElementById("servingTeam");
-        completeSetElement.style.display = "";
-        completeSetElement = document.getElementById("servingTeamChoiceTeamA");
-        completeSetElement.style.display = "";
-        completeSetElement = document.getElementById("servingTeamChoiceTeamB");
-        completeSetElement.style.display = "";
-        servingstateElement = document.getElementById("servingstate-teamA");
-        servingstateElement.style.display = "none";
-        servingstateElement = document.getElementById("servingstate-teamB");
-        servingstateElement.style.display = "none";
+        servingTeamChoiceElement.style.display = "";
     }
+}
+
+function updateSetsElements() {
+
+    updateTeamPosition();
+
+    //updating scoring elements
+    updateScoringServingValues();
+
+    //updating UI elements visibility
+    updateUIElementsVisibility();
 
     console.log(mygame.getMatchStatus())
 }
@@ -150,20 +172,37 @@ document.getElementById('completeGame').addEventListener('click', function() {
     updateSetsElements();
 });
 
-document.getElementById('nameTeamA').addEventListener('click', function() {
-    var teamANameElement = document.querySelector('input[name="homeeorawayteamA"]:checked');
-    console.warn(`teamA name is ${teamANameElement.value}`)
+function actionSideChoices() {
     if (mygame.isPreGameToss) {
+        var teamANameElement = document.querySelector('input[name="homeeorawayteamA"]:checked');
+        console.warn(`teamA name is ${teamANameElement.value}`)
         mygame.teamA = teamANameElement.value;
+
+        var nameteamAElement = document.getElementById(`name-teamA`);
+        nameteamAElement.textContent = mygame.getTeamName("teamA");
+    
+        var nameteamBElement = document.getElementById(`name-teamB`);
+        nameteamBElement.textContent = mygame.getTeamName("teamB");
     } 
 
-    var nameteamAElement = document.getElementById(`name-teamA`);
-    nameteamAElement.textContent = mygame.getTeamName("teamA");
+    if (mygame.isPreDeciderToss) {
+        var teamLeftElement = document.querySelector('input[name="teamAorBStartingLeft"]:checked');
+        if (teamLeftElement.value == "teamA") {mygame.onLeft = true;}
+        if (teamLeftElement.value == "teamB") {mygame.onLeft = false;} 
+        updateTeamPosition();      
+    } 
 
-    var nameteamBElement = document.getElementById(`name-teamB`);
-    nameteamBElement.textContent = mygame.getTeamName("teamB");
-
+    
     updateSetsElements();
+}
+
+document.getElementById("nameTeamA").addEventListener('click', function() {
+    actionSideChoices();
+});
+
+document.getElementById("nameTeamStartingLeft").addEventListener('click', function() {
+    console.warn("team sarting left for decider set was decided")
+    actionSideChoices();
 });
 
 
@@ -178,6 +217,11 @@ document.getElementById('servingTeam').addEventListener('click', function() {
     if (mygame.isPreDeciderToss) {
         mygame.team_serving_deciderset = servingTeamElement.value;
     }    
+
+    var servingstateElement = document.getElementById("servingstate-teamA");
+    servingstateElement.textContent = mygame.servingstate["teamA"] 
+    servingstateElement = document.getElementById("servingstate-teamB");
+    servingstateElement.textContent =  mygame.servingstate["teamB"]; 
 
     updateSetsElements();
 });
