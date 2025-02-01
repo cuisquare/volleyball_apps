@@ -42,14 +42,14 @@ console.log(myfixture)
 const mygame = new Game(myfixture);
 
 //things decided after toss
-mygame.teamA = "home"
+//mygame.teamA = "home"
 //mygame.team_serving_startset = "teamB"
 
-var nameteamAElement = document.getElementById(`name-teamA`);
-nameteamAElement.textContent = mygame.getTeamName("teamA");
+var servingTeamChoiceTeamAHomeElement = document.getElementById("servingTeamChoiceTeamAHome")
+servingTeamChoiceTeamAHomeElement.textContent =  mygame.fixture.hometeam_name;
+var servingTeamChoiceTeamAAwayElement = document.getElementById("servingTeamChoiceTeamAAway")
+servingTeamChoiceTeamAAwayElement.textContent =  mygame.fixture.awayteam_name;
 
-var nameteamBElement = document.getElementById(`name-teamB`);
-nameteamBElement.textContent = mygame.getTeamName("teamB");
 
 console.log("mygame successfully created!")
 console.log(mygame)
@@ -98,7 +98,18 @@ function updateSetsElements() {
         servingstateElement = document.getElementById("servingstate-teamB");
         servingstateElement.style.display = "none";
     }
+
+    if (!mygame.isPreGameToss) {
+        var completeSetElement = document.getElementById("nameTeamA");
+        completeSetElement.style.display = "none";
+        completeSetElement = document.getElementById("homeTeamNameForTeamA");
+        completeSetElement.style.display = "none";
+        completeSetElement = document.getElementById("awayTeamNameForTeamA");
+        completeSetElement.style.display = "none";
+    }
+
     var startordeciderset = mygame.isPreGameToss | mygame.isPreDeciderToss;
+
     if (!startordeciderset) {
         var completeSetElement = document.getElementById("servingTeam");
         completeSetElement.style.display = "none";
@@ -136,6 +147,22 @@ document.getElementById('completeSet').addEventListener('click', function() {
 
 document.getElementById('completeGame').addEventListener('click', function() {
     mygame.completeGame();
+    updateSetsElements();
+});
+
+document.getElementById('nameTeamA').addEventListener('click', function() {
+    var teamANameElement = document.querySelector('input[name="homeeorawayteamA"]:checked');
+    console.warn(`teamA name is ${teamANameElement.value}`)
+    if (mygame.isPreGameToss) {
+        mygame.teamA = teamANameElement.value;
+    } 
+
+    var nameteamAElement = document.getElementById(`name-teamA`);
+    nameteamAElement.textContent = mygame.getTeamName("teamA");
+
+    var nameteamBElement = document.getElementById(`name-teamB`);
+    nameteamBElement.textContent = mygame.getTeamName("teamB");
+
     updateSetsElements();
 });
 
