@@ -22,18 +22,22 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-var lvarules = new Rules(5, 3,14,1, 3,2,2)
+var lvarules = new Rules(21, 15,14,1, 3,2,2)
 
 console.log("rules successfully created!")
 console.log(lvarules)
+
+var hometeam_name = window.prompt("Enter home team name")
+var awayteam_name = window.prompt("Enter away team name")
+
 var my_fixture_date = new Date('2025-02-02T16:00:00');
 const myfixture = new Fixture("45", 
                                    "Chestnut Grove Academy",
                                    my_fixture_date,
                                    "16:20",
                                    "18:00", 
-                                   "London Bears Men 2",
-                                   "Brazukas All Stars",
+                                   hometeam_name,
+                                   awayteam_name,
                                    lvarules);
 console.log("myfixture successfully created!")
 console.log(myfixture)
