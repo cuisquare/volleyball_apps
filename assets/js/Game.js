@@ -18,6 +18,7 @@ class Game {
 
         //game interrupted
         this.game_interrupted = false;
+        this.interruptReason = "";
 
         //servingstuff
         this.servingstate = { teamA: "Unknown", teamB: "Unknown" };
@@ -250,6 +251,16 @@ class Game {
         } else {
             this.currentSetAcceptingMorePoints = true;
         }
+
+        //deal with case where we swap sides at n points in decider set
+        var doswapsidenow = this.fixture.rules.swapsidesindecider & this.isDeciderSet() & (this.currentSet[team] == this.fixture.rules.nbptsforswap) & (this.currentSet[this.getOtherTeam(team)] < this.fixture.rules.nbptsforswap)
+        if (doswapsidenow) {
+            //do something
+            this.onLeft = !this.onLeft;
+            console_plus_popup_warn("Team swapping sides!")
+            //TODO code the going back to previous position because points reversed...
+        }
+
     }
 
     resetCurrentServingState() {
@@ -446,6 +457,10 @@ class Game {
                     output = output  + this.totalPoints[this.gameWinner] + " points to " + this.totalPoints[this.getOtherTeam(this.gameWinner)]
                 }
             }
+            if (this.game_interrupted) {
+                output = output + ` (Game interrupted: ${this.interruptReason})`;
+            }
+
         }
         return output
     }

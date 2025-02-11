@@ -22,13 +22,24 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-var lvarules = new Rules(21, 15,14,1, 3,2,2)
+var lvarules = new Rules(
+    21, 
+    2,
+    15,
+    2,
+    2,
+    true,
+    8,
+    14,
+    2
+)
 
 console.log("rules successfully created!")
 console.log(lvarules)
 
-var hometeam_name = window.prompt("Enter home team name")
-var awayteam_name = window.prompt("Enter away team name")
+
+var hometeam_name = "Home team (default)";
+var awayteam_name = "Away team (default)";
 
 var my_fixture_date = new Date('2025-02-02T16:00:00');
 const myfixture = new Fixture("45", 
@@ -60,6 +71,22 @@ console.log("mygame successfully created!")
 console.log(mygame)
 console.log("initially state of game is: ")
 console.log(mygame.getMatchStatus())
+
+function updateTeamNames() {
+
+
+    mygame.fixture.hometeam_name = window.prompt("Enter home team name")
+    mygame.fixture.awayteam_name = window.prompt("Enter away team name")
+
+    var servingTeamChoiceTeamAHomeElement = document.getElementById("servingTeamChoiceTeamAHome")
+    servingTeamChoiceTeamAHomeElement.textContent =  mygame.fixture.hometeam_name;
+    var servingTeamChoiceTeamAAwayElement = document.getElementById("servingTeamChoiceTeamAAway")
+    servingTeamChoiceTeamAAwayElement.textContent =  mygame.fixture.awayteam_name;
+}
+
+document.getElementById('teamNamesInput').addEventListener('click', function() {
+    updateTeamNames();
+});
 
 function updateTeamPosition() {
     const container = document.querySelector('.teams-container');
@@ -100,6 +127,8 @@ function updateScoringServingValues() {
 function updateUIElementsVisibility() {
 
     var completeButtonsElement = document.getElementById("completeButtons");
+    var teamDetailsInputElement = document.getElementById("teamDetailsInput");
+
     var homeTeamNameChoiceElement = document.getElementById("homeTeamNameChoice");
     var teamStartingLeftChoiceElement = document.getElementById("teamStartingLeftChoice");
     var servingTeamChoiceElement = document.getElementById("servingTeamChoice");
@@ -109,22 +138,11 @@ function updateUIElementsVisibility() {
     var accruedSetsPointsTeamAElement = document.getElementById("accruedSetsPointsTeamA");
     var accruedSetsPointsTeamBElement = document.getElementById("accruedSetsPointsTeamB");
 
-
-
-    if (mygame.isGameOver) {
-        completeButtonsElement.style.display = "none";
-        // servingstateElement = document.getElementById("servingstate-teamA");
-        // servingstateElement.style.display = "none";
-        // servingstateElement = document.getElementById("servingstate-teamB");
-        // servingstateElement.style.display = "none";
-        ongoingSetStateTeamAElement.style.display = "none";
-        //accruedSetsPointsTeamAElement.style.display = "none";
-        ongoingSetStateTeamBElement.style.display = "none";
-        //accruedSetsPointsTeamBElement.style.display = "none";
-    }
+    var gameInputsElement = document.getElementById("gameInputs");
 
     if (!mygame.isPreGameToss) {
         homeTeamNameChoiceElement.style.display = "none";
+        teamDetailsInputElement.style.display = "none";
 
         var servingstateElement = document.getElementById("servingstate-teamA");
         servingstateElement.style.display = "none";
@@ -160,6 +178,20 @@ function updateUIElementsVisibility() {
     if (startordeciderset) {
         servingTeamChoiceElement.style.display = "";
     }
+
+    if (mygame.isGameOver) {
+        completeButtonsElement.style.display = "none";
+        // servingstateElement = document.getElementById("servingstate-teamA");
+        // servingstateElement.style.display = "none";
+        // servingstateElement = document.getElementById("servingstate-teamB");
+        // servingstateElement.style.display = "none";
+        ongoingSetStateTeamAElement.style.display = "none";
+        //accruedSetsPointsTeamAElement.style.display = "none";
+        ongoingSetStateTeamBElement.style.display = "none";
+        //accruedSetsPointsTeamBElement.style.display = "none";
+
+        gameInputsElement.style.display = "none";
+    }
 }
 
 function updateSetsElements() {
@@ -183,8 +215,12 @@ document.getElementById('completeSet').addEventListener('click', function() {
 });
 
 document.getElementById('completeGame').addEventListener('click', function() {
-    mygame.completeGame();
-    updateSetsElements();
+    var confirmationCompleteGame = prompt("Are you sure you want to interrupt the game before completion on sets won? (Y/N)")
+    if (confirmationCompleteGame == "Y") {
+        mygame.completeGame();
+        mygame.interruptReason = window.prompt("Please enter an interruption reason (typically, Booking Elapsed)");
+        updateSetsElements();
+    }
 });
 
 function actionSideChoices() {
