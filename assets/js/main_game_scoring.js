@@ -88,6 +88,30 @@ document.getElementById('teamNamesInput').addEventListener('click', function() {
     updateTeamNames();
 });
 
+function getUserInputShirtNums(numbersArray) {
+    let defaultInput = numbersArray.length ? numbersArray.join(", ") : "";
+    let userInput = prompt("Enter numbers separated by commas:", defaultInput);
+    
+    if (userInput !== null) {
+        numbersArray = userInput.split(",")
+            .map(num => parseInt(num.trim(), 10))
+            .filter(num => !isNaN(num));
+        numbersArray = [...new Set(numbersArray)]; // Remove duplicates
+        numbersArray.sort((a, b) => a - b);
+        document.getElementById("output").textContent = "Sorted Numbers: " + numbersArray.join(", ");
+    }
+}
+
+function updateTeamShirtNums(teanName) {
+    console.warn("here would update the shirt nums, to be coded")
+    getUserInputShirtNums(mygame.fixture)
+}
+
+document.getElementById('teamShirtNumsInput').addEventListener('click', function() {
+    updateTeamShirtNums("teamA");
+    updateTeamShirtNums("teamB");
+});
+
 function updateTeamPosition() {
     const container = document.querySelector('.teams-container');
     if (mygame.onLeft) {
