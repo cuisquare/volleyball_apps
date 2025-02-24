@@ -252,8 +252,8 @@ officialstarttime
 officialendtime
 hometeam
 awayteam */
-const lvarules = new Rules()
-const myfixture = new Fixture()
+//const lvarules = new Rules()
+//const myfixture = new Fixture()
 //const mygame = new Game();
 
 

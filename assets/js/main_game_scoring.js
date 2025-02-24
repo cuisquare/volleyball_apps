@@ -88,6 +88,9 @@ document.getElementById('teamNamesInput').addEventListener('click', function() {
     updateTeamNames();
 });
 
+var numbersArrayTeamA = [1,2,3];
+var numbersArrayTeamB = [4,5,6];
+
 function getUserInputShirtNums(numbersArray) {
     let defaultInput = numbersArray.length ? numbersArray.join(", ") : "";
     let userInput = prompt("Enter numbers separated by commas:", defaultInput);
@@ -98,8 +101,10 @@ function getUserInputShirtNums(numbersArray) {
             .filter(num => !isNaN(num));
         numbersArray = [...new Set(numbersArray)]; // Remove duplicates
         numbersArray.sort((a, b) => a - b);
-        document.getElementById("output").textContent = "Sorted Numbers: " + numbersArray.join(", ");
+        //document.getElementById("output").textContent = "Sorted Numbers: " + numbersArray.join(", ");
     }
+
+    return numbersArray
 }
 
 function updateTeamShirtNums(teanName) {
@@ -108,8 +113,8 @@ function updateTeamShirtNums(teanName) {
 }
 
 document.getElementById('teamShirtNumsInput').addEventListener('click', function() {
-    updateTeamShirtNums("teamA");
-    updateTeamShirtNums("teamB");
+    numbersArrayTeamA = getUserInputShirtNums(numbersArrayTeamA);
+    numbersArrayTeamB = getUserInputShirtNums(numbersArrayTeamB);
 });
 
 function updateTeamPosition() {

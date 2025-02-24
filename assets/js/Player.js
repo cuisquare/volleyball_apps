@@ -7,8 +7,6 @@ class Player {
         this.regnum = regnum;
         this.isLibero = isLibero;
     }
-
-
 }
 
 // Export the class to make it accessible in other files

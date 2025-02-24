@@ -8,7 +8,8 @@ class Rules {
         swapsidesindecider = true, 
         nbptsforswap = 8,
         maxnumberplayers=14,
-        minliberoifthirteen=2
+        minliberoifthirteen=2, 
+        maxshirtnum = 99
     ) {
         this.regsetpts = regsetpts;
         this.nbsetswin = nbsetswin;
@@ -26,6 +27,8 @@ class Rules {
 
         this.swapsidesindecider = swapsidesindecider;
         this.nbptsforswap = nbptsforswap;
+
+        this.maxshirtnum = maxshirtnum;
 
     }
 }
