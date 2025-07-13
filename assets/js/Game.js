@@ -2,6 +2,8 @@
 //who won, who lost etc
 
 import {console_plus_popup_warn} from './utils.js';
+import Team from './Team.js';
+import LineupDev from './LineupDev.js';
 
 class Game {
     constructor(
@@ -30,6 +32,14 @@ class Game {
         //position stuff
         this._teamA = "Unknown"
         this._teamB = "Unknown"
+
+        //team objects
+        this._hometeam = new Team();
+        this._awayteam = new Team();
+
+        //lineup objects
+        this.lineup_hometeam = new LineupDev();
+        this.lineup_awayteam = new LineupDev();
 
         //teampositionstuff
         this.onLeft = true; // whether teamA is on left side from the point of view of scorer

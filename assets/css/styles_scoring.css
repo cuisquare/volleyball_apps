@@ -9,9 +9,14 @@ body {
     background-color: #f7f7f7;
   }
   
+  div {
+    /*padding: 20px;
+    border: 1px solid #ddd;*/
+   } 
+
   .scoreboard {
     display: flex;
-    justify-content: space-between;
+    justify-content: space-around; /*space-between;*/
     width: 80%;
     max-width: 800px;
     background-color: #fff;
@@ -22,8 +27,10 @@ body {
   .teams-container {
     display: flex;
     gap: 20px;
+    border: 1px solid #ddd;
+    padding: 20px;
   }
-  
+
   /* Default - Team A on left */
   .left .team:first-child {
     order: 1;
@@ -31,6 +38,18 @@ body {
   .left .team:last-child {
     order: 2;
   }
+
+  
+  .game-inputs {
+    border: 1px solid #ddd;
+    padding: 20px;
+  }
+
+  .game-status {
+    border: 1px solid #ddd;
+    padding: 20px;
+  }
+  
   
   /* Swap positions - Team A on right */
   .right .team:first-child {

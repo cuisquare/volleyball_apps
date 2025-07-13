@@ -88,8 +88,13 @@ document.getElementById('teamNamesInput').addEventListener('click', function() {
     updateTeamNames();
 });
 
-var numbersArrayTeamA = [1,2,3];
-var numbersArrayTeamB = [4,5,6];
+var fullShirtNumbersArrayTeamA = [1,2,3,4,5,6,7,8,9];
+mygame.lineup_hometeam.fullshirtnums = fullShirtNumbersArrayTeamA;
+var fullShirtNumbersArrayTeamB = [4,5,6,7,8,9,10,11,12];
+mygame.lineup_awayteam.fullshirtnums = fullShirtNumbersArrayTeamB;
+
+var lineupShirtNumbersArrayTeamA = [];
+var lineupShirtNumbersArrayTeamB = [];
 
 function getUserInputShirtNums(numbersArray) {
     let defaultInput = numbersArray.length ? numbersArray.join(", ") : "";
@@ -107,14 +112,53 @@ function getUserInputShirtNums(numbersArray) {
     return numbersArray
 }
 
-function updateTeamShirtNums(teanName) {
-    console.warn("here would update the shirt nums, to be coded")
-    getUserInputShirtNums(mygame.fixture)
-}
+//TODO deal with when the tshirts setup bit is visible / not visible (once at start of game)
+//TODO deal with when the lineup setup bit is visible / not visible (once at start of each set, but not until the tshirt setup is done)
+//TODO deal with the recording of the lineups throughout the game - during the set, at end of set
+//TODO deal with substitutions including what is allowed
+//TODO deal with libero role....
+//TODO deal with libero retiring/ reassigning
+//TODO displaying lineup on UI
+//TODO lineup display to show who is the server
+//TODO lineup display to show position of players on court
+//TODO don't let the game scoring starts unless a lineup is entered
 
 document.getElementById('teamShirtNumsInput').addEventListener('click', function() {
-    numbersArrayTeamA = getUserInputShirtNums(numbersArrayTeamA);
-    numbersArrayTeamB = getUserInputShirtNums(numbersArrayTeamB);
+    fullShirtNumbersArrayTeamA = getUserInputShirtNums(fullShirtNumbersArrayTeamA);
+    fullShirtNumbersArrayTeamB = getUserInputShirtNums(fullShirtNumbersArrayTeamB);
+});
+
+function getUserInputLineups(allowedNumbersArray, lastselectionnumbers) {
+    var allowedNumbersArrayAsCSV = allowedNumbersArray.join(", ");
+    //console.log(allowedNumbersArrayAsCSV)
+    let userInput = prompt(`Enter numbers separated by commas to indicate lineup from position 1 to 6. Max 6 numbers, allowed values : ${allowedNumbersArrayAsCSV}`, lastselectionnumbers);
+    
+    if (userInput == null) {
+        return
+    }
+
+    var numbersArray = userInput.split(",")
+        .map(num => parseInt(num.trim(), 10))
+        .filter(num => !isNaN(num));
+    numbersArray = [...new Set(numbersArray)]; // Remove duplicates
+
+    //check that the resulting numbersArray is exactly 6 numbers, all included in allowedNumbersArray
+    if (numbersArray.length != 6) {
+        console.warn("Invalid lineup, you must select 6 numbers.")
+        return
+    }
+
+    if (!(numbersArray.every(num => allowedNumbersArray.includes(num)))) {
+        console.warn(`Invalid lineup, you must select only numbers in the squad list: ${allowedNumbersArrayAsCSV}. Add players to the squad list before you can add to line up.`)
+        return
+    }
+
+    return numbersArray
+}
+
+document.getElementById('teamSetLinupInput').addEventListener('click', function() {
+    lineupShirtNumbersArrayTeamA = getUserInputLineups(fullShirtNumbersArrayTeamA, lineupShirtNumbersArrayTeamA )
+    lineupShirtNumbersArrayTeamB = getUserInputLineups(fullShirtNumbersArrayTeamB, lineupShirtNumbersArrayTeamB );
 });
 
 function updateTeamPosition() {
