@@ -6,6 +6,12 @@ html {
   background-color: #009ca7;
 }
 
+body {
+  margin: 0;
+  padding: 16px;
+  font-family: Arial, sans-serif;
+}
+
 button {
   margin-left: 10px;
   margin-right: 10px;
@@ -24,6 +30,99 @@ button {
   padding: 10px;
   margin:10px;
 } 
+
+.team-setup-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+  max-width: 1200px;
+  margin: 0 auto 10px auto;
+}
+
+.team-setup-card {
+  background: rgba(255, 255, 255, 0.12);
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-radius: 12px;
+  padding: 16px;
+  color: #fff;
+}
+
+.team-setup-card h2 {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.setup-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.setup-input,
+.lineup-input {
+  border: 2px solid white;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 15px;
+  font-weight: bold;
+  color: #004d52;
+  background: #f7ffff;
+  box-sizing: border-box;
+}
+
+.setup-input {
+  flex: 1 1 220px;
+}
+
+.lineup-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 16px;
+  row-gap: 10px;
+  align-items: stretch;
+  margin-bottom: 12px;
+}
+
+.lineup-grid.sideways-layout {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.lineup-slot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.lineup-slot label,
+.team-setup-card > label {
+  padding-left: 0;
+  white-space: nowrap;
+}
+
+.lineup-input {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  margin-right: 0;
+}
+
+.setup-status {
+  min-height: 20px;
+  margin: 0;
+  color: #f7ffff;
+  font-size: 14px;
+}
+
+.setup-status.error {
+  color: #ffe1e1;
+}
+
+.setup-status.success {
+  color: #dcffe4;
+}
 
 .canvas-wrapper {
   display:block;
@@ -157,5 +256,13 @@ input[type="checkbox"]:focus {
 @media (max-width: 750px) {
   .canvas-container {
     flex-direction: column;
+  }
+
+  .lineup-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lineup-grid.sideways-layout {
+    grid-template-columns: 1fr;
   }
 }

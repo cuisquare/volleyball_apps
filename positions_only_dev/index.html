@@ -7,6 +7,87 @@
     <link rel="stylesheet" href="../assets/css/styles_positions_only_flex_dev.css">
   </head>
   <body>
+    <div class="team-setup-container">
+      <section class="team-setup-card" data-team="teamA">
+        <h2 id="teamA-setup-title">Left Court Setup</h2>
+        <label for="teamA-roster-input">Roster shirt numbers</label>
+        <div class="setup-row">
+          <input id="teamA-roster-input" class="setup-input" type="text" placeholder="e.g. 5, 9, 45, 23, 12, 7, 4, 10">
+          <button id="teamA-roster-apply" type="button">Apply Roster</button>
+        </div>
+        <label>Lineup on court by position 1 to 6</label>
+        <div class="lineup-grid" id="teamA-lineup-grid">
+          <div class="lineup-slot" id="teamA-slot-1">
+            <label for="teamA-lineup-1">P1</label>
+            <select id="teamA-lineup-1" class="lineup-input"></select>
+          </div>
+          <div class="lineup-slot" id="teamA-slot-2">
+            <label for="teamA-lineup-2">P2</label>
+            <select id="teamA-lineup-2" class="lineup-input"></select>
+          </div>
+          <div class="lineup-slot" id="teamA-slot-3">
+            <label for="teamA-lineup-3">P3</label>
+            <select id="teamA-lineup-3" class="lineup-input"></select>
+          </div>
+          <div class="lineup-slot" id="teamA-slot-4">
+            <label for="teamA-lineup-4">P4</label>
+            <select id="teamA-lineup-4" class="lineup-input"></select>
+          </div>
+          <div class="lineup-slot" id="teamA-slot-5">
+            <label for="teamA-lineup-5">P5</label>
+            <select id="teamA-lineup-5" class="lineup-input"></select>
+          </div>
+          <div class="lineup-slot" id="teamA-slot-6">
+            <label for="teamA-lineup-6">P6</label>
+            <select id="teamA-lineup-6" class="lineup-input"></select>
+          </div>
+        </div>
+        <div class="setup-row">
+          <button id="teamA-lineup-apply" type="button">Apply Lineup</button>
+        </div>
+        <p id="teamA-setup-status" class="setup-status" aria-live="polite"></p>
+      </section>
+
+      <section class="team-setup-card" data-team="teamB">
+        <h2 id="teamB-setup-title">Right Court Setup</h2>
+        <label for="teamB-roster-input">Roster shirt numbers</label>
+        <div class="setup-row">
+          <input id="teamB-roster-input" class="setup-input" type="text" placeholder="e.g. 3, 10, 8, 7, 13, 4">
+          <button id="teamB-roster-apply" type="button">Apply Roster</button>
+        </div>
+        <label>Lineup on court by position 1 to 6</label>
+        <div class="lineup-grid" id="teamB-lineup-grid">
+          <div class="lineup-slot" id="teamB-slot-1">
+            <label for="teamB-lineup-1">P1</label>
+            <select id="teamB-lineup-1" class="lineup-input"></select>
+          </div>
+          <div class="lineup-slot" id="teamB-slot-2">
+            <label for="teamB-lineup-2">P2</label>
+            <select id="teamB-lineup-2" class="lineup-input"></select>
+          </div>
+          <div class="lineup-slot" id="teamB-slot-3">
+            <label for="teamB-lineup-3">P3</label>
+            <select id="teamB-lineup-3" class="lineup-input"></select>
+          </div>
+          <div class="lineup-slot" id="teamB-slot-4">
+            <label for="teamB-lineup-4">P4</label>
+            <select id="teamB-lineup-4" class="lineup-input"></select>
+          </div>
+          <div class="lineup-slot" id="teamB-slot-5">
+            <label for="teamB-lineup-5">P5</label>
+            <select id="teamB-lineup-5" class="lineup-input"></select>
+          </div>
+          <div class="lineup-slot" id="teamB-slot-6">
+            <label for="teamB-lineup-6">P6</label>
+            <select id="teamB-lineup-6" class="lineup-input"></select>
+          </div>
+        </div>
+        <div class="setup-row">
+          <button id="teamB-lineup-apply" type="button">Apply Lineup</button>
+        </div>
+        <p id="teamB-setup-status" class="setup-status" aria-live="polite"></p>
+      </section>
+    </div>
     <div class="canvas-container">
       <div class="canvas-wrapper">
           <canvas class = "canvas" id="canvasleft"></canvas>

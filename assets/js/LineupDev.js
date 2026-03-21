@@ -110,6 +110,7 @@ class LineupDev {
         this.tsref = this.onTouchStart.bind(this);
         this.tmref = this.onTouchMove.bind(this);
         this.teref = this.onTouchEnd.bind(this);
+        this.stateChangeHandler = null;
 
         this.addEventListeners();
 
@@ -175,6 +176,31 @@ class LineupDev {
         if (!this.fullshirtnums.includes(newShirtNum)) {
             this.fullshirtnums.push(newShirtNum)
         }
+    }
+
+    setStateChangeHandler(handler) {
+        this.stateChangeHandler = handler;
+    }
+
+    notifyStateChange() {
+        if (typeof this.stateChangeHandler === "function") {
+            this.stateChangeHandler(this);
+        }
+    }
+
+    setFullShirtNums(newFullShirtNums) {
+        this.fullshirtnums = newFullShirtNums.slice();
+        this.notifyStateChange();
+    }
+
+    setLineupShirtNums(newShirtNums) {
+        this.clearPositions();
+        this.shirtnums = newShirtNums.slice();
+        this.fullshirtnums = Array.from(new Set([...this.fullshirtnums, ...this.shirtnums]));
+        this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
+        this.addEventListeners();
+        this.checkPositionsLegalityStatic();
+        this.notifyStateChange();
     }
 
 
@@ -468,6 +494,8 @@ class LineupDev {
                     } 
                     pos.shirtnum = newshirtnum;
                 }
+                this.shirtnums = this.getShirtNums(this.positions)
+                this.notifyStateChange();
             } else {
                 console.log("the edit is not allowed because the chosen newshirtnum ("+ newshirtnum + ") is not in the allowed shirt numbers ("+ validshirtnums + ")")
             }
@@ -618,6 +646,7 @@ class LineupDev {
             index ++;
         })
         this.syncSymbolsAndShirtnums();
+        this.notifyStateChange();
         console.log("reassigned all position values")
     }
 
@@ -639,6 +668,7 @@ class LineupDev {
         this.symbols = newsymbols;
         this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
         this.addEventListeners();
+        this.notifyStateChange();
         //this.updatePrevpos(n);
         logmyobject("lineup positions after rotate forward",this.positions);
         logmyobject("previous lineup positions after rotate forward",this.prevpositions);
@@ -723,6 +753,7 @@ class LineupDev {
         this.symbols = arrayRotateN(this.symbols, false,n);
         this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
         this.addEventListeners();
+        this.notifyStateChange();
         //this.updatePrevpos(n);
         logmyobject("lineup positions after rotate forward",this.positions);
         logmyobject("previous lineup positions after rotate forward",this.prevpositions);
@@ -735,6 +766,7 @@ class LineupDev {
         this.symbols = arrayRotateN(this.symbols, true,n);
         this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
         this.addEventListeners();
+        this.notifyStateChange();
         //this.updatePrevpos(n, false);
         logmyobject("lineup positions after rotate backward",this.positions);
         logmyobject("previous lineup positions after rotate backward",this.prevpositions);
