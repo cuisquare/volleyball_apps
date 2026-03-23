@@ -1,6 +1,7 @@
 import {logmyobject, arrayRotateN} from './utils.js';
 
 import PositionDev from './PositionDev.js';
+import {checkSinglePositionLegality, getIllegalPositionTuples} from './LineupRules.js';
 
 class LineupDev {
     constructor(
@@ -827,19 +828,12 @@ class LineupDev {
     }
 
     checkPositionsLegalityStatic(checkedpositions = this.positions, otherPositions = this.positions, oldrules = this.oldRules) { 
-        checkedpositions.forEach( pos1 => {
-            console.log("outer loop considering pos",pos1)
-            otherPositions.forEach( pos2 => {
-                console.log("inner loop considering pos",pos2)
-                if (!this.checkSinglePositionLegality(pos1,pos2,oldrules)) {
-                    console.log("illegal")
-                    this.addPosTupleToArray(pos1,pos2, this.illegalPositionTuples)    
-                } else {
-                    console.log("legal")
-                    this.removePosTupleFromArray(pos1,pos2,this.illegalPositionTuples)
-                }
-            })
-        })
+        this.illegalPositionTuples = getIllegalPositionTuples(
+            checkedpositions,
+            otherPositions,
+            oldrules,
+            this.illegalPositionTuples
+        );
 
         
         var notIllegalPositions = this.positions;
@@ -866,37 +860,6 @@ class LineupDev {
 
     }
 
-    addPosTupleToArray(mypos1, mypos2, postuplearray) {
-        var postuple = [mypos1,mypos2];
-        var found = false;
-        for (let i = 0; i < postuplearray.length; i++) {
-            const tuple = postuplearray[i];
-            const pos1 = tuple[0];
-            const pos2 = tuple[1];
-            if ((mypos1.value == pos1.value && mypos2.value == pos2.value ) | (mypos1.value == pos2.value && mypos2.value == pos1.value)) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            postuplearray.push(postuple);
-        }
-        
-    }
-
-    removePosTupleFromArray(mypos1, mypos2, postuplearray) {
-        for (let i = 0; i < postuplearray.length; i++) {
-            const tuple = postuplearray[i];
-            const pos1 = tuple[0];
-            const pos2 = tuple[1];
-            if ((mypos1.value == pos1.value && mypos2.value == pos2.value ) | (mypos1.value == pos2.value && mypos2.value == pos1.value)) {
-                postuplearray.splice(i, 1); // Remove the tuple at index i
-                return true; // Tuple removed successfully
-            }
-        }
-        return false; // Tuple not found in the array
-    }
-
     checkPositionsLegality(checkedpositions = this.positions, otherPositions = this.positions) { 
         //TODO BUG
         //this works well if a single position is incorrect however where there are incorrect positions
@@ -905,7 +868,7 @@ class LineupDev {
         var posillegal = false;
         checkedpositions.forEach( pos1 => {
             otherPositions.forEach( pos2 => {
-                if (!this.checkSinglePositionLegality(pos1,pos2)) {
+                if (!checkSinglePositionLegality(pos1,pos2)) {
                     posillegal = true;
                     pos1.color = "red";
                     pos2.color = "red";
@@ -946,85 +909,6 @@ class LineupDev {
         if (pos.value == 6) posvalues = [1,3,5]
         var positionswithrel = getPositionFromValue(posvalues,this.positions) 
         return positionswithrel
-    }
-
-    checkSinglePositionLegality(pos1,pos2, oldrules = false) {
-        if (oldrules) {
-            return this.checkSinglePositionLegalityOldRules(pos1,pos2)
-        } else {
-            return this.checkSinglePositionLegalityNewRules(pos1,pos2)
-        }
-    }
-
-    checkSinglePositionLegalityOldRules(pos1,pos2) {
-        //vertical legality
-        var vertlegal = true;
-        if (pos1.hor == pos2.hor) {
-            var fp = pos1;
-            var bp = pos2;
-            if (pos1.isbackrow) {
-                var fp = pos2;
-                var bp = pos1;
-            }
-            var bp_frontfeet_pos = bp.ypos - 0.5 * bp.height;
-            var fp_frontfeet_pos = fp.ypos - 0.5* fp.height;
-            vertlegal = bp_frontfeet_pos >= fp_frontfeet_pos;
-        } 
-        //horizontal legality
-        var horlegal = true;
-        if (pos1.vert == pos2.vert) {
-            var lp = pos1;
-            var rp = pos2;
-            if (pos1.hor > pos2.hor) {
-                var lp = pos2;
-                var rp = pos1;
-            } 
-            var lp_rightfeet_pos = lp.xpos + 0.5 * lp.width;
-            var rp_rightfeet_pos = rp.xpos + 0.5 * rp.width;
-            horlegal = lp_rightfeet_pos <= rp_rightfeet_pos;
-        } 
-        var output = vertlegal & horlegal;
-        return output 
-    }
-
-
-
-    checkSinglePositionLegalityNewRules(pos1,pos2) {
-        //vertical legality
-        var vertlegal = true;
-        if (pos1.hor == pos2.hor) {
-            var fp = pos1;
-            var bp = pos2;
-            if (pos1.isbackrow) {
-                var fp = pos2;
-                var bp = pos1;
-            }
-            var bp_backfeet_pos = bp.ypos + 0.5 * bp.height;
-            var fp_frontfeet_pos = fp.ypos - 0.5* fp.height;
-            //logmyobject("bp_backfeet_pos",bp_backfeet_pos);
-            //logmyobject("fp_frontfeet_pos",fp_frontfeet_pos);
-            //logmyobject("vertlegal",vertlegal);
-            vertlegal = bp_backfeet_pos > fp_frontfeet_pos;
-        } 
-        //horizontal legality
-        var horlegal = true;
-        if (pos1.vert == pos2.vert) {
-
-            var lp = pos1;
-            var rp = pos2;
-            if (pos1.hor > pos2.hor) {
-                var lp = pos2;
-                var rp = pos1;
-            } 
-            var lp_leftfeet_pos = lp.xpos - 0.5 * lp.width;
-            var rp_rightfeet_pos = rp.xpos + 0.5 * rp.width;
-            //logmyobject("lp_leftfeet_pos",lp_leftfeet_pos);
-            //logmyobject("rp_rightfeet_pos",rp_rightfeet_pos);
-            horlegal = lp_leftfeet_pos < rp_rightfeet_pos;
-            //logmyobject("horlegal",horlegal);
-        } 
-        var output = vertlegal & horlegal;
-        return output 
     }
 
     drawcourt = function() {
