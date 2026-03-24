@@ -1,6 +1,7 @@
 import {logmyobject} from './utils.js';
 
 import {convertToRotatedCoords} from './utils.js';
+import {drawPosition} from './CourtRenderer.js';
 
 
 class PositionDev {
@@ -365,77 +366,7 @@ class PositionDev {
     }
 
     draw() {
-        //console.log("drawing a position")
-        var poscontext = this.context;
-        poscontext.save(); // Save the current canvas state
-
-
-    
-        poscontext.beginPath();
-        poscontext.strokeStyle = this.color;
-        poscontext.lineWidth = 3;
-    
-        // Rotate the canvas around the Position instance's coordinates
-        poscontext.translate(this.xpos, this.ypos);
-        poscontext.rotate(-this.total_angle); // Replace 'this.rotationAngle' with the desired rotation angle in radians
-    
-        //console.log("started drawing rectangle for position")
-        //console.log("this.width: ", this.width)
-        //console.log("this.height: ", this.height)
-        
-        poscontext.fillStyle = this.colorbackground;
-        poscontext.fillRect(            
-            -0.5 * this.width, // Rectangle position relative to the Position instance's coordinates
-            -0.5 * this.height,
-            this.width,
-            this.height);
-
-        if (this.drawsquare) {
-            poscontext.rect(
-                -0.5 * this.width, // Rectangle position relative to the Position instance's coordinates
-                -0.5 * this.height,
-                this.width,
-                this.height
-            );
-            poscontext.stroke();    
-        }
-        poscontext.closePath();
-        //console.log("finished drawing rectangle for position")
-
-        // Draw the background image if it exists
-        if (this.drawfeet) {
-            if (this.backgroundImage) {
-                poscontext.drawImage(
-                    this.backgroundImage, 
-                    - 0.5 * this.width, 
-                    - 0.5 * this.height, 
-                    this.width, 
-                    this.height
-                );
-            }
-        }
-
-        // Shirtnumber
-        poscontext.textAlign = "center";
-        poscontext.textBaseline = "middle"
-        poscontext.font = "bold 20px Arial";
-        poscontext.fillStyle = "#000";
-        poscontext.fillText(this.shirtnum, 0, 0); // Text position relative to the Position instance's coordinates
-    
-        // Symbol
-        poscontext.textAlign = "left";
-        poscontext.textBaseline = "bottom"
-        poscontext.font = "15px Arial";
-        poscontext.fillText(this.symbol, -0.8 * this.width, 0.9 * this.height); // Text position relative to the Position instance's coordinates
-    
-        // Value
-        poscontext.textAlign = "right";
-        poscontext.textBaseline = "bottom"
-        poscontext.font = "15px Arial";
-        poscontext.fillText(this.rotationPosition, 0.8 * this.width, 0.9 * this.height); // Text position relative to the Position instance's coordinates
-    
-        poscontext.restore(); // Restore the canvas state
-        //console.log("drawed a position")
+        drawPosition(this);
     }
 
     isInsideBox(x, y,xmin,xmax,ymin,ymax) {     
