@@ -3,6 +3,18 @@ import {logmyobject, arrayRotateN} from './utils.js';
 import PositionDev from './PositionDev.js';
 import {checkSinglePositionLegality, getIllegalPositionTuples} from './LineupRules.js';
 import {drawCourt, drawLineup} from './CourtRenderer.js';
+import {
+    addLineupEventListeners,
+    removeLineupEventListeners,
+    onLineupMouseLeave,
+    onLineupTouchStart,
+    onLineupMouseDown,
+    onLineupTouchEnd,
+    onLineupMouseUp,
+    onLineupMouseRightClick,
+    onLineupTouchMove,
+    onLineupMouseMove
+} from './LineupInteractionController.js';
 
 class LineupDev {
     constructor(
@@ -207,160 +219,35 @@ class LineupDev {
 
 
     addEventListeners() {
-        // Add event listeners
-        this.canvas.addEventListener('mousedown', this.mdref);
-        this.canvas.addEventListener('mousemove', this.mmref);
-        this.canvas.addEventListener('mouseup', this.muref);
-        this.canvas.addEventListener('mouseleave', this.mlref);
-        this.canvas.addEventListener('contextmenu',this.mrcref);
-        this.canvas.addEventListener('touchstart',this.tsref);
-        this.canvas.addEventListener('touchmove',this.tmref);
-        this.canvas.addEventListener('touchend',this.teref);
+        addLineupEventListeners(this);
     }
 
     removeEventListeners() {
-        // remove event listeners
-        this.canvas.removeEventListener('mousedown', this.mdref);
-        this.canvas.removeEventListener('mousemove', this.mmref);
-        this.canvas.removeEventListener('mouseup', this.muref);
-        this.canvas.removeEventListener('mouseleave', this.mlref);
-        this.canvas.removeEventListener('contextmenu',this.mrcref);
-        this.canvas.removeEventListener('touchstart',this.tsref);
-        this.canvas.removeEventListener('touchmove',this.tmref);
-        this.canvas.removeEventListener('touchend',this.teref);
+        removeLineupEventListeners(this);
     }
 
     onMouseLeave(event) {
-        this.positions.forEach((pos,index) => {
-            //logmyobject("BECAUSE OF MOUSE LEAVE, calling mouseup on element index",index)
-            pos.onMouseUp(event); // Call onMouseDown for each position
-        });        
+        onLineupMouseLeave(this, event);
     }
 
     onTouchStart(event) {
-            // Store touch start time and position
-        this.touchStartTime = Date.now();
-        this.onMouseDown(event);
+        onLineupTouchStart(this, event);
     }
 
     onMouseDown(event) {
-        this.isDragging = false;
-        this.notDraggingPositions = this.positions;
-        this.positions.forEach((pos,index) => {
-            //logmyobject("calling mousedown on element index",index)
-            pos.onMouseDown(event); // Call onMouseDown for each position
-            if (pos.isDragging) {
-                //logmyobject("this object is dragging so turning all lineup to dragging",pos)
-                this.isDragging = true;
-                this.draggingPositions.push(pos);
-                this.newIllegalPositions = [];
-                this.removePositionsByValue(pos.rotationPosition,this.notDraggingPositions);
-            }
-        });
-        //this.checkPositionsLegalityStatic();
+        onLineupMouseDown(this, event);
     }
 
     onTouchEnd(event) {
-        event.preventDefault();
-        this.touchEndTime = Date.now();
-        this.touchDuration = this.touchEndTime - this.touchStartTime;
-            // Determine if it was a tap or a long press based on touch duration
-        console.log("Touch duration : ", this.touchDuration);
-        if (this.touchDuration < 300) { // Tap (less than 300ms)
-            console.log("TAP EVENT")
-            const rect = this.canvas.getBoundingClientRect();
-            const touchX = event.changedTouches[0].clientX - rect.left;
-            const touchY = event.changedTouches[0].clientY - rect.top;
-            
-            this.positions.forEach(pos => {
-                if (pos.isInsideShirtNum(touchX,touchY)) {
-                    logmyobject("calling touch right click on element ",pos)
-                    logmyobject("editing positions with forbiddent values ",this.shirtnums)
-                    var allowedshirtnums =  this.getValidShirtNums(this.editmode)
-                    var allowedshirtnumsellipsis =  this.ellipsisArray(allowedshirtnums)
-                    const newshirtnum = parseInt(prompt("Enter new shirt number (valid numbers are: "+ allowedshirtnumsellipsis +"):", pos.shirtnum));
-                    this.editShirtNum(pos, newshirtnum,this.editmode)
-                    this.shirtnums = this.getShirtNums(this.positions)
-                    //before TODO this does not edit shirtnums array and it must do so!
-                }
-                if (pos.isInsideSymbol(touchX,touchY, this.isUpright,this.leftcourt)) {
-                    //TODO something that would assign all other positions based on this one position
-                    //pos.editSymbol(this.defaultsymbols)
-                    console.log("inside symbol of ", pos, "!");
-                    const newSymbol = prompt("Enter new symbol (valid symbols are: "+ this.defaultsymbols +"):","S");
-                    this.assignDefaultSymbols(pos, newSymbol); 
-                    console.log("No, really, inside symbol of ", pos, "!");
-                }
-                if (pos.isInsidePositionValue(touchX,touchY, this.isUpright,this.leftcourt)) {
-                    console.log("inside value of ",pos)
-                    console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
-                    console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
-                    console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
-                    const newvalue = parseInt(prompt("Enter new  value (valid values are: "+ [1,2,3,4,5,6] +"):",pos.rotationPosition));
-                    console.log("new values: ", newvalue)
-                    this.editValues(pos, newvalue)
-                    //before TODO this does not edit shirtnums array and it must do so!
-                }
-            });
-            this.draw();
-        } else { // Long press
-            console.log("LONG PRESS EVENT")
-        }    
-        this.onMouseUp(event);  
+        onLineupTouchEnd(this, event);
     }
 
     onMouseUp(event) {
-        this.positions.forEach(pos => {
-            //logmyobject("calling mouseup on element index",index)
-            pos.onMouseUp(event); // Call onMouseUp for each position
-        });
-
-        //this.checkPositionsLegalityStatic(this.draggingPositions, this.notDraggingPositions);
-        this.isDragging = false;
-        this.draggingPositions = [];
-        this.newIllegalPositions = [];
-        this.notDraggingPositions = this.positions;
-        
+        onLineupMouseUp(this, event);
     }
 
     onMouseRightClick(event) { 
-        event.preventDefault(); // Prevent the default context menu
-        // Iterate over your list of Position instances
-        const rect = this.canvas.getBoundingClientRect();
-        const mouseX = event.clientX - rect.left;
-        const mouseY = event.clientY - rect.top;
-        this.positions.forEach(pos => {
-            if (pos.isInsideShirtNum(mouseX,mouseY)) {
-                logmyobject("calling mouse right click on element ",pos)
-                logmyobject("editing positions with forbiddent values ",this.shirtnums)
-                var allowedshirtnums =  this.getValidShirtNums(this.editmode)
-                var allowedshirtnumsellipsis =  this.ellipsisArray(allowedshirtnums)
-                const newshirtnum = parseInt(prompt("Enter new shirt number (valid numbers are: "+ allowedshirtnumsellipsis +"):", this.shirtnum));
-                this.editShirtNum(pos, newshirtnum,this.editmode)
-                this.shirtnums = this.getShirtNums(this.positions)
-                //before TODO this does not edit shirtnums array and it must do so!
-            }
-            if (pos.isInsideSymbol(mouseX,mouseY, this.isUpright,this.leftcourt)) {
-                //TODO something that would assign all other positions based on this one position
-                //pos.editSymbol(this.defaultsymbols)
-                console.log("moomoo inside symbol of ", pos, "!");
-                console.log("second moomoo inside symbol of ", pos, "!");
-                const newSymbol = prompt("Enter new symbol (valid symbols are: "+ this.defaultsymbols +"):","S", this.symbol);
-                this.assignDefaultSymbols(pos, newSymbol); 
-                console.log("No, really, inside symbol of ", pos, "!");
-            }
-            if (pos.isInsidePositionValue(mouseX,mouseY, this.isUpright,this.leftcourt)) {
-                console.log("inside value of ",pos)
-                console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
-                console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
-                console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
-                const newvalue = parseInt(prompt("Enter new  value (valid values are: "+ [1,2,3,4,5,6] +"):",pos.rotationPosition));
-                console.log("new values: ", newvalue)
-                this.editValues(pos, newvalue)
-                //before TODO this does not edit shirtnums array and it must do so!
-            }
-        });
-        this.draw();
+        onLineupMouseRightClick(this, event);
     }
 
     getValidShirtNums(mode = "override") {
@@ -507,15 +394,11 @@ class LineupDev {
     }
 
     onTouchMove(event) {
-        this.onMouseMove(event);
+        onLineupTouchMove(this, event);
     }
 
     onMouseMove(event) {
-        //console.log("I redrew because of mouse movement");
-        if (this.isDragging) {
-            this.checkPositionsLegalityStatic(this.draggingPositions, this.notDraggingPositions, this.oldRules);
-            this.draw();
-        }
+        onLineupMouseMove(this, event);
     }
 
 

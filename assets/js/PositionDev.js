@@ -1,7 +1,21 @@
 import {logmyobject} from './utils.js';
-
-import {convertToRotatedCoords} from './utils.js';
 import {drawPosition} from './CourtRenderer.js';
+import {
+    addPositionEventListeners,
+    removePositionEventListeners,
+    isInsideBox as controllerIsInsideBox,
+    isInsideShirtNum as controllerIsInsideShirtNum,
+    isInsideSymbol as controllerIsInsideSymbol,
+    isInsidePositionValue as controllerIsInsidePositionValue,
+    isInsidePosition as controllerIsInsidePosition,
+    onPositionTouchStart,
+    onPositionMouseDown,
+    onPositionTouchMove,
+    onPositionMouseMove,
+    onPositionTouchEnd,
+    onPositionMouseUp,
+    onPositionMouseRightClick
+} from './LineupInteractionController.js';
 
 
 class PositionDev {
@@ -307,26 +321,11 @@ class PositionDev {
     }
 
     addEventListeners() {
-        // Add event listeners
-        this.canvas.addEventListener('mousedown', this.mdref);
-        this.canvas.addEventListener('mousemove', this.mmref);
-        this.canvas.addEventListener('mouseup', this.muref);
-        
-        this.canvas.addEventListener('touchstart',this.tsref);
-        this.canvas.addEventListener('touchmove',this.tmref);
-        this.canvas.addEventListener('touchend',this.teref);
-        //this.canvas.addEventListener('contextmenu', this.mrcref);
+        addPositionEventListeners(this);
     }
 
     removeEventListeners() {
-        this.canvas.removeEventListener('mousedown', this.mdref);
-        this.canvas.removeEventListener('mousemove', this.mmref);
-        this.canvas.removeEventListener('mouseup', this.muref);
-        
-        this.canvas.removeEventListener('touchstart',this.tsref);
-        this.canvas.removeEventListener('touchmove',this.tmref);
-        this.canvas.removeEventListener('touchend',this.teref);
-        //this.canvas.removeEventListener('contextmenu', this.mrcref);
+        removePositionEventListeners(this);
     }
 
     moveFrom() {
@@ -370,145 +369,19 @@ class PositionDev {
     }
 
     isInsideBox(x, y,xmin,xmax,ymin,ymax) {     
-        console.log("in isInsideBox")
-        console.log("x, y,xmin,xmax,ymin,ymax: ",x,", ", y,", ",xmin,", ",xmax,", ",ymin,", ",ymax)
-        var output = x >= xmin &&
-                     x <= xmax &&
-                     y >= ymin &&
-                     y <= ymax
-
-        if (output) {console.log("!!!!! IS INSIDE BOX !!!!")} else {console.log("!!!!! is NOT inside box !!!!")}
-        return output;
+        return controllerIsInsideBox(this, x, y, xmin, xmax, ymin, ymax);
     }
 
     isInsideShirtNum(mouseX, mouseY) {
-
-        var w4 = 0.375 * this.width;
-
-        // Convert mouse coordinates to rotated canvas coordinates
-        var centerX = this.canvas.width / 2;
-        var centerY = this.canvas.height / 2;
-        const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle,centerX,centerY);
-
-        return this.isInsideBox(
-            rotatedCoords.x,rotatedCoords.y,
-            this.xpos - w4 ,
-            this.xpos + w4 ,
-            this.ypos - w4 ,
-            this.ypos + w4 
-            )
+        return controllerIsInsideShirtNum(this, mouseX, mouseY);
     }
 
     isInsideSymbol(mouseX, mouseY,isUpright,leftcourt) {
-        
-        //TODO here code a save, then rotation of -total_angle
-        //basically it picks the right position considering the rotated position 
-        //however this is not where the symbol is because at the time of drawing the letter
-        //a rotation of -total_angle had been applied. 
-
-        var w1 = 0.5*this.width ; //value now outside of square //0.125 * this.width; //value when it was in the corner
-        var w2 = 0.25 * this.width;
-        var w3 = 1.25 *this.width; //value now outside of square //0.5 * this.width; //value when it was in the corner
-
-        console.log("INSIDE  isInsideSymbol")
-        console.log("this.canvas: ", this.canvas)
-        console.log("this.canvas.width: ", this.canvas.width)
-        console.log("this.canvas.height: ", this.canvas.height)
-
-        var centerX = this.canvas.width / 2;
-        var centerY = this.canvas.height / 2;
-        const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle,centerX,centerY);
-        if (isUpright) {
-                var isinsidebox = this.isInsideBox(
-                    rotatedCoords.x,rotatedCoords.y,
-                    this.xpos - w3,
-                    this.xpos - w1,
-                    this.ypos + w2,
-                    this.ypos + w3
-                    )
-
-        } else {
-            if (leftcourt) {
-                var isinsidebox = this.isInsideBox(
-                    rotatedCoords.x,rotatedCoords.y,
-                    this.xpos + w2,
-                    this.xpos + w3,
-                    this.ypos + w1,
-                    this.ypos + w3
-                    )
-            } else {
-                var isinsidebox = this.isInsideBox(
-                    rotatedCoords.x,rotatedCoords.y,
-                    this.xpos - w3,
-                    this.xpos - w2,
-                    this.ypos - w3,
-                    this.ypos - w1
-                    )
-            }
-        }
-
-        //poscontext.restore(); // Restore the canvas state
-
-        return isinsidebox;
+        return controllerIsInsideSymbol(this, mouseX, mouseY, isUpright, leftcourt);
     }
 
     isInsidePositionValue(mouseX, mouseY,isUpright,leftcourt) {
-        //TODO here code a save, then rotation of -total_angle
-     //basically it picks the right position considering the rotated position 
-     //however this is not where the symbol is because at the time of drawing the letter
-     //a rotation of -total_angle had been applied. 
-
-     console.log("INSIDE  isInsidePositionValue")
-     console.log("isUpright:"+ isUpright)
-     console.log("leftcourt:"+ leftcourt)
-     console.log("this.canvas: ", this.canvas)
-     console.log("this.canvas.width: ", this.canvas.width)
-     console.log("this.canvas.height: ", this.canvas.height)
-
-     console.log("posL " + this)
-
-     var centerX = this.canvas.width / 2;
-     var centerY = this.canvas.height / 2;
-     var w1 = 0.5*this.width ; //value now outside of square //0.125 * this.width; //value when it was in the corner
-     var w2 = 0.25 * this.width;
-     var w3 = 1.25 *this.width; //value now outside of square //0.5 * this.width; //value when it was in the corner
-
-     const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle,centerX,centerY);
-     if (isUpright) {
-        console.log("upright court")
-             var isinsidebox = this.isInsideBox(
-                 rotatedCoords.x,rotatedCoords.y,
-                 this.xpos + w1,
-                 this.xpos + w3,
-                 this.ypos + w2,
-                 this.ypos + w3
-                 )
-
-     } else {
-         if (leftcourt) {
-            console.log("sideway left court")
-            var isinsidebox = this.isInsideBox(
-                rotatedCoords.x,rotatedCoords.y,
-                this.xpos + w2,
-                this.xpos + w3,
-                this.ypos - w3,
-                this.ypos - w1
-                )
-         } else {
-            console.log("sideway right court")
-            var isinsidebox = this.isInsideBox(
-                rotatedCoords.x,rotatedCoords.y,
-                this.xpos - w3,
-                this.xpos - w2,
-                this.ypos + w1,
-                this.ypos + w3
-                )
-        }
-     }
-
-     //poscontext.restore(); // Restore the canvas state
-
-     return isinsidebox;
+        return controllerIsInsidePositionValue(this, mouseX, mouseY, isUpright, leftcourt);
  }
 
     assignContext(newcontext) {
@@ -517,155 +390,36 @@ class PositionDev {
     }
 
     isInside(x,y) {
-        return this.isInsideBox(
-            x,y,
-            this.xpos - 0.5 * this.width,
-            this.xpos + 0.5 * this.width,
-            this.ypos - 0.5 * this.width,
-            this.ypos + 0.5 * this.width
-            )
+        return controllerIsInsidePosition(this, x, y);
     }
 
     onTouchStart(event) {
-        // Store touch start time and position
-        this.touchStartTime = Date.now();
-        // Get touch end position relative to the canvas
-        const rect = this.canvas.getBoundingClientRect();
-        const touchStartPositionX = event.changedTouches[0].clientX - rect.left;
-        const touchStartPositionY = event.changedTouches[0].clientY - rect.top;
-
-        var centerX = this.canvas.width / 2;
-        var centerY = this.canvas.height / 2;
-        const rotatedCoords = convertToRotatedCoords(touchStartPositionX, touchStartPositionY, this.total_angle,centerX,centerY);
-
-
-        if (this.isInside(rotatedCoords.x, rotatedCoords.y)) {
-            //console.log("CLICKED INSIDE POSITION SO WE ARE NOW DRAGGING")
-            this.isDragging = true;
-            this.dragOffsetX = rotatedCoords.x - this.xpos;
-            this.dragOffsetY = rotatedCoords.y - this.ypos;
-        } else {
-            //console.log("CLICKED OUTSIDE POSITION SO DRAGGING NOT CHANGED")
-        }
+        onPositionTouchStart(this, event);
     }
 
     onMouseDown(event) {
-        console.log("MOUSE DOWN EVENT")
-        const rect = this.canvas.getBoundingClientRect();
-        const mouseX = event.clientX - rect.left;
-        const mouseY = event.clientY - rect.top;
-
-        // Convert mouse coordinates to rotated canvas coordinates
-        var centerX = this.canvas.width / 2;
-        var centerY = this.canvas.height / 2;
-        const rotatedCoords = convertToRotatedCoords(mouseX, mouseY, this.total_angle,centerX,centerY);
-
-        if (this.isInside(rotatedCoords.x, rotatedCoords.y)) {
-            //console.log("CLICKED INSIDE POSITION SO WE ARE NOW DRAGGING")
-            this.isDragging = true;
-            this.dragOffsetX = rotatedCoords.x - this.xpos;
-            this.dragOffsetY = rotatedCoords.y - this.ypos;
-        } else {
-            //console.log("CLICKED OUTSIDE POSITION SO DRAGGING NOT CHANGED")
-        }
+        onPositionMouseDown(this, event);
     }
 
     onTouchMove(event) {
-        
-        if (this.isDragging) {
-            event.preventDefault();
-            //console.log("MOUSE MOVE WHILE DRAGGING")
-            const rect = this.canvas.getBoundingClientRect();
-            const touchStartPositionX = event.changedTouches[0].clientX - rect.left;
-            const touchStartPositionY = event.changedTouches[0].clientY - rect.top;
-    
-            var centerX = this.canvas.width / 2;
-            var centerY = this.canvas.height / 2;
-            const rotatedCoords = convertToRotatedCoords(touchStartPositionX, touchStartPositionY, this.total_angle,centerX,centerY);
-
-            this.xpos = rotatedCoords.x - this.dragOffsetX;
-            this.ypos = rotatedCoords.y - this.dragOffsetY;
-
-            this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            this.draw();
-        } else {
-            //console.log("MOUSE MOVE WHILE NOT DRAGGING SO WILL NOT DRAW POSITION")
-        }        
+        onPositionTouchMove(this, event);
     }
 
     onMouseMove(event) {
-        if (this.isDragging) {
-            //console.log("MOUSE MOVE WHILE DRAGGING")
-            const rect = this.canvas.getBoundingClientRect();
-            const mouseX = event.clientX - rect.left;
-            const mouseY = event.clientY - rect.top;
-
-            // Convert mouse coordinates to rotated canvas coordinates
-            var centerX = this.canvas.width / 2;
-            var centerY = this.canvas.height / 2;
-            const rotatedCoords = convertToRotatedCoords(mouseX, mouseY,this.total_angle,centerX,centerY);
-
-            this.xpos = rotatedCoords.x - this.dragOffsetX;
-            this.ypos = rotatedCoords.y - this.dragOffsetY;
-
-            this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            this.draw();
-        } else {
-            //console.log("MOUSE MOVE WHILE NOT DRAGGING SO WILL NOT DRAW POSITION")
-        }
+        onPositionMouseMove(this, event);
     }
 
     onTouchEnd(event) {
-        this.isDragging = false;
-        event.preventDefault();
-        this.touchEndTime = Date.now();
-        this.touchDuration = this.touchEndTime - this.touchStartTime;
-            // Determine if it was a tap or a long press based on touch duration
-        console.log("Touch duration : ", this.touchDuration);
-        if (this.touchDuration < 300) { // Tap (less than 300ms)
-            console.log("TAP EVENT")
-            this.onMouseUp(event);
-            console.log("RUNNING onMouseRightCLick(event)")
-            this.onMouseRightClick(event);
-        } else { // Long press
-            console.log("LONG PRESS EVENT")
-            //this.onMouseRightClick(event);
-        }   
+        onPositionTouchEnd(this, event);
     }
 
-    onMouseUp(event) {
-        this.isDragging = false;
+    onMouseUp(event = null) {
+        onPositionMouseUp(this, event);
     }
 
 
     onMouseRightClick(event) {
-
-        //not called anymore to give more limits to the edit
-
-        if (this.independentEdit) {
-            const rect = this.canvas.getBoundingClientRect();
-            const mouseX = event.clientX - rect.left;
-            const mouseY = event.clientY - rect.top;
-            
-            //TODO make it so it detects whether editing shirt number OR position OR role
-            //if role : from one change, apply changes on all positions
-            //if shirt number : check that the change is allowed then apply or not
-            //if position: swap player with player of the target position
-    
-            if (this.isInsideShirtNum(mouseX, mouseY)) {
-                // Display form or dialog box to edit properties of 'pos'
-                this.editShirtNum();
-            } else if (this.isInsideSymbol(mouseX, mouseY)) {
-                // Display form or dialog box to edit properties of 'pos'
-                this.editSymbol();
-            } else if (this.isInsidePositionValue(mouseX, mouseY)) {
-
-            } else {
-                console.log("Nothing was picked as editable for mouseX = ",mouseX, " and mouseY = ",mouseY)
-    
-            }
-        }
-
+        onPositionMouseRightClick(this, event);
     }
 
  
