@@ -90,31 +90,38 @@ class PositionDev {
         this.context = poscontext;
         /* this.canvas = this.context.canvas; */
 
-        this.assignLaterality() 
+        this.assignLaterality();
 
+        this._courtX = 0;
+        this._courtY = 0;
+        this._prevCourtX = 0;
+        this._prevCourtY = 0;
+
+        let initialY = ypos;
         if (ypos == "default") {
             if (this.isfrontrow) {
-                this.ypos = 0.5*this.courtheight/3.0
-            } 
+                initialY = 0.5 * this.courtheight / 3.0;
+            }
             if (this.isbackrow) {
-                this.ypos = 0.666*this.courtheight
+                initialY = 0.666 * this.courtheight;
             }
         }
 
+        let initialX = xpos;
         if (xpos == "default") {
             if (this.isleftside) {
-                this.xpos = 0.25*this.courtwidth
-            } 
+                initialX = 0.25 * this.courtwidth;
+            }
             if (this.ismiddle) {
-                this.xpos = 0.5*this.courtwidth
-            } 
+                initialX = 0.5 * this.courtwidth;
+            }
             if (this.isrightside) {
-                this.xpos = 0.75*this.courtwidth
-            } 
+                initialX = 0.75 * this.courtwidth;
+            }
         }
 
-
-
+        this.xpos = initialX;
+        this.ypos = initialY;
         this.prevxpos = this.xpos;
         this.prevypos = this.ypos;
 
@@ -165,48 +172,84 @@ class PositionDev {
         this.value = newRotationPosition;
     }
 
-    get courtX() {
+    get xpos() {
+        return this._courtX * this.courtwidth;
+    }
+
+    set xpos(newXPos) {
         if (this.courtwidth === 0) {
-            return 0;
+            this._courtX = 0;
+            return;
         }
-        return this.xpos / this.courtwidth;
+        this._courtX = newXPos / this.courtwidth;
+    }
+
+    get ypos() {
+        return this._courtY * this.courtheight;
+    }
+
+    set ypos(newYPos) {
+        if (this.courtheight === 0) {
+            this._courtY = 0;
+            return;
+        }
+        this._courtY = newYPos / this.courtheight;
+    }
+
+    get prevxpos() {
+        return this._prevCourtX * this.courtwidth;
+    }
+
+    set prevxpos(newPrevXPos) {
+        if (this.courtwidth === 0) {
+            this._prevCourtX = 0;
+            return;
+        }
+        this._prevCourtX = newPrevXPos / this.courtwidth;
+    }
+
+    get prevypos() {
+        return this._prevCourtY * this.courtheight;
+    }
+
+    set prevypos(newPrevYPos) {
+        if (this.courtheight === 0) {
+            this._prevCourtY = 0;
+            return;
+        }
+        this._prevCourtY = newPrevYPos / this.courtheight;
+    }
+
+    get courtX() {
+        return this._courtX;
     }
 
     set courtX(newCourtX) {
-        this.xpos = newCourtX * this.courtwidth;
+        this._courtX = newCourtX;
     }
 
     get courtY() {
-        if (this.courtheight === 0) {
-            return 0;
-        }
-        return this.ypos / this.courtheight;
+        return this._courtY;
     }
 
     set courtY(newCourtY) {
-        this.ypos = newCourtY * this.courtheight;
+        this._courtY = newCourtY;
     }
 
     get prevCourtX() {
-        if (this.courtwidth === 0) {
-            return 0;
-        }
-        return this.prevxpos / this.courtwidth;
+        return this._prevCourtX;
     }
 
     set prevCourtX(newPrevCourtX) {
-        this.prevxpos = newPrevCourtX * this.courtwidth;
+        this._prevCourtX = newPrevCourtX;
     }
 
     get prevCourtY() {
-        if (this.courtheight === 0) {
-            return 0;
-        }
-        return this.prevypos / this.courtheight;
+        return this._prevCourtY;
     }
 
     set prevCourtY(newPrevCourtY) {
-        this.prevypos = newPrevCourtY * this.courtheight;
+        this._prevCourtY = newPrevCourtY;
     }
 
     get width() {

@@ -613,12 +613,8 @@ class LineupDev {
         console.log("this.static_courtwidth: ", this.static_courtwidth)
         console.log("this.static_courtheight: ", this.static_courtheight)
         this.positions.forEach( pos => {
-            var xratio = pos.courtX
-            var yratio = pos.courtY
             pos.courtwidth = newcourtwidth;
             pos.courtheight = newcourtheight;
-            pos.courtX = xratio;
-            pos.courtY = yratio;
         })
         this.static_courtwidth = newcourtwidth;
         this.static_courtheight= newcourtheight;
