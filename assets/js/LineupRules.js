@@ -7,7 +7,7 @@ function addPosTupleToArray(mypos1, mypos2, postuplearray) {
         const pos1 = tuple[0];
         const pos2 = tuple[1];
 
-        if ((mypos1.value == pos1.value && mypos2.value == pos2.value) | (mypos1.value == pos2.value && mypos2.value == pos1.value)) {
+        if ((mypos1.rotationPosition == pos1.rotationPosition && mypos2.rotationPosition == pos2.rotationPosition) | (mypos1.rotationPosition == pos2.rotationPosition && mypos2.rotationPosition == pos1.rotationPosition)) {
             found = true;
             break;
         }
@@ -26,7 +26,7 @@ function removePosTupleFromArray(mypos1, mypos2, postuplearray) {
         const pos1 = tuple[0];
         const pos2 = tuple[1];
 
-        if ((mypos1.value == pos1.value && mypos2.value == pos2.value) | (mypos1.value == pos2.value && mypos2.value == pos1.value)) {
+        if ((mypos1.rotationPosition == pos1.rotationPosition && mypos2.rotationPosition == pos2.rotationPosition) | (mypos1.rotationPosition == pos2.rotationPosition && mypos2.rotationPosition == pos1.rotationPosition)) {
             postuplearray.splice(i, 1);
             return postuplearray;
         }

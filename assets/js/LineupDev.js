@@ -132,7 +132,7 @@ class LineupDev {
     get values() {
         var actualvalues = []
         this.positions.forEach(pos => {
-            actualvalues.push(pos.value);
+            actualvalues.push(pos.rotationPosition);
         })
         console.log("values: "+ actualvalues)
         return(actualvalues);
@@ -253,7 +253,7 @@ class LineupDev {
                 this.isDragging = true;
                 this.draggingPositions.push(pos);
                 this.newIllegalPositions = [];
-                this.removePositionsByValue(pos.value,this.notDraggingPositions);
+                this.removePositionsByValue(pos.rotationPosition,this.notDraggingPositions);
             }
         });
         //this.checkPositionsLegalityStatic();
@@ -295,7 +295,7 @@ class LineupDev {
                     console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
                     console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
                     console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
-                    const newvalue = parseInt(prompt("Enter new  value (valid values are: "+ [1,2,3,4,5,6] +"):",pos.value));
+                    const newvalue = parseInt(prompt("Enter new  value (valid values are: "+ [1,2,3,4,5,6] +"):",pos.rotationPosition));
                     console.log("new values: ", newvalue)
                     this.editValues(pos, newvalue)
                     //before TODO this does not edit shirtnums array and it must do so!
@@ -353,7 +353,7 @@ class LineupDev {
                 console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
                 console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
                 console.log("!!!!!!! editing values !!!!!!!!!!!!!!")
-                const newvalue = parseInt(prompt("Enter new  value (valid values are: "+ [1,2,3,4,5,6] +"):",pos.value));
+                const newvalue = parseInt(prompt("Enter new  value (valid values are: "+ [1,2,3,4,5,6] +"):",pos.rotationPosition));
                 console.log("new values: ", newvalue)
                 this.editValues(pos, newvalue)
                 //before TODO this does not edit shirtnums array and it must do so!
@@ -408,7 +408,7 @@ class LineupDev {
         var newsymbols = [];
         var newShirtnums = [];
         for (let posval = 1; posval < 7; posval++) {
-            var posindexatvalue = this.positions.findIndex(somepos => somepos.value === posval)
+            var posindexatvalue = this.positions.findIndex(somepos => somepos.rotationPosition === posval)
             console.log("found position with value" + posval + " at element index " + posindexatvalue)
             var relpos= this.positions[posindexatvalue]
             console.log("relpos: ", relpos)
@@ -422,7 +422,7 @@ class LineupDev {
     editValues(pos, newvalue) {
         var finalvalues = [...this.values];  // Spread operator for arrays
         var nb_rotations = 0;
-        const posindex = this.positions.findIndex(somepos => somepos.value === pos.value)
+        const posindex = this.positions.findIndex(somepos => somepos.rotationPosition === pos.rotationPosition)
 
         console.log("the index for pos selected to change all values:" + posindex)
 
@@ -435,16 +435,16 @@ class LineupDev {
             while (finalvalues[posindex] != newvalue) {
                 console.log("goal not reached yet with following values: ")
                 console.log("finalvalues: ", finalvalues)
-                console.log("pos.value: " + pos.value)
-                console.log("finalvalues[pos.value-1]: " + finalvalues[pos.value-1])
+                console.log("pos.rotationPosition: " + pos.rotationPosition)
+                console.log("finalvalues[pos.rotationPosition-1]: " + finalvalues[pos.rotationPosition-1])
                 console.log("updating finalvalues")
                 finalvalues = arrayRotateN(finalvalues, false,1);
                 nb_rotations ++;
                 console.log("nb_rotations: ",nb_rotations)
             }
             console.log("goal reached with following values:  ")
-            console.log("pos.value: " + pos.value)
-            console.log("finalvalues[pos.value-1]: " + finalvalues[pos.value-1])
+            console.log("pos.rotationPosition: " + pos.rotationPosition)
+            console.log("finalvalues[pos.rotationPosition-1]: " + finalvalues[pos.rotationPosition-1])
             console.log("nb_rotations final: ",nb_rotations)
             console.log("finalvalues to match proposed edit: ", finalvalues)
             this.updatePositionValues(finalvalues)
@@ -642,7 +642,7 @@ class LineupDev {
             console.log("pos: " , pos)
             console.log("index:",index)
             console.log("newvalues[index]:",newvalues[index])           
-            pos.value = newvalues[index];
+            pos.rotationPosition = newvalues[index];
             pos.assignLaterality();
             index ++;
         })
@@ -682,7 +682,7 @@ class LineupDev {
     }
 
     assignDefaultSymbols(pos,newdefaultsymbol = "S",recreatePositions = false) {
-        const posindex = this.positions.findIndex(somepos => somepos.value === pos.value)
+        const posindex = this.positions.findIndex(somepos => somepos.rotationPosition === pos.rotationPosition)
         console.log("inside assignDefaultSymbols")
         if (this.defaultsymbols.includes(newdefaultsymbol)) {
             console.log(this.defaultsymbols," includes ", newdefaultsymbol)
@@ -690,7 +690,7 @@ class LineupDev {
             console.log("before rotating, newsymbols:", newsymbols)            
             var nb_rotations = 0;
             console.log("nb_rotations: ",nb_rotations)
-            var posvalue = pos.value;
+            var posvalue = pos.rotationPosition;
             console.log("posvalue: ",posvalue)
             console.log("newsymbols[posvalue-1]: ",newsymbols[posvalue-1])
             while (newsymbols[posindex] != newdefaultsymbol) {
@@ -729,10 +729,12 @@ class LineupDev {
         console.log("this.static_courtwidth: ", this.static_courtwidth)
         console.log("this.static_courtheight: ", this.static_courtheight)
         this.positions.forEach( pos => {
-            var xratio = pos.xpos / this.static_courtwidth
-            var yratio = pos.xpos / this.static_courtheight
-            pos.xpos = xratio * newcourtwidth;
-            pos.ypos = yratio * newcourtheight;
+            var xratio = pos.courtX
+            var yratio = pos.courtY
+            pos.courtwidth = newcourtwidth;
+            pos.courtheight = newcourtheight;
+            pos.courtX = xratio;
+            pos.courtY = yratio;
         })
         this.static_courtwidth = newcourtwidth;
         this.static_courtheight= newcourtheight;
@@ -793,8 +795,8 @@ class LineupDev {
             logmyobject("in updatePrevpos, previndex",previndex);
             var prevpos = this.prevpositions[previndex ];
             logmyobject("pos before updating prevpos",pos);
-            pos.prevxpos = prevpos.xpos;
-            pos.prevypos = prevpos.ypos;
+            pos.prevCourtX = prevpos.courtX;
+            pos.prevCourtY = prevpos.courtY;
             logmyobject("pos after updating prevpos",pos);
             logmyobject("prevpos",prevpos);
         })
@@ -822,7 +824,7 @@ class LineupDev {
 
     removePositionsByValue(value,positions) {
         var result = positions.filter(obj => {
-            return obj.value !== value
+            return obj.rotationPosition !== value
           })
         return result
     }
@@ -877,22 +879,22 @@ class LineupDev {
                         this.newIllegalPositions = this.addPosToPosArray(pos1, this.newIllegalPositions)
                     }   
                     this.illegalPositions = this.addPosToPosArray(pos1, this.illegalPositions)
-                    this.removePositionsByValue(pos1.value,this.notIllegalPositions);
+                    this.removePositionsByValue(pos1.rotationPosition,this.notIllegalPositions);
 
                     if (!this.illegalPositions.includes(pos2)) {
                         this.newIllegalPositions = this.addPosToPosArray(pos2, this.newIllegalPositions)
                     }   
                     this.illegalPositions = this.addPosToPosArray(pos2, this.illegalPositions)
-                    this.removePositionsByValue(pos2.value,this.notIllegalPositions);
+                    this.removePositionsByValue(pos2.rotationPosition,this.notIllegalPositions);
                 } 
                 else {
                     if (this.newIllegalPositions.includes(pos1)) {
                         pos1.color = "green"
-                        this.newIllegalPositions = this.removePositionsByValue(pos1.value,this.newIllegalPositions);
+                        this.newIllegalPositions = this.removePositionsByValue(pos1.rotationPosition,this.newIllegalPositions);
                     }
                     if (this.newIllegalPositions.includes(pos2)) {
                         pos2.color = "green"
-                        this.newIllegalPositions = this.removePositionsByValue(pos2.value,this.newIllegalPositions);
+                        this.newIllegalPositions = this.removePositionsByValue(pos2.rotationPosition,this.newIllegalPositions);
                     }
                 }
             })
@@ -901,12 +903,12 @@ class LineupDev {
 
     getPositionWithRelationship(pos) {
         var posvalues = []
-        if (pos.value == 1) posvalues = [1,5,6]
-        if (pos.value == 2) posvalues = [1,3,4]
-        if (pos.value == 3) posvalues = [2,4,6]
-        if (pos.value == 4) posvalues = [2,3,5]
-        if (pos.value == 5) posvalues = [1,4,6]
-        if (pos.value == 6) posvalues = [1,3,5]
+        if (pos.rotationPosition == 1) posvalues = [1,5,6]
+        if (pos.rotationPosition == 2) posvalues = [1,3,4]
+        if (pos.rotationPosition == 3) posvalues = [2,4,6]
+        if (pos.rotationPosition == 4) posvalues = [2,3,5]
+        if (pos.rotationPosition == 5) posvalues = [1,4,6]
+        if (pos.rotationPosition == 6) posvalues = [1,3,5]
         var positionswithrel = getPositionFromValue(posvalues,this.positions) 
         return positionswithrel
     }

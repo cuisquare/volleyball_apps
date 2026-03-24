@@ -142,6 +142,58 @@ class PositionDev {
         return(this.context.canvas)
     }
 
+    get rotationPosition() {
+        return this.value;
+    }
+
+    set rotationPosition(newRotationPosition) {
+        this.value = newRotationPosition;
+    }
+
+    get courtX() {
+        if (this.courtwidth === 0) {
+            return 0;
+        }
+        return this.xpos / this.courtwidth;
+    }
+
+    set courtX(newCourtX) {
+        this.xpos = newCourtX * this.courtwidth;
+    }
+
+    get courtY() {
+        if (this.courtheight === 0) {
+            return 0;
+        }
+        return this.ypos / this.courtheight;
+    }
+
+    set courtY(newCourtY) {
+        this.ypos = newCourtY * this.courtheight;
+    }
+
+    get prevCourtX() {
+        if (this.courtwidth === 0) {
+            return 0;
+        }
+        return this.prevxpos / this.courtwidth;
+    }
+
+    set prevCourtX(newPrevCourtX) {
+        this.prevxpos = newPrevCourtX * this.courtwidth;
+    }
+
+    get prevCourtY() {
+        if (this.courtheight === 0) {
+            return 0;
+        }
+        return this.prevypos / this.courtheight;
+    }
+
+    set prevCourtY(newPrevCourtY) {
+        this.prevypos = newPrevCourtY * this.courtheight;
+    }
+
     get width() {
         return (this.getPosWidth())
     }
@@ -159,11 +211,11 @@ class PositionDev {
     }
 
     assignLaterality() {
-        this.isfrontrow = ([2,3,4].includes(this.value));
-        this.isbackrow = ([5,6,1].includes(this.value));
-        this.isleftside = ([4,5].includes(this.value));
-        this.ismiddle = ([3,6].includes(this.value));
-        this.isrightside = ([1,2].includes(this.value));
+        this.isfrontrow = ([2,3,4].includes(this.rotationPosition));
+        this.isbackrow = ([5,6,1].includes(this.rotationPosition));
+        this.isleftside = ([4,5].includes(this.rotationPosition));
+        this.ismiddle = ([3,6].includes(this.rotationPosition));
+        this.isrightside = ([1,2].includes(this.rotationPosition));
 
         if (this.isfrontrow) {
             this.vert = 1;
@@ -184,7 +236,7 @@ class PositionDev {
 
     prevposition() {
         var allvalues = [1,2,3,4,5,6]
-        var currindex = allvalues.indexOf(this.value)
+        var currindex = allvalues.indexOf(this.rotationPosition)
         var previndex = (currindex +1) % 6
         return allvalues[previndex]
     }
@@ -232,9 +284,9 @@ class PositionDev {
             this.shirtnum = newShirtNum;
         }
 
-        const newValue = prompt("Enter new position value (1-6 only):", this.value);
+        const newValue = prompt("Enter new position value (1-6 only):", this.rotationPosition);
         if (newValue !== null) {
-            this.value = newValue;
+            this.rotationPosition = newValue;
         }
 
 
@@ -380,7 +432,7 @@ class PositionDev {
         poscontext.textAlign = "right";
         poscontext.textBaseline = "bottom"
         poscontext.font = "15px Arial";
-        poscontext.fillText(this.value, 0.8 * this.width, 0.9 * this.height); // Text position relative to the Position instance's coordinates
+        poscontext.fillText(this.rotationPosition, 0.8 * this.width, 0.9 * this.height); // Text position relative to the Position instance's coordinates
     
         poscontext.restore(); // Restore the canvas state
         //console.log("drawed a position")
