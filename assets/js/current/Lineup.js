@@ -1,4 +1,4 @@
-import {logmyobject, arrayRotateN} from './utils.js';
+import {logmyobject, arrayRotateN} from '../core/utils.js';
 
 import Position from './Position.js';
 

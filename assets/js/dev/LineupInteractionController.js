@@ -1,4 +1,4 @@
-import {logmyobject, convertToRotatedCoords} from './utils.js';
+import {logmyobject, convertToRotatedCoords} from '../core/utils.js';
 
 function addPositionEventListeners(position) {
     position.canvas.addEventListener('mousedown', position.mdref);

@@ -1,8 +1,8 @@
-import Fixture from './Fixture.js';
-import Rules from './Rules.js';
-import Game from './Game.js';
-import LineupDev from './LineupDev.js';
-import getSymbolsFromSetterPosition from './utils.js';
+import Fixture from '../core/Fixture.js';
+import Rules from '../core/Rules.js';
+import Game from '../core/Game.js';
+import Lineup from './Lineup.js';
+import getSymbolsFromSetterPosition from '../core/utils.js';
 
 
 
@@ -282,7 +282,7 @@ function bindTeamSetup(teamKey, sideLabel, lineup) {
     return controller;
 }
 
-var mylineupteamA = new LineupDev(
+var mylineupteamA = new Lineup(
     [5,9,45,23,12,7],
     mysymbols,
     contextleft, 
@@ -312,7 +312,7 @@ contextright.clearRect(0, 0, window_width , window_height)
 //contextright.fillStyle = 'blue';
 //contextright.fillRect(0, 0, canvasright.width, canvasright.height);
 
-var mylineupteamB = new LineupDev(
+var mylineupteamB = new Lineup(
     [3,10,8,7,13,4],
     mysymbols,
     contextright, 
@@ -517,7 +517,6 @@ awayteam */
 const lvarules = new Rules()
 const myfixture = new Fixture()
 //const mygame = new Game();
-
 
 
 

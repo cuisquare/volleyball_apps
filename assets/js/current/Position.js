@@ -1,6 +1,6 @@
-import {logmyobject} from './utils.js';
+import {logmyobject} from '../core/utils.js';
 
-import {convertToRotatedCoords} from './utils.js';
+import {convertToRotatedCoords} from '../core/utils.js';
 
 
 class Position {

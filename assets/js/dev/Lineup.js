@@ -1,6 +1,6 @@
-import {logmyobject, arrayRotateN} from './utils.js';
+import {logmyobject, arrayRotateN} from '../core/utils.js';
 
-import PositionDev from './PositionDev.js';
+import Position from './Position.js';
 import LineupState from './LineupState.js';
 import {checkSinglePositionLegality, getIllegalPositionTuples} from './LineupRules.js';
 import {drawCourt, drawLineup} from './CourtRenderer.js';
@@ -17,7 +17,7 @@ import {
     onLineupMouseMove
 } from './LineupInteractionController.js';
 
-class LineupDev extends LineupState {
+class Lineup extends LineupState {
     constructor(
         shirtnums = [15,16,17,18,19,20], 
         symbols = [], 
@@ -405,7 +405,7 @@ class LineupDev extends LineupState {
             console.log("creating new position")
             console.log("this.courtwidth:",this.courtwidth)
             console.log("this.courtheight:",this.courtheight)
-            var updatedposition = new PositionDev(
+            var updatedposition = new Position(
                 val, 
                 shirtnum,
                 symbol,
@@ -707,4 +707,4 @@ class LineupDev extends LineupState {
 }
 
 // Export the class to make it accessible in other files
-export default LineupDev;
+export default Lineup;

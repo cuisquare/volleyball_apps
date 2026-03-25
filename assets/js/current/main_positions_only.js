@@ -1,8 +1,8 @@
-import Fixture from './Fixture.js';
-import Rules from './Rules.js';
-import Game from './Game.js';
+import Fixture from '../core/Fixture.js';
+import Rules from '../core/Rules.js';
+import Game from '../core/Game.js';
 import Lineup from './Lineup.js';
-import getSymbolsFromSetterPosition from './utils.js';
+import getSymbolsFromSetterPosition from '../core/utils.js';
 
 
 let canvasleft = document.getElementById("canvasleft");

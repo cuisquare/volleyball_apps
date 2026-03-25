@@ -1,4 +1,4 @@
-import {logmyobject} from './utils.js';
+import {logmyobject} from '../core/utils.js';
 import CourtPlayerState from './CourtPlayerState.js';
 import {drawPosition} from './CourtRenderer.js';
 import {
@@ -18,7 +18,7 @@ import {
     onPositionMouseRightClick
 } from './LineupInteractionController.js';
 
-class PositionDev extends CourtPlayerState {
+class Position extends CourtPlayerState {
     constructor(
         rotationPosition, 
         shirtnum, 
@@ -384,4 +384,4 @@ class PositionDev extends CourtPlayerState {
 }
 
 // Export the class to make it accessible in other files
-export default PositionDev;
+export default Position;
