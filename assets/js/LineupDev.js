@@ -1,6 +1,7 @@
 import {logmyobject, arrayRotateN} from './utils.js';
 
 import PositionDev from './PositionDev.js';
+import LineupState from './LineupState.js';
 import {checkSinglePositionLegality, getIllegalPositionTuples} from './LineupRules.js';
 import {drawCourt, drawLineup} from './CourtRenderer.js';
 import {
@@ -16,7 +17,7 @@ import {
     onLineupMouseMove
 } from './LineupInteractionController.js';
 
-class LineupDev {
+class LineupDev extends LineupState {
     constructor(
         shirtnums = [15,16,17,18,19,20], 
         symbols = [], 
@@ -26,28 +27,10 @@ class LineupDev {
         window_width, 
         window_height
         ) {
-
-        this.editmode = "freeswap" //"freeswap", "override" , "ingame"
-
-        this.playerappearance = "square" //"feetandsquare", "feet" , "square"
+        super(shirtnums, symbols);
 
         this.colorcourtline = "#eee";
         this.colorcourtbackground = "#fe7a58";
-
-        this.shirtnums = shirtnums;
-
-        this.defaultsymbols = ["S","O1","M1","Opp","O2","M2"];
-
-        if (this.symbols == []) {
-            this.symbols = this.defaultsymbols;
-        } else {
-            this.symbols = symbols;
-        }
-        
-        this.fullshirtnums = this.shirtnums.slice()
-
-
-        this.oldRules = false;
 
         this.context = lucontext;
         this.canvas = this.context.canvas;
@@ -88,7 +71,7 @@ class LineupDev {
         console.log("this.perc_full_height : " , this.perc_full_height )
         console.log("this.getCourtHeight(this.perc_full_height): ",this.getCourtHeight(this.perc_full_height))
 
-        this.positions = this.getPositions(shirtnums, symbols,this.context, this.defaultvalues);
+        this.positions = this.getPositions(this.shirtnums, this.symbols, this.context, this.defaultvalues);
         this.illegalPositions = [];
         this.illegalPositionTuples = [];
         this.notIllegalPositions = this.positions;
@@ -130,27 +113,6 @@ class LineupDev {
 
     }
 
-    _defaultvalues = [1,2,3,4,5,6];
-
-    get defaultvalues() {
-        console.log("I was in the getter for this.defaultvalues")
-        return this._defaultvalues;
-    }
-
-    set defaultvalues(newdefaultvalues) {
-        console.log("I was in the setter for this.defaultvalues")
-        console.log("attempted to set defaultvalues to " + newdefaultvalues + " but this is forbidden.")
-    }
-
-    get values() {
-        var actualvalues = []
-        this.positions.forEach(pos => {
-            actualvalues.push(pos.rotationPosition);
-        })
-        console.log("values: "+ actualvalues)
-        return(actualvalues);
-    }
-
     // Define the getter for court_width
     get courtwidth() {
         return this.getCourtWidth();
@@ -186,12 +148,6 @@ class LineupDev {
         })
     }
 
-    addShirtnum(newShirtNum) {
-        if (!this.fullshirtnums.includes(newShirtNum)) {
-            this.fullshirtnums.push(newShirtNum)
-        }
-    }
-
     setStateChangeHandler(handler) {
         this.stateChangeHandler = handler;
     }
@@ -203,7 +159,7 @@ class LineupDev {
     }
 
     setFullShirtNums(newFullShirtNums) {
-        this.fullshirtnums = newFullShirtNums.slice();
+        super.setFullShirtNums(newFullShirtNums);
         this.notifyStateChange();
     }
 
@@ -248,44 +204,6 @@ class LineupDev {
 
     onMouseRightClick(event) { 
         onLineupMouseRightClick(this, event);
-    }
-
-    getValidShirtNums(mode = "override") {
-        //gets valid numbers
-        console.log("currentShirtNums: ",this.shirtnums)
-        console.log("fullShirtNums: ",this.fullshirtnums)
-        var validshirtnums = Array.from({ length: 99 }, (_, i) => i + 1);
-        if (mode == "freeswap") {
-            console.log("mode is freeswap, running this code")
-            validshirtnums = this.fullshirtnums
-        }
-        if (mode == "ingame") {
-            console.log("mode is ingame, running this code")
-            validshirtnums = this.fullshirtnums.filter(item => !this.shirtnums.includes(item))
-        }
-        console.log("valid shirtnums : " + validshirtnums)
-
-        return validshirtnums;
-    }
-
-    ellipsisArray(arr,maxnumdisplay=3, numstartellipsis = 14) {
-        if (arr.length <= numstartellipsis) {
-            var output = arr.join(',');
-        } else {
-            const firstThree = arr.slice(0, maxnumdisplay);      // Get the first maxnumdisplay elements
-            const lastThree = arr.slice(-maxnumdisplay);         // Get the last maxnumdisplay elements
-    
-            var output = [...firstThree, '...', ...lastThree].join(',');
-        }
-
-        console.log(output)
-    
-        return output;
-
-    }
-
-    findPositionByShirtNum(shirtnum) {
-        return this.positions.find(pos => pos.shirtnum === shirtnum);
     }
 
     //because we can now update values independently from underlying pos.symbols and pos.shirtnums,
@@ -511,14 +429,6 @@ class LineupDev {
         return positions
     }
 
-    getShirtNums(positions) {
-        var shirtnums = []
-        positions.forEach(pos => {
-            shirtnums.push(pos.shirtnum)
-        })
-        return shirtnums
-    }
-
     updatePositionValues(newvalues) {
         var index = 0;
         console.log("inside updatePositionValues")
@@ -699,14 +609,7 @@ class LineupDev {
     }
 
     removePosFromPosArray(pos,posarray) {
-        return this.removePositionsByValue(pos.value,posarray);
-    }
-
-    removePositionsByValue(value,positions) {
-        var result = positions.filter(obj => {
-            return obj.rotationPosition !== value
-          })
-        return result
+        return this.removePositionsByValue(pos.rotationPosition,posarray);
     }
 
     checkPositionsLegalityStatic(checkedpositions = this.positions, otherPositions = this.positions, oldrules = this.oldRules) { 

@@ -1,4 +1,5 @@
 import {logmyobject} from './utils.js';
+import CourtPlayerState from './CourtPlayerState.js';
 import {drawPosition} from './CourtRenderer.js';
 import {
     addPositionEventListeners,
@@ -17,10 +18,9 @@ import {
     onPositionMouseRightClick
 } from './LineupInteractionController.js';
 
-
-class PositionDev {
+class PositionDev extends CourtPlayerState {
     constructor(
-        value, 
+        rotationPosition, 
         shirtnum, 
         symbol = "P",
         poscontext,
@@ -33,14 +33,7 @@ class PositionDev {
         imageSrcGreen =  "../assets/images/squarefeetgreyernobackgroundgreen.png",
         imageSrcRed =  "../assets/images/squarefeetgreyernobackgroundred.png"
         ) {
-
-        if(!([1,2,3,4,5,6].includes(value))) {
-            throw('value can only take any of the following values: [1,2,3,4,5,6], but value attempt was: '+ value.toString() );
-        }
-
-        this.value = value;
-        this.shirtnum = shirtnum;
-        this.symbol = symbol;
+        super(rotationPosition, shirtnum, symbol);
 
         this.postocourtratio = 0.1;
         this.courtwidth = courtwidth;
@@ -89,13 +82,6 @@ class PositionDev {
 
         this.context = poscontext;
         /* this.canvas = this.context.canvas; */
-
-        this.assignLaterality();
-
-        this._courtX = 0;
-        this._courtY = 0;
-        this._prevCourtX = 0;
-        this._prevCourtY = 0;
 
         let initialY = ypos;
         if (ypos == "default") {
@@ -164,14 +150,6 @@ class PositionDev {
         return(this.context.canvas)
     }
 
-    get rotationPosition() {
-        return this.value;
-    }
-
-    set rotationPosition(newRotationPosition) {
-        this.value = newRotationPosition;
-    }
-
     get xpos() {
         return this._courtX * this.courtwidth;
     }
@@ -220,38 +198,6 @@ class PositionDev {
         this._prevCourtY = newPrevYPos / this.courtheight;
     }
 
-    get courtX() {
-        return this._courtX;
-    }
-
-    set courtX(newCourtX) {
-        this._courtX = newCourtX;
-    }
-
-    get courtY() {
-        return this._courtY;
-    }
-
-    set courtY(newCourtY) {
-        this._courtY = newCourtY;
-    }
-
-    get prevCourtX() {
-        return this._prevCourtX;
-    }
-
-    set prevCourtX(newPrevCourtX) {
-        this._prevCourtX = newPrevCourtX;
-    }
-
-    get prevCourtY() {
-        return this._prevCourtY;
-    }
-
-    set prevCourtY(newPrevCourtY) {
-        this._prevCourtY = newPrevCourtY;
-    }
-
     get width() {
         return (this.getPosWidth())
     }
@@ -268,37 +214,6 @@ class PositionDev {
         return(this.postocourtratio * this.courtheight)
     }
 
-    assignLaterality() {
-        this.isfrontrow = ([2,3,4].includes(this.rotationPosition));
-        this.isbackrow = ([5,6,1].includes(this.rotationPosition));
-        this.isleftside = ([4,5].includes(this.rotationPosition));
-        this.ismiddle = ([3,6].includes(this.rotationPosition));
-        this.isrightside = ([1,2].includes(this.rotationPosition));
-
-        if (this.isfrontrow) {
-            this.vert = 1;
-        }
-        if (this.isbackrow) {
-            this.vert = 0;
-        }
-        if (this.isleftside) {
-            this.hor = 0;
-        }
-        if (this.ismiddle) {
-            this.hor = 1;
-        }
-        if (this.isrightside) {
-            this.hor = 2;
-        }
-    }
-
-    prevposition() {
-        var allvalues = [1,2,3,4,5,6]
-        var currindex = allvalues.indexOf(this.rotationPosition)
-        var previndex = (currindex +1) % 6
-        return allvalues[previndex]
-    }
- 
     editShirtNum(currentShirtNums,fullShirtNums, mode = "override") {
         // Display a form or dialog box to edit shirtnum property 
         console.log("currentShirtNums: ",currentShirtNums)
