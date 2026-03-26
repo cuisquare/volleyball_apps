@@ -1,6 +1,6 @@
-import Fixture from './Fixture.js';
-import Rules from './Rules.js';
-import Game from './Game.js';
+import Fixture from '../core/Fixture.js';
+import Rules from '../core/Rules.js';
+import Game from '../core/Game.js';
 
 document.addEventListener("DOMContentLoaded", () => {
     const toggleButton = document.getElementById("dark-mode-toggle");
