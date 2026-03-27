@@ -124,14 +124,28 @@ button {
   color: #dcffe4;
 }
 
-.canvas-wrapper {
+.canvas-container > .canvas-wrapper {
   display:block;
   margin: 10px;
+  flex: 1 1 320px;
+  width: min(100%, 600px);
+  max-width: 600px;
+  min-width: 280px;
+}
+
+body > .canvas-wrapper {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+  margin: 10px auto;
 }
 
 .canvas {
-/*   max-width: 600px;
-  max-height: 600px; */
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
 }
 
 .button-wrapper {
@@ -148,6 +162,7 @@ button {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
 
 /*   height: auto;
   margin-left: auto;
@@ -256,6 +271,7 @@ input[type="checkbox"]:focus {
 @media (max-width: 750px) {
   .canvas-container {
     flex-direction: column;
+    align-items: center;
   }
 
   .lineup-grid {
@@ -264,5 +280,10 @@ input[type="checkbox"]:focus {
 
   .lineup-grid.sideways-layout {
     grid-template-columns: 1fr;
+  }
+
+  .canvas-container > .canvas-wrapper {
+    min-width: min(280px, 100%);
+    width: min(100%, 600px);
   }
 }

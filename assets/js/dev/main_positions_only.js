@@ -4,23 +4,19 @@ import Game from '../core/Game.js';
 import Lineup from './Lineup.js';
 import getSymbolsFromSetterPosition from '../core/utils.js';
 
-
-
-
-var max_court_width = 0.8 * Math.min(window.innerWidth,window.innerHeight)
-
-//max_court_width = window.innerWidth;
+function getMaxCourtWidth() {
+    return Math.min(0.8 * Math.min(window.innerWidth, window.innerHeight), 600);
+}
 
 function get_window_width() {
-    return Math.min(max_court_width,600); // 0.80 * max_court_width ;
+    return getMaxCourtWidth();
 }
 
 function get_window_height() {
-    return Math.min(max_court_width,600); // 0.80 * max_court_width ;
+    return getMaxCourtWidth();
 }
 
 var window_width = get_window_width() ;
-//window_height = 0.80 * 2 * max_court_width;
 var window_height = get_window_height();
 
 
@@ -70,6 +66,20 @@ function setStatusMessage(statusElement, message, status = "") {
 function redrawLineup(lineup, reason = "UI update") {
     lineup.checkPositionsLegalityStatic();
     lineup.draw(reason);
+}
+
+function syncCanvasDisplaySize(canvas) {
+    const rect = canvas.getBoundingClientRect();
+    const nextWidth = Math.max(1, Math.round(rect.width));
+    const nextHeight = Math.max(1, Math.round(rect.height));
+    const sizeChanged = canvas.width !== nextWidth || canvas.height !== nextHeight;
+
+    if (sizeChanged) {
+        canvas.width = nextWidth;
+        canvas.height = nextHeight;
+    }
+
+    return sizeChanged;
 }
 
 const teamSetupControllers = [];
@@ -336,7 +346,6 @@ function updateSetupPanelAssignments() {
 mylineupteamA.setStateChangeHandler(refreshAllTeamSetupPanels);
 mylineupteamB.setStateChangeHandler(refreshAllTeamSetupPanels);
 refreshAllTeamSetupPanels();
-window.addEventListener("resize", refreshAllTeamSetupPanels);
 
 document.getElementById('fwd').addEventListener('click',function(){
     //context.clearRect(0, 0, canvas.width, canvas.height)
@@ -476,34 +485,33 @@ playerappearancedropdown.addEventListener('change',function(){
     mylineupright.draw();
 });
 
-// Call this function on window resize or when the canvas is rendered
-function adjustCanvasSize(canvasid, reason,thelineup) {
-    var canvas = document.getElementById(canvasid);
-    var styleWidth = canvas.getBoundingClientRect().width;
-    var styleHeight = canvas.getBoundingClientRect().height;
+function resizeLineupCanvas(canvas, lineup, reason) {
+    syncCanvasDisplaySize(canvas);
+    lineup.refreshPositions(canvas.width, canvas.height);
+    redrawLineup(lineup, reason);
+}
 
-    // Update the canvas internal size to match the visual size
-    canvas.width = styleWidth;
-    canvas.height = styleHeight;
+function resizeAllCanvases(reason = "Resize event") {
+    resizeLineupCanvas(canvasleft, mylineup, `${reason} left court`);
+    resizeLineupCanvas(canvasright, mylineupright, `${reason} right court`);
+    refreshAllTeamSetupPanels();
+}
 
-    // Redraw your canvas content after resizing if necessary
-    thelineup.refreshPositions()
-    thelineup.draw(reason);
-    
-}
-/* window.addEventListener('resize', 
-function(){
-    console.log("RESIZE EVENT FOR LEFT CANVAS")
-    adjustCanvasSize("canvasleft", "RESIZE EVENT",mylineup);
-    adjustCanvasSize("canvasright","RESIZE EVENT",mylineupright);
-}
-);
-window.addEventListener('load', 
-function(){
-    adjustCanvasSize("canvasleft", "LOAD EVENT",mylineup);
-    adjustCanvasSize("canvasright","LOAD EVENT",mylineupright);
-}
-); */
+let resizeFrameId = null;
+window.addEventListener("resize", function () {
+    if (resizeFrameId !== null) {
+        cancelAnimationFrame(resizeFrameId);
+    }
+
+    resizeFrameId = requestAnimationFrame(function () {
+        resizeAllCanvases("Window resize");
+        resizeFrameId = null;
+    });
+});
+
+window.addEventListener("load", function () {
+    resizeAllCanvases("Window load");
+});
 
 
 
@@ -517,7 +525,6 @@ awayteam */
 const lvarules = new Rules()
 const myfixture = new Fixture()
 //const mygame = new Game();
-
 
 
 
