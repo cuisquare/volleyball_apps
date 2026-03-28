@@ -4,6 +4,32 @@ import Game from '../core/Game.js';
 import Lineup from './Lineup.js';
 import getSymbolsFromSetterPosition from '../core/utils.js';
 
+const appStateStorageKey = 'positions_only_dev.appState';
+
+function loadAppState() {
+    if (typeof localStorage === "undefined") {
+        return null;
+    }
+
+    const rawState = localStorage.getItem(appStateStorageKey);
+    if (!rawState) {
+        return null;
+    }
+
+    try {
+        const parsedState = JSON.parse(rawState);
+        if (parsedState && typeof parsedState === "object") {
+            return parsedState;
+        }
+    } catch (error) {
+        console.warn("Unable to load saved app state.", error);
+    }
+
+    return null;
+}
+
+const savedAppState = loadAppState();
+
 function getMaxCourtWidth() {
     return Math.min(0.8 * Math.min(window.innerWidth, window.innerHeight), 600);
 }
@@ -31,6 +57,19 @@ canvasleft.style.background = "#FFFFFF";
 contextleft.clearRect(0, 0, window_width , window_height)
 
 var mysymbols = getSymbolsFromSetterPosition(1);
+const defaultTeamALineup = [5,9,45,23,12,7];
+const defaultTeamARoster = [5,9,45,23,12,7,4,10];
+const defaultTeamBLineup = [3,10,8,7,13,4];
+const defaultTeamBRoster = [3,10,8,7,13,4];
+
+function getInitialTeamState(teamKey, defaults) {
+    const savedTeamState = savedAppState?.[teamKey];
+    return {
+        lineup: Array.isArray(savedTeamState?.lineup) ? savedTeamState.lineup.slice() : defaults.lineup.slice(),
+        roster: Array.isArray(savedTeamState?.roster) ? savedTeamState.roster.slice() : defaults.roster.slice(),
+        symbols: Array.isArray(savedTeamState?.symbols) ? savedTeamState.symbols.slice() : mysymbols.slice()
+    };
+}
 
 function parseShirtNumbersInput(rawValue) {
     const tokens = rawValue
@@ -293,8 +332,8 @@ function bindTeamSetup(teamKey, sideLabel, lineup) {
 }
 
 var mylineupteamA = new Lineup(
-    [5,9,45,23,12,7],
-    mysymbols,
+    getInitialTeamState("teamA", { lineup: defaultTeamALineup, roster: defaultTeamARoster }).lineup,
+    getInitialTeamState("teamA", { lineup: defaultTeamALineup, roster: defaultTeamARoster }).symbols,
     contextleft, 
     0, 
     true,
@@ -302,8 +341,7 @@ var mylineupteamA = new Lineup(
     window_height);
 mylineupteamA.team = "teamA";
 mylineupteamA.loadRotationSnapshots();
-mylineupteamA.addShirtnum(4);
-mylineupteamA.addShirtnum(10);
+mylineupteamA.setFullShirtNums(getInitialTeamState("teamA", { lineup: defaultTeamALineup, roster: defaultTeamARoster }).roster);
 var mylineup = mylineupteamA;
 redrawLineup(mylineup, "Initial draw");
 
@@ -324,8 +362,8 @@ contextright.clearRect(0, 0, window_width , window_height)
 //contextright.fillRect(0, 0, canvasright.width, canvasright.height);
 
 var mylineupteamB = new Lineup(
-    [3,10,8,7,13,4],
-    mysymbols,
+    getInitialTeamState("teamB", { lineup: defaultTeamBLineup, roster: defaultTeamBRoster }).lineup,
+    getInitialTeamState("teamB", { lineup: defaultTeamBLineup, roster: defaultTeamBRoster }).symbols,
     contextright, 
     0, 
     false,
@@ -334,6 +372,7 @@ var mylineupteamB = new Lineup(
     );
 mylineupteamB.team = "teamB"
 mylineupteamB.loadRotationSnapshots();
+mylineupteamB.setFullShirtNums(getInitialTeamState("teamB", { lineup: defaultTeamBLineup, roster: defaultTeamBRoster }).roster);
 var mylineupright = mylineupteamB;
 redrawLineup(mylineupright, "Initial draw");
 
@@ -345,38 +384,68 @@ function updateSetupPanelAssignments() {
     rightSetupController.setLineup(mylineupright);
 }
 
-mylineupteamA.setStateChangeHandler(refreshAllTeamSetupPanels);
-mylineupteamB.setStateChangeHandler(refreshAllTeamSetupPanels);
+function saveAppState() {
+    if (typeof localStorage === "undefined") {
+        return;
+    }
+
+    const appState = {
+        teamA: {
+            lineup: mylineupteamA.shirtnums.slice(),
+            roster: mylineupteamA.fullshirtnums.slice(),
+            symbols: mylineupteamA.symbols.slice()
+        },
+        teamB: {
+            lineup: mylineupteamB.shirtnums.slice(),
+            roster: mylineupteamB.fullshirtnums.slice(),
+            symbols: mylineupteamB.symbols.slice()
+        },
+        teamAOnLeft: mylineup.team === "teamA",
+        courtsUpright: mylineup.isUpright,
+        playerAppearance: playerappearancedropdown.value,
+        oldRules: oldrulescheckbox.checked,
+        persistentMode: persistentModeCheckbox.checked,
+        lineupEditMode: lineupeditmodedropdown.value
+    };
+
+    localStorage.setItem(appStateStorageKey, JSON.stringify(appState));
+}
+
+function handleLineupStateChange() {
+    refreshAllTeamSetupPanels();
+    saveAppState();
+}
+
+mylineupteamA.setStateChangeHandler(handleLineupStateChange);
+mylineupteamB.setStateChangeHandler(handleLineupStateChange);
 refreshAllTeamSetupPanels();
 
+function rotateDisplayedLineupForward(lineup) {
+    lineup.rotateForward();
+    lineup.draw();
+    saveAppState();
+}
+
+function rotateDisplayedLineupBackward(lineup) {
+    lineup.rotateBackward();
+    lineup.draw();
+    saveAppState();
+}
+
 document.getElementById('fwd').addEventListener('click',function(){
-    //context.clearRect(0, 0, canvas.width, canvas.height)
-    mylineup.rotateForward();
-    mylineup.draw();
-    //animate();
+    rotateDisplayedLineupForward(mylineup);
 });
 
 document.getElementById('bck').addEventListener('click',function(){
-    //context.clearRect(0, 0, canvas.width, canvas.height)
-    mylineup.rotateBackward();
-    mylineup.draw();
-    //animate();
-    
+    rotateDisplayedLineupBackward(mylineup);
 });
 
 document.getElementById('fwdright').addEventListener('click',function(){
-    //context.clearRect(0, 0, canvas.width, canvas.height)
-    mylineupright.rotateForward();
-    mylineupright.draw();
-    //animate();
+    rotateDisplayedLineupForward(mylineupright);
 });
 
 document.getElementById('bckright').addEventListener('click',function(){
-    //context.clearRect(0, 0, canvas.width, canvas.height)
-    mylineupright.rotateBackward();
-    mylineupright.draw();
-    //animate();
-    
+    rotateDisplayedLineupBackward(mylineupright);
 });
 
 //let rotate_angle = -Math.PI/ 2;
@@ -384,15 +453,20 @@ document.getElementById('bckright').addEventListener('click',function(){
 
 // Call the rotateCanvas function when needed
 // For example, you can call it when a button is clicked
-document.getElementById('changecourtsorientation').addEventListener('click', function() {
+function rotateDisplayedCourts() {
     mylineup.changeOrientationCanvas()
     mylineupright.changeOrientationCanvas()
     mylineup.draw();
     mylineupright.draw();
     refreshAllTeamSetupPanels();
+    saveAppState();
+}
+
+document.getElementById('changecourtsorientation').addEventListener('click', function() {
+    rotateDisplayedCourts();
 });
 
-document.getElementById('swapcourts').addEventListener('click', function() {
+function swapDisplayedCourts() {
 
     var courtsUpright = mylineup.isUpright
 
@@ -441,10 +515,17 @@ document.getElementById('swapcourts').addEventListener('click', function() {
     mylineup.draw();
     mylineupright.draw();
     updateSetupPanelAssignments();
+    saveAppState();
+}
 
+document.getElementById('swapcourts').addEventListener('click', function() {
+    swapDisplayedCourts();
 });
 
 const oldrulescheckbox = document.getElementById('oldrules-toggle-checkbox');
+oldrulescheckbox.checked = savedAppState?.oldRules === true;
+mylineup.oldRules = oldrulescheckbox.checked;
+mylineupright.oldRules = oldrulescheckbox.checked;
 oldrulescheckbox.addEventListener('change',function(){
 
     if (this.checked) {
@@ -462,12 +543,12 @@ oldrulescheckbox.addEventListener('change',function(){
 
     mylineupright.checkPositionsLegalityStatic();
     mylineupright.draw();
+    saveAppState();
 });
 
 const persistentModeCheckbox = document.getElementById('persistentmode-toggle-checkbox');
-const persistentModeStorageKey = 'positions_only_dev.persistentMode';
-const savedPersistentMode = localStorage.getItem(persistentModeStorageKey);
-const initialPersistentMode = savedPersistentMode === 'true';
+const savedPersistentMode = savedAppState?.persistentMode;
+const initialPersistentMode = savedPersistentMode === true;
 
 persistentModeCheckbox.checked = initialPersistentMode;
 mylineupteamA.persistentMode = initialPersistentMode;
@@ -484,7 +565,6 @@ persistentModeCheckbox.addEventListener('change', function () {
     const persistentModeEnabled = this.checked;
     mylineupteamA.persistentMode = persistentModeEnabled;
     mylineupteamB.persistentMode = persistentModeEnabled;
-    localStorage.setItem(persistentModeStorageKey, String(persistentModeEnabled));
 
     if (persistentModeEnabled) {
         mylineup.applyPersistentSnapshotIfAvailable();
@@ -492,9 +572,15 @@ persistentModeCheckbox.addEventListener('change', function () {
         redrawLineup(mylineup, "Persistent mode enabled");
         redrawLineup(mylineupright, "Persistent mode enabled");
     }
+    saveAppState();
 });
 
 const lineupeditmodedropdown = document.getElementById('lineupeditmode-dropdown');
+if (typeof savedAppState?.lineupEditMode === "string") {
+    lineupeditmodedropdown.value = savedAppState.lineupEditMode;
+    mylineup.editmode = savedAppState.lineupEditMode;
+    mylineupright.editmode = savedAppState.lineupEditMode;
+}
 
 lineupeditmodedropdown.addEventListener('change',function(){
 
@@ -502,10 +588,18 @@ lineupeditmodedropdown.addEventListener('change',function(){
     mylineup.editmode = selectedMode; // Set the editmode in the Lineup instance
     mylineupright.editmode = selectedMode; // Set the editmode in the Lineup instance
     refreshAllTeamSetupPanels();
+    saveAppState();
 
 });
 
 const playerappearancedropdown = document.getElementById('playerappearance-dropdown');
+if (typeof savedAppState?.playerAppearance === "string") {
+    playerappearancedropdown.value = savedAppState.playerAppearance;
+    mylineup.playerappearance = savedAppState.playerAppearance;
+    mylineupright.playerappearance = savedAppState.playerAppearance;
+    mylineup.updatePlayerAppearance();
+    mylineupright.updatePlayerAppearance();
+}
 playerappearancedropdown.addEventListener('change',function(){
 
     const selectedMode = this.value; // Get the selected playerappearance from dropdown
@@ -515,6 +609,7 @@ playerappearancedropdown.addEventListener('change',function(){
     mylineup.draw();
     mylineupright.updatePlayerAppearance() 
     mylineupright.draw();
+    saveAppState();
 });
 
 function resizeLineupCanvas(canvas, lineup, reason) {
@@ -543,6 +638,12 @@ window.addEventListener("resize", function () {
 });
 
 window.addEventListener("load", function () {
+    if (savedAppState?.teamAOnLeft === false) {
+        swapDisplayedCourts();
+    }
+    if (savedAppState?.courtsUpright === false) {
+        rotateDisplayedCourts();
+    }
     resizeAllCanvases("Window load");
 });
 
@@ -558,4 +659,3 @@ awayteam */
 const lvarules = new Rules()
 const myfixture = new Fixture()
 //const mygame = new Game();
-
