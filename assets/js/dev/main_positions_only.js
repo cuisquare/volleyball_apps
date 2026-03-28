@@ -488,6 +488,7 @@ playerappearancedropdown.addEventListener('change',function(){
 function resizeLineupCanvas(canvas, lineup, reason) {
     syncCanvasDisplaySize(canvas);
     lineup.refreshPositions(canvas.width, canvas.height);
+    lineup.syncCanvasTransform();
     redrawLineup(lineup, reason);
 }
 
@@ -525,7 +526,6 @@ awayteam */
 const lvarules = new Rules()
 const myfixture = new Fixture()
 //const mygame = new Game();
-
 
 
 

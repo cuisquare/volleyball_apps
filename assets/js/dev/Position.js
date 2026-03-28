@@ -26,8 +26,8 @@ class Position extends CourtPlayerState {
         poscontext,
         total_angle = 0,
         playerappearance,
-        xpos = "default",
-        ypos = "default",
+        courtX = "default",
+        courtY = "default",
         courtwidth,
         courtheight,
         imageSrcGreen =  "../assets/images/squarefeetgreyernobackgroundgreen.png",
@@ -83,33 +83,33 @@ class Position extends CourtPlayerState {
         this.context = poscontext;
         /* this.canvas = this.context.canvas; */
 
-        let initialY = ypos;
-        if (ypos == "default") {
+        let initialCourtY = courtY;
+        if (courtY == "default") {
             if (this.isfrontrow) {
-                initialY = 0.5 * this.courtheight / 3.0;
+                initialCourtY = (0.5 * this.courtheight / 3.0) / this.courtheight;
             }
             if (this.isbackrow) {
-                initialY = 0.666 * this.courtheight;
+                initialCourtY = (0.666 * this.courtheight) / this.courtheight;
             }
         }
 
-        let initialX = xpos;
-        if (xpos == "default") {
+        let initialCourtX = courtX;
+        if (courtX == "default") {
             if (this.isleftside) {
-                initialX = 0.25 * this.courtwidth;
+                initialCourtX = (0.25 * this.courtwidth) / this.courtwidth;
             }
             if (this.ismiddle) {
-                initialX = 0.5 * this.courtwidth;
+                initialCourtX = (0.5 * this.courtwidth) / this.courtwidth;
             }
             if (this.isrightside) {
-                initialX = 0.75 * this.courtwidth;
+                initialCourtX = (0.75 * this.courtwidth) / this.courtwidth;
             }
         }
 
-        this.xpos = initialX;
-        this.ypos = initialY;
-        this.prevxpos = this.xpos;
-        this.prevypos = this.ypos;
+        this.courtX = initialCourtX;
+        this.courtY = initialCourtY;
+        this.prevCourtX = this.courtX;
+        this.prevCourtY = this.courtY;
 
         this.isMoving = false;
         this.currentmovestep = 0;

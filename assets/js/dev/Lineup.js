@@ -141,6 +141,25 @@ class Lineup extends LineupState {
         //this.addEventListeners();
     }
 
+    syncCanvasTransform() {
+        this.context.setTransform(1, 0, 0, 1, 0, 0);
+
+        let appliedAngle = 0;
+        if (!this.isUpright) {
+            const quarterTurns = this.leftcourt ? 3 : 1;
+            for (let index = 0; index < quarterTurns; index++) {
+                this.context.translate(0, this.canvas.height);
+                this.context.rotate(this.rotate_angle);
+                appliedAngle += this.rotate_angle;
+            }
+        }
+
+        this.total_angle = appliedAngle;
+        this.positions.forEach(pos => {
+            pos.total_angle = this.total_angle;
+        });
+    }
+
     assignTotalAngle(new_total_angle) {
         this.total_angle = new_total_angle;
         this.positions.forEach(pos => {
@@ -412,6 +431,8 @@ class Lineup extends LineupState {
                 lucontext, 
                 this.total_angle,
                 this.playerappearance,
+                // Normalized court coordinates are omitted here so Position falls back
+                // to its default per-rotation placement for first-time creation.
                 "default",
                 "default",
                 this.courtwidth, 
@@ -522,6 +543,7 @@ class Lineup extends LineupState {
         console.log("ORIGINAL")
         console.log("this.static_courtwidth: ", this.static_courtwidth)
         console.log("this.static_courtheight: ", this.static_courtheight)
+        this.canvas = this.context.canvas;
         this.positions.forEach( pos => {
             pos.courtwidth = newcourtwidth;
             pos.courtheight = newcourtheight;
