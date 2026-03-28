@@ -579,6 +579,7 @@ class Lineup extends LineupState {
         this.symbols = newsymbols;
         this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
         this.addEventListeners();
+        this.checkPositionsLegalityStatic();
         this.notifyStateChange();
         //this.updatePrevpos(n);
         logmyobject("lineup positions after rotate forward",this.positions);
@@ -654,6 +655,7 @@ class Lineup extends LineupState {
         this.saveCurrentRotationSnapshot();
         this.clearPositions();
         this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
+        this.checkPositionsLegalityStatic();
         this.addEventListeners()
     }
 
@@ -664,6 +666,7 @@ class Lineup extends LineupState {
         this.symbols = arrayRotateN(this.symbols, false,n);
         this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
         this.addEventListeners();
+        this.checkPositionsLegalityStatic();
         this.notifyStateChange();
         //this.updatePrevpos(n);
         logmyobject("lineup positions after rotate forward",this.positions);
@@ -677,6 +680,7 @@ class Lineup extends LineupState {
         this.symbols = arrayRotateN(this.symbols, true,n);
         this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
         this.addEventListeners();
+        this.checkPositionsLegalityStatic();
         this.notifyStateChange();
         //this.updatePrevpos(n, false);
         logmyobject("lineup positions after rotate backward",this.positions);
