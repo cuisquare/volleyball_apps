@@ -301,6 +301,7 @@ var mylineupteamA = new Lineup(
     window_width,
     window_height);
 mylineupteamA.team = "teamA";
+mylineupteamA.loadRotationSnapshots();
 mylineupteamA.addShirtnum(4);
 mylineupteamA.addShirtnum(10);
 var mylineup = mylineupteamA;
@@ -332,6 +333,7 @@ var mylineupteamB = new Lineup(
     window_height
     );
 mylineupteamB.team = "teamB"
+mylineupteamB.loadRotationSnapshots();
 var mylineupright = mylineupteamB;
 redrawLineup(mylineupright, "Initial draw");
 
@@ -457,9 +459,39 @@ oldrulescheckbox.addEventListener('change',function(){
 
     mylineup.checkPositionsLegalityStatic();
     mylineup.draw();
-    
+
     mylineupright.checkPositionsLegalityStatic();
     mylineupright.draw();
+});
+
+const persistentModeCheckbox = document.getElementById('persistentmode-toggle-checkbox');
+const persistentModeStorageKey = 'positions_only_dev.persistentMode';
+const savedPersistentMode = localStorage.getItem(persistentModeStorageKey);
+const initialPersistentMode = savedPersistentMode === 'true';
+
+persistentModeCheckbox.checked = initialPersistentMode;
+mylineupteamA.persistentMode = initialPersistentMode;
+mylineupteamB.persistentMode = initialPersistentMode;
+
+if (initialPersistentMode) {
+    mylineup.applyPersistentSnapshotIfAvailable();
+    mylineupright.applyPersistentSnapshotIfAvailable();
+    redrawLineup(mylineup, "Initial persistent layout");
+    redrawLineup(mylineupright, "Initial persistent layout");
+}
+
+persistentModeCheckbox.addEventListener('change', function () {
+    const persistentModeEnabled = this.checked;
+    mylineupteamA.persistentMode = persistentModeEnabled;
+    mylineupteamB.persistentMode = persistentModeEnabled;
+    localStorage.setItem(persistentModeStorageKey, String(persistentModeEnabled));
+
+    if (persistentModeEnabled) {
+        mylineup.applyPersistentSnapshotIfAvailable();
+        mylineupright.applyPersistentSnapshotIfAvailable();
+        redrawLineup(mylineup, "Persistent mode enabled");
+        redrawLineup(mylineupright, "Persistent mode enabled");
+    }
 });
 
 const lineupeditmodedropdown = document.getElementById('lineupeditmode-dropdown');
@@ -526,8 +558,6 @@ awayteam */
 const lvarules = new Rules()
 const myfixture = new Fixture()
 //const mygame = new Game();
-
-
 
 
 

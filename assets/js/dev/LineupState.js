@@ -8,6 +8,7 @@ class LineupState {
         this.symbols = symbols.length === 0 ? this.defaultsymbols.slice() : symbols.slice();
         this.fullshirtnums = this.shirtnums.slice();
         this.oldRules = false;
+        this.persistentMode = false;
 
         this.positions = [];
         this.illegalPositionTuples = [];

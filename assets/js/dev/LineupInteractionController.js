@@ -370,6 +370,8 @@ function onLineupMouseUp(lineup, event) {
         pos.onMouseUp(event);
     });
 
+    lineup.saveCurrentRotationSnapshot();
+
     lineup.isDragging = false;
     lineup.draggingPositions = [];
     lineup.newIllegalPositions = [];

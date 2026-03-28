@@ -50,6 +50,7 @@ class Lineup extends LineupState {
 
         this.courtxpos = 0;
         this.courtypos = 0;
+        this.rotationSnapshots = {};
 
 
 
@@ -177,6 +178,97 @@ class Lineup extends LineupState {
         }
     }
 
+    getRotationSnapshotKey(shirtnums = this.shirtnums) {
+        return shirtnums.join("-");
+    }
+
+    getRotationSnapshotStorageKey() {
+        const teamKey = this.team || (this.leftcourt ? "leftcourt" : "rightcourt");
+        return `positions_only_dev.${teamKey}.rotationSnapshots`;
+    }
+
+    loadRotationSnapshots() {
+        if (typeof localStorage === "undefined") {
+            return;
+        }
+
+        const rawSnapshots = localStorage.getItem(this.getRotationSnapshotStorageKey());
+        if (!rawSnapshots) {
+            return;
+        }
+
+        try {
+            const parsedSnapshots = JSON.parse(rawSnapshots);
+            if (parsedSnapshots && typeof parsedSnapshots === "object") {
+                this.rotationSnapshots = parsedSnapshots;
+            }
+        } catch (error) {
+            console.warn("Unable to load saved rotation snapshots.", error);
+        }
+    }
+
+    persistRotationSnapshots() {
+        if (typeof localStorage === "undefined") {
+            return;
+        }
+
+        localStorage.setItem(
+            this.getRotationSnapshotStorageKey(),
+            JSON.stringify(this.rotationSnapshots)
+        );
+    }
+
+    getSavedRotationSnapshot(shirtnums = this.shirtnums) {
+        return this.rotationSnapshots[this.getRotationSnapshotKey(shirtnums)];
+    }
+
+    saveCurrentRotationSnapshot() {
+        const snapshot = this.positions
+            .slice()
+            .sort((posA, posB) => posA.rotationPosition - posB.rotationPosition)
+            .map(pos => ({
+                rotationPosition: pos.rotationPosition,
+                shirtnum: pos.shirtnum,
+                symbol: pos.symbol,
+                courtX: pos.courtX,
+                courtY: pos.courtY
+            }));
+
+        this.rotationSnapshots[this.getRotationSnapshotKey()] = snapshot;
+        this.persistRotationSnapshots();
+    }
+
+    applyPersistentSnapshotIfAvailable(shirtnums = this.shirtnums, positions = this.positions) {
+        if (!this.persistentMode) {
+            return;
+        }
+
+        const snapshot = this.getSavedRotationSnapshot(shirtnums);
+        if (!Array.isArray(snapshot) || snapshot.length === 0) {
+            return;
+        }
+
+        snapshot.forEach(savedPos => {
+            const matchingPosition = positions.find(pos => pos.rotationPosition === savedPos.rotationPosition);
+            if (!matchingPosition) {
+                return;
+            }
+
+            if (typeof savedPos.courtX === "number") {
+                matchingPosition.courtX = savedPos.courtX;
+            }
+            if (typeof savedPos.courtY === "number") {
+                matchingPosition.courtY = savedPos.courtY;
+            }
+            if (typeof savedPos.courtX === "number") {
+                matchingPosition.prevCourtX = savedPos.courtX;
+            }
+            if (typeof savedPos.courtY === "number") {
+                matchingPosition.prevCourtY = savedPos.courtY;
+            }
+        });
+    }
+
     setFullShirtNums(newFullShirtNums) {
         super.setFullShirtNums(newFullShirtNums);
         this.notifyStateChange();
@@ -187,6 +279,7 @@ class Lineup extends LineupState {
         this.shirtnums = newShirtNums.slice();
         this.fullshirtnums = Array.from(new Set([...this.fullshirtnums, ...this.shirtnums]));
         this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
+        this.applyPersistentSnapshotIfAvailable(this.shirtnums, this.positions);
         this.addEventListeners();
         this.checkPositionsLegalityStatic();
         this.notifyStateChange();
@@ -447,6 +540,7 @@ class Lineup extends LineupState {
             console.log(pos);
         })
 
+        this.applyPersistentSnapshotIfAvailable(shirtnums, positions);
         return positions
     }
 
@@ -479,6 +573,7 @@ class Lineup extends LineupState {
     }
 
     updatePositions(newshirtnums, newsymbols) {
+        this.saveCurrentRotationSnapshot();
         this.clearPositions();
         this.shirtnums = newshirtnums;
         this.symbols = newsymbols;
@@ -556,13 +651,14 @@ class Lineup extends LineupState {
     }
 
     resetPositions() {
+        this.saveCurrentRotationSnapshot();
         this.clearPositions();
         this.positions = this.getPositions(this.shirtnums, this.symbols, this.context);
         this.addEventListeners()
     }
 
     rotateForward(n=1) {
-        //this.prevpositions = this.positions;
+        this.saveCurrentRotationSnapshot();
         this.clearPositions();
         this.shirtnums = arrayRotateN(this.shirtnums, false,n);
         this.symbols = arrayRotateN(this.symbols, false,n);
@@ -575,7 +671,7 @@ class Lineup extends LineupState {
     }
 
     rotateBackward(n=1) {
-        //this.prevpositions = this.positions;
+        this.saveCurrentRotationSnapshot();
         this.clearPositions();
         this.shirtnums = arrayRotateN(this.shirtnums, true,n);
         this.symbols = arrayRotateN(this.symbols, true,n);
