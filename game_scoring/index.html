@@ -6,91 +6,172 @@
   <link rel="stylesheet" href="../assets/css/styles_scoring.css">
 </head>
 <body>
-  <div class="scoreboard">
+  <header class="top-menu">
+    <div class="top-menu-left">
+      <button id="toggle-setup-panel" type="button">Pre-Match Setup</button>
+      <span id="setup-status-badge" class="status-badge">Setup Incomplete</span>
+    </div>
+    <div class="top-menu-right">
+      <button id="start-match" type="button">Start Match</button>
+      <button id="dark-mode-toggle" type="button">Toggle Dark Mode</button>
+    </div>
+  </header>
+
+  <section id="setup-panel" class="setup-panel">
+    <div class="setup-grid">
+      <div class="setup-card">
+        <h3>Rules</h3>
+        <div class="form-row">
+          <label for="regsetpts">Regular Set Points</label>
+          <input id="regsetpts" type="number" min="1" step="1">
+        </div>
+        <div class="form-row">
+          <label for="nbsetswin">Sets To Win Match</label>
+          <input id="nbsetswin" type="number" min="1" step="1">
+        </div>
+        <div class="form-row">
+          <label for="decidersetpts">Decider Set Points</label>
+          <input id="decidersetpts" type="number" min="1" step="1">
+        </div>
+        <div class="form-row">
+          <label for="ptsdiffwinpts">Points Diff To Win Interrupted Match</label>
+          <input id="ptsdiffwinpts" type="number" min="0" step="1">
+        </div>
+        <div class="form-row">
+          <label for="ptsdiffwinset">Points Diff To Win Set</label>
+          <input id="ptsdiffwinset" type="number" min="1" step="1">
+        </div>
+        <div class="form-row checkbox-row">
+          <label for="swapsidesindecider">Swap Sides In Decider</label>
+          <input id="swapsidesindecider" type="checkbox">
+        </div>
+        <div class="form-row">
+          <label for="nbptsforswap">Points For Side Swap</label>
+          <input id="nbptsforswap" type="number" min="1" step="1">
+        </div>
+        <div class="form-row">
+          <label for="maxnumberplayers">Max Players</label>
+          <input id="maxnumberplayers" type="number" min="1" step="1">
+        </div>
+        <div class="form-row">
+          <label for="minliberoifthirteen">Min Liberos If 13 Players</label>
+          <input id="minliberoifthirteen" type="number" min="0" step="1">
+        </div>
+        <div class="setup-actions">
+          <button id="save-custom-rules" type="button">Save Custom Rules</button>
+          <button id="accept-default-rules" type="button">Use Default Rules</button>
+        </div>
+      </div>
+
+      <div class="setup-card">
+        <h3>Teams</h3>
+        <div class="form-row">
+          <label for="home-team-name">Home Team Name</label>
+          <input id="home-team-name" type="text" maxlength="60" placeholder="Home team">
+        </div>
+        <div class="form-row">
+          <label for="away-team-name">Away Team Name</label>
+          <input id="away-team-name" type="text" maxlength="60" placeholder="Away team">
+        </div>
+
+        <h3>Starts Left (Scorer View)</h3>
+        <label class="radio-row">
+          <input type="radio" name="setup-left-starter" value="home">
+          Home team starts on Left
+        </label>
+        <label class="radio-row">
+          <input type="radio" name="setup-left-starter" value="away">
+          Away team starts on Left
+        </label>
+
+        <h3>First Serving Team</h3>
+        <label class="radio-row">
+          <input type="radio" name="setup-first-server" value="teamA">
+          Team A serves first
+        </label>
+        <label class="radio-row">
+          <input type="radio" name="setup-first-server" value="teamB">
+          Team B serves first
+        </label>
+      </div>
+
+      <div class="setup-card" id="decider-toss-card">
+        <h3>Decider Toss</h3>
+        <p class="hint">Only used when the match reaches a decider set.</p>
+        <div class="form-row">
+          <label for="decider-left-team">Team Starting Left</label>
+          <select id="decider-left-team">
+            <option value="">Select team</option>
+            <option value="teamA">Team A</option>
+            <option value="teamB">Team B</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="decider-serving-team">First Server (Decider)</label>
+          <select id="decider-serving-team">
+            <option value="">Select team</option>
+            <option value="teamA">Team A</option>
+            <option value="teamB">Team B</option>
+          </select>
+        </div>
+        <div class="setup-actions">
+          <button id="apply-decider-toss" type="button">Apply Decider Toss</button>
+        </div>
+      </div>
+    </div>
+    <p id="setup-feedback" class="setup-feedback"></p>
+  </section>
+
+  <main class="scoreboard">
     <div class="teams-container left" id="teams-container">
       <div class="team" id="team-a">
         <h2>Team A</h2>
-        <p id = "name-teamA"></p>
-        <div id = "ongoingSetStateTeamA">
+        <p id="name-teamA"></p>
+        <div id="ongoingSetStateTeamA">
           <h2>Points:</h2>
-          <p class = "score" id="score-teamA">0</p>
-          <button id="increase-score-teamA">+</button>
-          <button id="decrease-score-teamA">-</button>
-          <p id = "servingstate-teamA">servingstateteamA</p>
+          <p class="score" id="score-teamA">0</p>
+          <button id="increase-score-teamA" type="button">+</button>
+          <button id="decrease-score-teamA" type="button">-</button>
+          <p id="servingstate-teamA">Unknown</p>
         </div>
-        <div id = "accruedSetsPointsTeamA">
-          <h2>Sets: </h2> 
-          <p class = "score" id="sets-teamA">0</p>
-          <h2>Points total: </h2> 
-          <p class = "score" id="points-teamA">0</p>
+        <div id="accruedSetsPointsTeamA">
+          <h2>Sets:</h2>
+          <p class="score" id="sets-teamA">0</p>
+          <h2>Points total:</h2>
+          <p class="score" id="points-teamA">0</p>
         </div>
-
       </div>
+
       <div class="team" id="team-b">
         <h2>Team B</h2>
-        <p id = "name-teamB"></p>
-        <div id = "ongoingSetStateTeamB">
+        <p id="name-teamB"></p>
+        <div id="ongoingSetStateTeamB">
           <h2>Points:</h2>
-          <p class = "score" id="score-teamB">0</p>
-          <button id="increase-score-teamB">+</button>
-          <button id="decrease-score-teamB">-</button>
-          <p id = "servingstate-teamB">servingstateteamB</p>
+          <p class="score" id="score-teamB">0</p>
+          <button id="increase-score-teamB" type="button">+</button>
+          <button id="decrease-score-teamB" type="button">-</button>
+          <p id="servingstate-teamB">Unknown</p>
         </div>
-        <div id = "accruedSetsPointsTeamB">
-          <h2>Sets: </h2> 
-          <p class = "score" id="sets-teamB">0</p>
-          <h2>Points total: </h2> 
-          <p class = "score" id="points-teamB">0</p>
+        <div id="accruedSetsPointsTeamB">
+          <h2>Sets:</h2>
+          <p class="score" id="sets-teamB">0</p>
+          <h2>Points total:</h2>
+          <p class="score" id="points-teamB">0</p>
         </div>
       </div>
     </div>
-    <div id = "gameInputs" class = "game-inputs">
-      <div id = "completeButtons">
-        <h2>Game Inputs</h2>
-        <button id = "completeGame">Interrupt Game</button>
-        <h2></h2>
-        <button id = "completeSet">Complete Set</button>
-        <h2></h2>
+
+    <div class="game-controls" id="game-controls">
+      <h2>Game Controls</h2>
+      <button id="completeGame" type="button">Interrupt Game</button>
+      <button id="completeSet" type="button">Complete Set</button>
+      <div class="game-status">
+        <h2>Game Status:</h2>
+        <p id="game-status"></p>
       </div>
-      <div id = "teamDetailsInput">
-        <button id = "teamNamesInput">Input Team Names</button>
-      </div>
-      <div id = "homeTeamNameChoice">
-        <label id="homeTeamNameForTeamA">
-          <input type="radio" name="homeeorawayteamA" value="home" > <span id="servingTeamChoiceTeamAHome">home team name</span>
-        </label><br>
-        <label id="awayTeamNameForTeamA">
-          <input type="radio" name="homeeorawayteamA" value="away" ><span id="servingTeamChoiceTeamAAway">away team name</span> 
-        </label><br>
-        <button id="nameTeamA">Confirm teamA</button>
-      </div>
-      <div id = "teamStartingLeftChoice">
-        <label id="teamAStartingLeft">
-          <input type="radio" name="teamAorBStartingLeft" value="teamA" > <span id="servingTeamChoiceTeamAHome">teamA</span>
-        </label><br>
-        <label id="teamBStartingLeft">
-          <input type="radio" name="teamAorBStartingLeft" value="teamB" ><span id="servingTeamChoiceTeamAAway">teamB</span> 
-        </label><br>
-        <button id="nameTeamStartingLeft">Confirm team starting Left</button>
-      </div>
-      <div id = "servingTeamChoice">
-        <h2></h2>
-        <label id="servingTeamChoiceTeamA">
-          <input type="radio" name="team" value="teamA" id="servingTeamChoiceTeamA"> Team A
-        </label><br>
-        <label id="servingTeamChoiceTeamB">
-          <input type="radio" name="team" value="teamB" id="servingTeamChoiceTeamB"> Team B
-        </label><br>
-        <button id="servingTeam">Confirm serving team</button>
-        <h2></h2>
-      </div>      
     </div>
-    <div class = "game-status">
-      <h2>Game Status:</h2>
-      <p id = "game-status"></p>
-    </div>
-  </div>
-  <button id="dark-mode-toggle">Toggle Dark Mode</button>
+  </main>
+
+  <script type="module" src="../assets/js/current/main_game_scoring.js"></script>
 </body>
-<script type="module"  src = "../assets/js/current/main_game_scoring.js"></script>
 </html>
