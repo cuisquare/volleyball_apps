@@ -90,6 +90,10 @@ body {
   display: none;
 }
 
+.hidden {
+  display: none !important;
+}
+
 .setup-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(240px, 1fr));
@@ -255,6 +259,11 @@ button {
 
 button:hover {
   background: var(--accent-hover);
+}
+
+.top-menu button.active-tab {
+  background: #0b4ea4;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.2);
 }
 
 button:disabled {

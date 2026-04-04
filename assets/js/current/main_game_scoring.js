@@ -58,12 +58,15 @@ const setupState = {
     matchStarted: false,
     setupLocked: false,
     deciderPromptShown: false,
-    deciderLeftStarter: ''
+    deciderLeftStarter: '',
+    activePanel: 'setup'
 };
 
 const elements = {
+    scoreboardPanel: document.getElementById('scoreboard-panel'),
     setupPanel: document.getElementById('setup-panel'),
     rulesPanel: document.getElementById('rules-panel'),
+    toggleScoreboardPanel: document.getElementById('toggle-scoreboard-panel'),
     toggleSetupPanel: document.getElementById('toggle-setup-panel'),
     toggleRulesPanel: document.getElementById('toggle-rules-panel'),
     setupStatusBadge: document.getElementById('setup-status-badge'),
@@ -114,6 +117,18 @@ const elements = {
     deciderServingTeam: document.getElementById('decider-serving-team'),
     applyDeciderToss: document.getElementById('apply-decider-toss')
 };
+
+function setActivePanel(panelName) {
+    setupState.activePanel = panelName;
+
+    elements.scoreboardPanel.classList.toggle('hidden', panelName !== 'scoreboard');
+    elements.setupPanel.classList.toggle('hidden', panelName !== 'setup');
+    elements.rulesPanel.classList.toggle('hidden', panelName !== 'rules');
+
+    elements.toggleScoreboardPanel.classList.toggle('active-tab', panelName === 'scoreboard');
+    elements.toggleSetupPanel.classList.toggle('active-tab', panelName === 'setup');
+    elements.toggleRulesPanel.classList.toggle('active-tab', panelName === 'rules');
+}
 
 function setSetupFeedback(message, variant = '') {
     elements.setupFeedback.textContent = message;
@@ -536,8 +551,7 @@ function updateDeciderTossVisibility() {
         if (deciderTossRequired) {
             elements.toggleSetupPanel.classList.add('needs-attention');
             elements.setupStatusBadge.classList.add('needs-attention');
-            elements.setupPanel.classList.remove('hidden');
-            elements.rulesPanel.classList.add('hidden');
+            setActivePanel('setup');
             if (!setupState.deciderPromptShown) {
                 setSetupFeedback('Decider set reached: please complete pre-decider toss choices.', 'error');
                 setupState.deciderPromptShown = true;
@@ -745,7 +759,7 @@ function startMatch() {
 
     setupState.matchStarted = true;
     lockPrematchSetup();
-    elements.setupPanel.classList.add('hidden');
+    setActivePanel('scoreboard');
 
     setSetupFeedback('Match started. Toss choices are locked. Rules remain available for viewing.', 'success');
     updateSetsElements();
@@ -790,15 +804,9 @@ function interruptGame() {
 }
 
 function hookEventListeners() {
-    elements.toggleSetupPanel.addEventListener('click', () => {
-        elements.setupPanel.classList.toggle('hidden');
-        elements.rulesPanel.classList.add('hidden');
-    });
-
-    elements.toggleRulesPanel.addEventListener('click', () => {
-        elements.rulesPanel.classList.toggle('hidden');
-        elements.setupPanel.classList.add('hidden');
-    });
+    elements.toggleScoreboardPanel.addEventListener('click', () => setActivePanel('scoreboard'));
+    elements.toggleSetupPanel.addEventListener('click', () => setActivePanel('setup'));
+    elements.toggleRulesPanel.addEventListener('click', () => setActivePanel('rules'));
 
     elements.rulesProfile.addEventListener('change', handleRulesProfileChange);
     elements.applyRulesProfile.addEventListener('click', applySelectedRulesProfile);
@@ -877,8 +885,7 @@ function initDarkMode() {
 }
 
 function initSetupDefaults() {
-    elements.setupPanel.classList.add('hidden');
-    elements.rulesPanel.classList.add('hidden');
+    setActivePanel('setup');
 
     elements.homeTeamName.value = mygame.fixture.hometeam_name;
     elements.awayTeamName.value = mygame.fixture.awayteam_name;
@@ -905,6 +912,9 @@ function init() {
     initDarkMode();
     initSetupDefaults();
     hookEventListeners();
+    if (setupState.matchStarted) {
+        setActivePanel('scoreboard');
+    }
     updateSetsElements();
 }
 

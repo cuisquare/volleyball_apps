@@ -8,6 +8,7 @@
 <body>
   <header class="top-menu">
     <div class="top-menu-left">
+      <button id="toggle-scoreboard-panel" type="button">Scoreboard</button>
       <button id="toggle-setup-panel" type="button">Toss Choices</button>
       <button id="toggle-rules-panel" type="button">Rules</button>
       <span id="setup-status-badge" class="status-badge">Toss Choices Incomplete</span>
@@ -152,7 +153,7 @@
     <p id="rules-feedback" class="setup-feedback"></p>
   </section>
 
-  <main class="scoreboard">
+  <main class="scoreboard hidden" id="scoreboard-panel">
     <div class="teams-container left" id="teams-container">
       <div class="team" id="team-a">
         <h2>Team A</h2>
