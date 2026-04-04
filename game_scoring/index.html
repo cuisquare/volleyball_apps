@@ -52,6 +52,9 @@
           <input type="radio" name="setup-first-server" value="teamB">
           Team B serves first
         </label>
+        <div class="setup-actions">
+          <button id="apply-prematch-toss" type="button">Apply Prematch Toss Choices</button>
+        </div>
       </div>
 
       <div class="setup-card" id="decider-toss-card">
@@ -107,8 +110,8 @@
         </div>
       </div>
 
-      <div class="setup-card hidden" id="custom-rules-card">
-        <h3>Custom Rules</h3>
+      <div class="setup-card" id="custom-rules-card">
+        <h3>Rule Values</h3>
         <div class="form-row">
           <label for="regsetpts">Regular Set Points</label>
           <input id="regsetpts" type="number" min="1" step="1">

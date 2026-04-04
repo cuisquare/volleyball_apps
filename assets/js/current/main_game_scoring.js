@@ -57,6 +57,7 @@ const setupState = {
     rulesProfileLabel: 'Not Set',
     matchStarted: false,
     setupLocked: false,
+    prematchTossConfirmed: false,
     deciderPromptShown: false,
     deciderLeftStarter: '',
     activePanel: 'setup'
@@ -73,6 +74,7 @@ const elements = {
     rulesStatusBadge: document.getElementById('rules-status-badge'),
     setupFeedback: document.getElementById('setup-feedback'),
     rulesFeedback: document.getElementById('rules-feedback'),
+    applyPrematchToss: document.getElementById('apply-prematch-toss'),
     startMatch: document.getElementById('start-match'),
     rulesProfile: document.getElementById('rules-profile'),
     applyRulesProfile: document.getElementById('apply-rules-profile'),
@@ -323,7 +325,6 @@ function updateRulesPanelView() {
     const selectedProfile = parseProfileSelection(elements.rulesProfile.value);
     const isCustom = selectedProfile.type === 'custom';
     const isSavedProfile = selectedProfile.type === 'saved';
-    elements.customRulesCard.classList.toggle('hidden', !isCustom);
 
     if (isCustom) {
         elements.rulesPresetSummary.textContent = `Custom profile. ${setupState.rulesSource === 'custom' ? 'Saved values are loaded below.' : 'Edit values below and save.'}`;
@@ -334,9 +335,25 @@ function updateRulesPanelView() {
         elements.rulesPresetSummary.textContent = 'Unknown profile selected.';
     }
 
+    const ruleFieldsReadOnly = setupState.matchStarted || !isCustom;
+    for (const input of [
+        elements.regsetpts,
+        elements.nbsetswin,
+        elements.decidersetpts,
+        elements.ptsdiffwinpts,
+        elements.ptsdiffwinset,
+        elements.swapsidesindecider,
+        elements.nbptsforswap,
+        elements.maxnumberplayers,
+        elements.minliberoifthirteen
+    ]) {
+        input.disabled = ruleFieldsReadOnly;
+    }
+
     elements.saveRulesProfile.disabled = setupState.matchStarted || !isCustom;
     elements.newRulesProfileName.disabled = setupState.matchStarted || !isCustom;
     elements.deleteRulesProfile.disabled = setupState.matchStarted || !isSavedProfile;
+    elements.saveCustomRules.disabled = setupState.matchStarted || !isCustom;
 }
 
 function updateRulesStatusBadge() {
@@ -385,19 +402,26 @@ function getSetupSelections() {
 }
 
 function hasReadySelections() {
-    const selections = getSetupSelections();
-    return (
-        setupState.rulesConfirmed &&
-        selections.homeName.length > 0 &&
-        selections.awayName.length > 0 &&
-        selections.leftStarter.length > 0 &&
-        selections.firstServer.length > 0
-    );
+    return setupState.rulesConfirmed && setupState.prematchTossConfirmed;
 }
 
 function validateBeforeStart() {
     if (!setupState.rulesConfirmed) {
         setSetupFeedback('Rules are required. Apply a preset or save custom rules first.', 'error');
+        return null;
+    }
+
+    if (!setupState.prematchTossConfirmed) {
+        setSetupFeedback('Apply prematch toss choices before starting the match.', 'error');
+        return null;
+    }
+
+    return getSetupSelections();
+}
+
+function validatePrematchSelections() {
+    if (!setupState.rulesConfirmed) {
+        setSetupFeedback('Rules must be confirmed before applying prematch toss choices.', 'error');
         return null;
     }
 
@@ -454,6 +478,7 @@ function lockPrematchSetup() {
     elements.saveRulesProfile.disabled = true;
     elements.deleteRulesProfile.disabled = true;
     elements.newRulesProfileName.disabled = true;
+    elements.applyPrematchToss.disabled = true;
 }
 
 function updateSetupBadge() {
@@ -575,6 +600,7 @@ function updateDeciderTossVisibility() {
 
 function updateActionAvailability() {
     elements.startMatch.disabled = setupState.matchStarted || !hasReadySelections();
+    elements.applyPrematchToss.disabled = setupState.matchStarted || !setupState.rulesConfirmed;
 
     const canManageSet = setupState.matchStarted && !mygame.isGameOver;
     const canScore = canManageSet && mygame.team_serving_currently !== 'Unknown';
@@ -616,6 +642,9 @@ function applyPresetProfile(profileId) {
 
     setRulesFeedback(`${selection.label} rules applied.`, 'success');
     setSetupFeedback('Rules profile applied. Complete remaining setup fields to start match.', 'success');
+    if (!setupState.matchStarted) {
+        setActivePanel('setup');
+    }
     updateSetsElements();
 }
 
@@ -643,6 +672,9 @@ function saveCustomRules() {
 
         setRulesFeedback('Custom rules saved and confirmed.', 'success');
         setSetupFeedback('Custom rules saved. Complete remaining setup fields to start match.', 'success');
+        if (!setupState.matchStarted) {
+            setActivePanel('setup');
+        }
         updateSetsElements();
     } catch (error) {
         setRulesFeedback(error.message, 'error');
@@ -751,12 +783,6 @@ function startMatch() {
         return;
     }
 
-    mygame.fixture.hometeam_name = selections.homeName;
-    mygame.fixture.awayteam_name = selections.awayName;
-    mygame.teamA = selections.leftStarter;
-    mygame.onLeft = true;
-    mygame.team_serving_startset = selections.firstServer;
-
     setupState.matchStarted = true;
     lockPrematchSetup();
     setActivePanel('scoreboard');
@@ -784,6 +810,29 @@ function applyDeciderToss() {
     mygame.team_serving_deciderset = servingTeam;
 
     setSetupFeedback('Decider toss applied.', 'success');
+    setActivePanel('scoreboard');
+    updateSetsElements();
+}
+
+function applyPrematchTossChoices() {
+    if (setupState.matchStarted) {
+        return;
+    }
+
+    const selections = validatePrematchSelections();
+    if (!selections) {
+        updateSetsElements();
+        return;
+    }
+
+    mygame.fixture.hometeam_name = selections.homeName;
+    mygame.fixture.awayteam_name = selections.awayName;
+    mygame.teamA = selections.leftStarter;
+    mygame.onLeft = true;
+    mygame.team_serving_startset = selections.firstServer;
+
+    setupState.prematchTossConfirmed = true;
+    setSetupFeedback('Prematch toss choices applied. You can now start the match.', 'success');
     updateSetsElements();
 }
 
@@ -814,6 +863,7 @@ function hookEventListeners() {
     elements.saveRulesProfile.addEventListener('click', saveCurrentRulesAsNewProfile);
     elements.deleteRulesProfile.addEventListener('click', deleteSelectedSavedProfile);
 
+    elements.applyPrematchToss.addEventListener('click', applyPrematchTossChoices);
     elements.startMatch.addEventListener('click', startMatch);
     elements.applyDeciderToss.addEventListener('click', applyDeciderToss);
 
@@ -856,6 +906,9 @@ function hookEventListeners() {
 
     for (const input of [elements.homeTeamName, elements.awayTeamName]) {
         input.addEventListener('input', () => {
+            if (!setupState.matchStarted) {
+                setupState.prematchTossConfirmed = false;
+            }
             updateSetupBadge();
             updateActionAvailability();
         });
@@ -863,6 +916,9 @@ function hookEventListeners() {
 
     for (const radio of document.querySelectorAll('input[name="setup-left-starter"], input[name="setup-first-server"]')) {
         radio.addEventListener('change', () => {
+            if (!setupState.matchStarted) {
+                setupState.prematchTossConfirmed = false;
+            }
             updateSetupBadge();
             updateActionAvailability();
         });
@@ -885,7 +941,7 @@ function initDarkMode() {
 }
 
 function initSetupDefaults() {
-    setActivePanel('setup');
+    setActivePanel('rules');
 
     elements.homeTeamName.value = mygame.fixture.hometeam_name;
     elements.awayTeamName.value = mygame.fixture.awayteam_name;
@@ -904,7 +960,7 @@ function initSetupDefaults() {
     rebuildRulesProfileOptions(DEFAULT_PROFILE_ID);
     updateRulesPanelView();
 
-    setSetupFeedback('Open Rules to apply a preset or save custom rules, then complete toss choices.', '');
+    setSetupFeedback('After rules are confirmed, complete toss choices to start match.', '');
     setRulesFeedback('Select or load a profile and click Apply Profile, or choose Custom and save.', '');
 }
 
