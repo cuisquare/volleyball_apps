@@ -9,7 +9,9 @@
   <header class="top-menu">
     <div class="top-menu-left">
       <button id="toggle-setup-panel" type="button">Pre-Match Setup</button>
+      <button id="toggle-rules-panel" type="button">Rules</button>
       <span id="setup-status-badge" class="status-badge">Setup Incomplete</span>
+      <span id="rules-status-badge" class="status-badge">Rules: Not Set</span>
     </div>
     <div class="top-menu-right">
       <button id="start-match" type="button">Start Match</button>
@@ -19,50 +21,6 @@
 
   <section id="setup-panel" class="setup-panel">
     <div class="setup-grid">
-      <div class="setup-card">
-        <h3>Rules</h3>
-        <div class="form-row">
-          <label for="regsetpts">Regular Set Points</label>
-          <input id="regsetpts" type="number" min="1" step="1">
-        </div>
-        <div class="form-row">
-          <label for="nbsetswin">Sets To Win Match</label>
-          <input id="nbsetswin" type="number" min="1" step="1">
-        </div>
-        <div class="form-row">
-          <label for="decidersetpts">Decider Set Points</label>
-          <input id="decidersetpts" type="number" min="1" step="1">
-        </div>
-        <div class="form-row">
-          <label for="ptsdiffwinpts">Points Diff To Win Interrupted Match</label>
-          <input id="ptsdiffwinpts" type="number" min="0" step="1">
-        </div>
-        <div class="form-row">
-          <label for="ptsdiffwinset">Points Diff To Win Set</label>
-          <input id="ptsdiffwinset" type="number" min="1" step="1">
-        </div>
-        <div class="form-row checkbox-row">
-          <label for="swapsidesindecider">Swap Sides In Decider</label>
-          <input id="swapsidesindecider" type="checkbox">
-        </div>
-        <div class="form-row">
-          <label for="nbptsforswap">Points For Side Swap</label>
-          <input id="nbptsforswap" type="number" min="1" step="1">
-        </div>
-        <div class="form-row">
-          <label for="maxnumberplayers">Max Players</label>
-          <input id="maxnumberplayers" type="number" min="1" step="1">
-        </div>
-        <div class="form-row">
-          <label for="minliberoifthirteen">Min Liberos If 13 Players</label>
-          <input id="minliberoifthirteen" type="number" min="0" step="1">
-        </div>
-        <div class="setup-actions">
-          <button id="save-custom-rules" type="button">Save Custom Rules</button>
-          <button id="accept-default-rules" type="button">Use Default Rules</button>
-        </div>
-      </div>
-
       <div class="setup-card">
         <h3>Teams</h3>
         <div class="form-row">
@@ -120,6 +78,70 @@
       </div>
     </div>
     <p id="setup-feedback" class="setup-feedback"></p>
+  </section>
+
+  <section id="rules-panel" class="setup-panel hidden">
+    <div class="setup-grid rules-grid">
+      <div class="setup-card">
+        <h3>Rules Profile</h3>
+        <div class="form-row">
+          <label for="rules-profile">Preset</label>
+          <select id="rules-profile">
+            <option value="london_league">London League</option>
+            <option value="fivb">FIVB</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <p id="rules-preset-summary" class="hint"></p>
+        <div class="setup-actions">
+          <button id="apply-rules-profile" type="button">Apply Profile</button>
+        </div>
+      </div>
+
+      <div class="setup-card hidden" id="custom-rules-card">
+        <h3>Custom Rules</h3>
+        <div class="form-row">
+          <label for="regsetpts">Regular Set Points</label>
+          <input id="regsetpts" type="number" min="1" step="1">
+        </div>
+        <div class="form-row">
+          <label for="nbsetswin">Sets To Win Match</label>
+          <input id="nbsetswin" type="number" min="1" step="1">
+        </div>
+        <div class="form-row">
+          <label for="decidersetpts">Decider Set Points</label>
+          <input id="decidersetpts" type="number" min="1" step="1">
+        </div>
+        <div class="form-row">
+          <label for="ptsdiffwinpts">Points Diff To Win Interrupted Match</label>
+          <input id="ptsdiffwinpts" type="number" min="0" step="1">
+        </div>
+        <div class="form-row">
+          <label for="ptsdiffwinset">Points Diff To Win Set</label>
+          <input id="ptsdiffwinset" type="number" min="1" step="1">
+        </div>
+        <div class="form-row checkbox-row">
+          <label for="swapsidesindecider">Swap Sides In Decider</label>
+          <input id="swapsidesindecider" type="checkbox">
+        </div>
+        <div class="form-row">
+          <label for="nbptsforswap">Points For Side Swap</label>
+          <input id="nbptsforswap" type="number" min="1" step="1">
+        </div>
+        <div class="form-row">
+          <label for="maxnumberplayers">Max Players</label>
+          <input id="maxnumberplayers" type="number" min="1" step="1">
+        </div>
+        <div class="form-row">
+          <label for="minliberoifthirteen">Min Liberos If 13 Players</label>
+          <input id="minliberoifthirteen" type="number" min="0" step="1">
+        </div>
+        <div class="setup-actions">
+          <button id="save-custom-rules" type="button">Save Custom Rules</button>
+        </div>
+      </div>
+    </div>
+    <p id="rules-feedback" class="setup-feedback"></p>
   </section>
 
   <main class="scoreboard">
