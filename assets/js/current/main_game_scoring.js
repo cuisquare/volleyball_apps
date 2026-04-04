@@ -57,6 +57,7 @@ const elements = {
     completeSet: document.getElementById('completeSet'),
     completeGame: document.getElementById('completeGame'),
     undoLastPoint: document.getElementById('undo-last-point'),
+    redoLastPoint: document.getElementById('redo-last-point'),
     teamAName: document.getElementById('name-teamA'),
     teamBName: document.getElementById('name-teamB'),
     scoreTeamA: document.getElementById('score-teamA'),
@@ -339,10 +340,12 @@ function updateActionAvailability() {
     const canManageSet = setupState.matchStarted && !mygame.isGameOver;
     const canScore = canManageSet && mygame.team_serving_currently !== 'Unknown';
     const canUndo = canManageSet && mygame.pointHistory.length > 0;
+    const canRedo = canManageSet && mygame.redoHistory.length > 0;
 
     elements.incTeamA.disabled = !canScore;
     elements.incTeamB.disabled = !canScore;
     elements.undoLastPoint.disabled = !canUndo;
+    elements.redoLastPoint.disabled = !canRedo;
     elements.completeSet.disabled = !canManageSet;
     elements.completeGame.disabled = !canManageSet;
     elements.applyDeciderToss.disabled = !(setupState.matchStarted && mygame.isPreDeciderToss && !mygame.isGameOver);
@@ -473,6 +476,11 @@ function hookEventListeners() {
 
     elements.undoLastPoint.addEventListener('click', () => {
         mygame.undoLastPoint();
+        updateSetsElements();
+    });
+
+    elements.redoLastPoint.addEventListener('click', () => {
+        mygame.redoLastPoint();
         updateSetsElements();
     });
 

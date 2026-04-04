@@ -16,6 +16,7 @@ class Game {
         this.setWins = { teamA: 0, teamB: 0 };
         this.totalPoints = { teamA: 0, teamB: 0 };
         this.pointHistory = [];
+        this.redoHistory = [];
 
         //game interrupted
         this.game_interrupted = false;
@@ -283,6 +284,8 @@ class Game {
         const pointAdded = this.updateScore(team, 1);
         if (pointAdded) {
             this.pointHistory.push(snapshot);
+            // New scoring action supersedes any pending redo chain.
+            this.redoHistory = [];
             return true;
         }
         return false;
@@ -294,7 +297,30 @@ class Game {
             return false;
         }
 
+        this.redoHistory.push(this.getUndoSnapshot());
         const snapshot = this.pointHistory.pop();
+        this.currentSet = { ...snapshot.currentSet };
+        this.currentSetAcceptingMorePoints = snapshot.currentSetAcceptingMorePoints;
+        this.onLeft = snapshot.onLeft;
+        this.team_serving_before = snapshot.team_serving_before;
+
+        if (snapshot.team_serving_currently === "Unknown") {
+            this.resetCurrentServingState();
+        } else {
+            this.team_serving_currently = snapshot.team_serving_currently;
+        }
+
+        return true;
+    }
+
+    redoLastPoint() {
+        if (this.redoHistory.length === 0) {
+            console_plus_popup_warn("No points to redo in the current set.");
+            return false;
+        }
+
+        this.pointHistory.push(this.getUndoSnapshot());
+        const snapshot = this.redoHistory.pop();
         this.currentSet = { ...snapshot.currentSet };
         this.currentSetAcceptingMorePoints = snapshot.currentSetAcceptingMorePoints;
         this.onLeft = snapshot.onLeft;
@@ -382,6 +408,7 @@ class Game {
         // Reset current set
         this.currentSet = { teamA: 0, teamB: 0 };
         this.pointHistory = [];
+        this.redoHistory = [];
 
         //Allow point to be added in that currentset
         this.currentSetAcceptingMorePoints = true;
