@@ -33,7 +33,9 @@ const RULE_PRESETS = {
     }
 };
 
-const DEFAULT_PROFILE_ID = 'london_league';
+const DEFAULT_PROFILE_ID = 'preset:london_league';
+const RULE_PROFILE_STORAGE_KEY = 'volleyball_rules_profiles_v1';
+let savedRuleProfiles = [];
 
 const myfixture = new Fixture(
     '45',
@@ -70,6 +72,9 @@ const elements = {
     startMatch: document.getElementById('start-match'),
     rulesProfile: document.getElementById('rules-profile'),
     applyRulesProfile: document.getElementById('apply-rules-profile'),
+    newRulesProfileName: document.getElementById('new-rules-profile-name'),
+    saveRulesProfile: document.getElementById('save-rules-profile'),
+    deleteRulesProfile: document.getElementById('delete-rules-profile'),
     rulesPresetSummary: document.getElementById('rules-preset-summary'),
     customRulesCard: document.getElementById('custom-rules-card'),
     saveCustomRules: document.getElementById('save-custom-rules'),
@@ -133,6 +138,121 @@ function asPositiveInteger(value, fieldName, minValue = 1) {
     return parsed;
 }
 
+function normalizeRulesValues(rawValues) {
+    const normalized = {
+        regsetpts: asPositiveInteger(rawValues.regsetpts, 'Regular set points'),
+        nbsetswin: asPositiveInteger(rawValues.nbsetswin, 'Sets to win', 1),
+        decidersetpts: asPositiveInteger(rawValues.decidersetpts, 'Decider set points'),
+        ptsdiffwinpts: asPositiveInteger(rawValues.ptsdiffwinpts, 'Points diff for interrupted match', 0),
+        ptsdiffwinset: asPositiveInteger(rawValues.ptsdiffwinset, 'Points diff to win set'),
+        swapsidesindecider: Boolean(rawValues.swapsidesindecider),
+        nbptsforswap: asPositiveInteger(rawValues.nbptsforswap, 'Points for side swap'),
+        maxnumberplayers: asPositiveInteger(rawValues.maxnumberplayers, 'Max players'),
+        minliberoifthirteen: asPositiveInteger(rawValues.minliberoifthirteen, 'Min liberos if 13 players', 0)
+    };
+
+    if (normalized.nbptsforswap > normalized.decidersetpts) {
+        throw new Error('Points for side swap cannot be greater than decider set points.');
+    }
+
+    return normalized;
+}
+
+function parseProfileSelection(selectedProfileValue) {
+    if (selectedProfileValue === 'custom') {
+        return { type: 'custom' };
+    }
+
+    if (selectedProfileValue.startsWith('preset:')) {
+        const presetId = selectedProfileValue.replace('preset:', '');
+        const preset = RULE_PRESETS[presetId];
+        if (!preset) {
+            return { type: 'unknown' };
+        }
+        return { type: 'preset', id: presetId, label: preset.label, values: preset.values };
+    }
+
+    if (selectedProfileValue.startsWith('saved:')) {
+        const savedId = selectedProfileValue.replace('saved:', '');
+        const savedProfile = savedRuleProfiles.find((profile) => profile.id === savedId);
+        if (!savedProfile) {
+            return { type: 'unknown' };
+        }
+        return { type: 'saved', id: savedId, label: savedProfile.name, values: savedProfile.values };
+    }
+
+    return { type: 'unknown' };
+}
+
+function persistSavedRuleProfiles() {
+    const payload = {
+        version: 1,
+        profiles: savedRuleProfiles
+    };
+    localStorage.setItem(RULE_PROFILE_STORAGE_KEY, JSON.stringify(payload));
+}
+
+function loadSavedRuleProfiles() {
+    savedRuleProfiles = [];
+    const raw = localStorage.getItem(RULE_PROFILE_STORAGE_KEY);
+    if (!raw) {
+        return;
+    }
+
+    try {
+        const parsed = JSON.parse(raw);
+        const profiles = Array.isArray(parsed.profiles) ? parsed.profiles : [];
+        for (const profile of profiles) {
+            if (!profile || typeof profile.id !== 'string' || typeof profile.name !== 'string') {
+                continue;
+            }
+            try {
+                const values = normalizeRulesValues(profile.values || {});
+                const trimmedName = profile.name.trim();
+                if (!trimmedName) {
+                    continue;
+                }
+                savedRuleProfiles.push({
+                    id: profile.id,
+                    name: trimmedName,
+                    values
+                });
+            } catch {
+                continue;
+            }
+        }
+    } catch {
+        savedRuleProfiles = [];
+    }
+}
+
+function rebuildRulesProfileOptions(selectedValue = 'custom') {
+    const currentValue = selectedValue || elements.rulesProfile.value;
+    elements.rulesProfile.innerHTML = '';
+
+    for (const presetId of Object.keys(RULE_PRESETS)) {
+        const presetOption = document.createElement('option');
+        presetOption.value = `preset:${presetId}`;
+        presetOption.textContent = RULE_PRESETS[presetId].label;
+        elements.rulesProfile.appendChild(presetOption);
+    }
+
+    for (const profile of savedRuleProfiles) {
+        const savedOption = document.createElement('option');
+        savedOption.value = `saved:${profile.id}`;
+        savedOption.textContent = `Saved: ${profile.name}`;
+        elements.rulesProfile.appendChild(savedOption);
+    }
+
+    const customOption = document.createElement('option');
+    customOption.value = 'custom';
+    customOption.textContent = 'Custom';
+    elements.rulesProfile.appendChild(customOption);
+
+    const hasSelection = Array.from(elements.rulesProfile.options).some((option) => option.value === currentValue);
+    elements.rulesProfile.value = hasSelection ? currentValue : DEFAULT_PROFILE_ID;
+}
+
 function getPresetSummaryLine(values) {
     return [
         `Regular: ${values.regsetpts} pts`,
@@ -156,23 +276,17 @@ function setRulesFormValues(ruleValues) {
 }
 
 function getRulesFromForm() {
-    const parsed = {
-        regsetpts: asPositiveInteger(elements.regsetpts.value, 'Regular set points'),
-        nbsetswin: asPositiveInteger(elements.nbsetswin.value, 'Sets to win', 1),
-        decidersetpts: asPositiveInteger(elements.decidersetpts.value, 'Decider set points'),
-        ptsdiffwinpts: asPositiveInteger(elements.ptsdiffwinpts.value, 'Points diff for interrupted match', 0),
-        ptsdiffwinset: asPositiveInteger(elements.ptsdiffwinset.value, 'Points diff to win set'),
+    return normalizeRulesValues({
+        regsetpts: elements.regsetpts.value,
+        nbsetswin: elements.nbsetswin.value,
+        decidersetpts: elements.decidersetpts.value,
+        ptsdiffwinpts: elements.ptsdiffwinpts.value,
+        ptsdiffwinset: elements.ptsdiffwinset.value,
         swapsidesindecider: elements.swapsidesindecider.checked,
-        nbptsforswap: asPositiveInteger(elements.nbptsforswap.value, 'Points for side swap'),
-        maxnumberplayers: asPositiveInteger(elements.maxnumberplayers.value, 'Max players'),
-        minliberoifthirteen: asPositiveInteger(elements.minliberoifthirteen.value, 'Min liberos if 13 players', 0)
-    };
-
-    if (parsed.nbptsforswap > parsed.decidersetpts) {
-        throw new Error('Points for side swap cannot be greater than decider set points.');
-    }
-
-    return parsed;
+        nbptsforswap: elements.nbptsforswap.value,
+        maxnumberplayers: elements.maxnumberplayers.value,
+        minliberoifthirteen: elements.minliberoifthirteen.value
+    });
 }
 
 function applyRules(ruleValues) {
@@ -190,19 +304,23 @@ function applyRules(ruleValues) {
 }
 
 function updateRulesPanelView() {
-    const selectedProfile = elements.rulesProfile.value;
-    const isCustom = selectedProfile === 'custom';
+    const selectedProfile = parseProfileSelection(elements.rulesProfile.value);
+    const isCustom = selectedProfile.type === 'custom';
+    const isSavedProfile = selectedProfile.type === 'saved';
     elements.customRulesCard.classList.toggle('hidden', !isCustom);
 
     if (isCustom) {
         elements.rulesPresetSummary.textContent = `Custom profile. ${setupState.rulesSource === 'custom' ? 'Saved values are loaded below.' : 'Edit values below and save.'}`;
+    } else if (selectedProfile.type === 'preset' || selectedProfile.type === 'saved') {
+        elements.rulesPresetSummary.textContent = `${selectedProfile.label}: ${getPresetSummaryLine(selectedProfile.values)}`;
+        setRulesFormValues(selectedProfile.values);
     } else {
-        const preset = RULE_PRESETS[selectedProfile];
-        if (preset) {
-            elements.rulesPresetSummary.textContent = `${preset.label}: ${getPresetSummaryLine(preset.values)}`;
-            setRulesFormValues(preset.values);
-        }
+        elements.rulesPresetSummary.textContent = 'Unknown profile selected.';
     }
+
+    elements.saveRulesProfile.disabled = setupState.matchStarted || !isCustom;
+    elements.newRulesProfileName.disabled = setupState.matchStarted || !isCustom;
+    elements.deleteRulesProfile.disabled = setupState.matchStarted || !isSavedProfile;
 }
 
 function updateRulesStatusBadge() {
@@ -317,6 +435,9 @@ function lockPrematchSetup() {
 
     elements.applyRulesProfile.disabled = true;
     elements.saveCustomRules.disabled = true;
+    elements.saveRulesProfile.disabled = true;
+    elements.deleteRulesProfile.disabled = true;
+    elements.newRulesProfileName.disabled = true;
 }
 
 function updateSetupBadge() {
@@ -441,35 +562,35 @@ function updateSetsElements() {
 }
 
 function applyPresetProfile(profileId) {
-    const preset = RULE_PRESETS[profileId];
-    if (!preset || setupState.matchStarted) {
+    const selection = parseProfileSelection(profileId);
+    if (!(selection.type === 'preset' || selection.type === 'saved') || setupState.matchStarted) {
         return;
     }
 
-    applyRules(preset.values);
-    setRulesFormValues(preset.values);
+    applyRules(selection.values);
+    setRulesFormValues(selection.values);
 
     setupState.rulesConfirmed = true;
-    setupState.rulesSource = 'preset';
+    setupState.rulesSource = selection.type;
     setupState.rulesProfileId = profileId;
-    setupState.rulesProfileLabel = preset.label;
+    setupState.rulesProfileLabel = selection.label;
 
-    setRulesFeedback(`${preset.label} rules applied.`, 'success');
+    setRulesFeedback(`${selection.label} rules applied.`, 'success');
     setSetupFeedback('Rules profile applied. Complete remaining setup fields to start match.', 'success');
     updateSetsElements();
 }
 
 function applySelectedRulesProfile() {
-    const selectedProfile = elements.rulesProfile.value;
-    if (selectedProfile === 'custom') {
+    const selectedProfile = parseProfileSelection(elements.rulesProfile.value);
+    if (selectedProfile.type === 'custom') {
         setRulesFeedback('Custom profile selected. Edit values and click Save Custom Rules.', '');
         return;
     }
-    applyPresetProfile(selectedProfile);
+    applyPresetProfile(elements.rulesProfile.value);
 }
 
 function saveCustomRules() {
-    if (setupState.matchStarted || elements.rulesProfile.value !== 'custom') {
+    if (setupState.matchStarted || parseProfileSelection(elements.rulesProfile.value).type !== 'custom') {
         return;
     }
 
@@ -489,28 +610,92 @@ function saveCustomRules() {
     }
 }
 
+function saveCurrentRulesAsNewProfile() {
+    if (setupState.matchStarted || parseProfileSelection(elements.rulesProfile.value).type !== 'custom') {
+        return;
+    }
+
+    const profileName = elements.newRulesProfileName.value.trim();
+    if (!profileName) {
+        setRulesFeedback('Enter a profile name before saving.', 'error');
+        return;
+    }
+
+    const duplicateName = savedRuleProfiles.some((profile) => profile.name.toLowerCase() === profileName.toLowerCase());
+    if (duplicateName) {
+        setRulesFeedback('A saved profile with that name already exists.', 'error');
+        return;
+    }
+
+    try {
+        const customRules = getRulesFromForm();
+        const savedId = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        savedRuleProfiles.push({
+            id: savedId,
+            name: profileName,
+            values: customRules
+        });
+        persistSavedRuleProfiles();
+        rebuildRulesProfileOptions(`saved:${savedId}`);
+        updateRulesPanelView();
+        elements.newRulesProfileName.value = '';
+        setRulesFeedback(`Saved profile "${profileName}". Click Apply Profile to use it.`, 'success');
+    } catch (error) {
+        setRulesFeedback(error.message, 'error');
+    }
+}
+
+function deleteSelectedSavedProfile() {
+    if (setupState.matchStarted) {
+        return;
+    }
+
+    const selected = parseProfileSelection(elements.rulesProfile.value);
+    if (selected.type !== 'saved') {
+        setRulesFeedback('Select a saved profile to delete.', 'error');
+        return;
+    }
+
+    const profileToDelete = savedRuleProfiles.find((profile) => profile.id === selected.id);
+    savedRuleProfiles = savedRuleProfiles.filter((profile) => profile.id !== selected.id);
+    persistSavedRuleProfiles();
+
+    rebuildRulesProfileOptions('custom');
+    updateRulesPanelView();
+
+    if (setupState.rulesProfileId === `saved:${selected.id}`) {
+        setupState.rulesConfirmed = false;
+        setupState.rulesSource = 'none';
+        setupState.rulesProfileId = 'none';
+        setupState.rulesProfileLabel = 'Not Set';
+    }
+
+    setRulesFeedback(`Deleted profile "${profileToDelete ? profileToDelete.name : selected.label}".`, 'success');
+    updateSetsElements();
+}
+
 function handleRulesProfileChange() {
     if (setupState.matchStarted) {
         return;
     }
 
-    const selectedProfile = elements.rulesProfile.value;
+    const selectedProfileValue = elements.rulesProfile.value;
+    const selectedProfile = parseProfileSelection(selectedProfileValue);
     updateRulesPanelView();
 
-    if (selectedProfile === setupState.rulesProfileId && setupState.rulesConfirmed) {
+    if (selectedProfileValue === setupState.rulesProfileId && setupState.rulesConfirmed) {
         return;
     }
 
     setupState.rulesConfirmed = false;
     setupState.rulesSource = 'none';
 
-    if (selectedProfile === 'custom') {
+    if (selectedProfile.type === 'custom') {
         setupState.rulesProfileLabel = 'Custom';
         setRulesFeedback('Custom profile selected. Edit values and save to confirm.', '');
     } else {
-        const preset = RULE_PRESETS[selectedProfile];
-        setupState.rulesProfileLabel = preset ? preset.label : 'Not Set';
-        setRulesFeedback('Preset selected. Click Apply Profile to confirm rules.', '');
+        setupState.rulesProfileLabel = selectedProfile.type === 'unknown' ? 'Not Set' : selectedProfile.label;
+        setRulesFeedback('Profile selected. Click Apply Profile to confirm rules.', '');
     }
 
     updateSetsElements();
@@ -591,6 +776,8 @@ function hookEventListeners() {
     elements.rulesProfile.addEventListener('change', handleRulesProfileChange);
     elements.applyRulesProfile.addEventListener('click', applySelectedRulesProfile);
     elements.saveCustomRules.addEventListener('click', saveCustomRules);
+    elements.saveRulesProfile.addEventListener('click', saveCurrentRulesAsNewProfile);
+    elements.deleteRulesProfile.addEventListener('click', deleteSelectedSavedProfile);
 
     elements.startMatch.addEventListener('click', startMatch);
     elements.applyDeciderToss.addEventListener('click', applyDeciderToss);
@@ -679,11 +866,12 @@ function initSetupDefaults() {
         defaultServer.checked = true;
     }
 
-    elements.rulesProfile.value = DEFAULT_PROFILE_ID;
+    loadSavedRuleProfiles();
+    rebuildRulesProfileOptions(DEFAULT_PROFILE_ID);
     updateRulesPanelView();
 
     setSetupFeedback('Open Rules to apply a preset or save custom rules, then complete setup.', '');
-    setRulesFeedback('Select a profile and click Apply Profile, or choose Custom and save.', '');
+    setRulesFeedback('Select or load a profile and click Apply Profile, or choose Custom and save.', '');
 }
 
 function init() {

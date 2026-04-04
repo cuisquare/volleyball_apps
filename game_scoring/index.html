@@ -87,14 +87,22 @@
         <div class="form-row">
           <label for="rules-profile">Preset</label>
           <select id="rules-profile">
-            <option value="london_league">London League</option>
-            <option value="fivb">FIVB</option>
+            <option value="preset:london_league">London League</option>
+            <option value="preset:fivb">FIVB</option>
             <option value="custom">Custom</option>
           </select>
         </div>
         <p id="rules-preset-summary" class="hint"></p>
         <div class="setup-actions">
           <button id="apply-rules-profile" type="button">Apply Profile</button>
+        </div>
+        <div class="form-row">
+          <label for="new-rules-profile-name">Save current custom rules as</label>
+          <input id="new-rules-profile-name" type="text" maxlength="60" placeholder="Profile name">
+        </div>
+        <div class="setup-actions">
+          <button id="save-rules-profile" type="button">Save New Profile</button>
+          <button id="delete-rules-profile" type="button">Delete Selected Saved Profile</button>
         </div>
       </div>
 
