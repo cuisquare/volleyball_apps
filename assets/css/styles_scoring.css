@@ -154,6 +154,14 @@ select {
   display: flex;
   align-items: center;
   gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+
+.radio-row:has(input:checked) {
+  color: var(--text);
+  font-weight: 600;
 }
 
 .setup-actions {
@@ -250,8 +258,35 @@ button:hover {
 }
 
 button:disabled {
-  opacity: 0.45;
+  opacity: 0.72;
   cursor: not-allowed;
+}
+
+input:disabled,
+select:disabled {
+  color: var(--text);
+  -webkit-text-fill-color: var(--text);
+  background: #eef2f7;
+  border-color: #c8d2df;
+  opacity: 1;
+  font-weight: 600;
+}
+
+input:disabled::placeholder {
+  color: #6b7280;
+}
+
+input[type="radio"] {
+  accent-color: var(--accent);
+}
+
+input[type="radio"]:disabled {
+  opacity: 1;
+}
+
+.radio-row:has(input:disabled:checked) {
+  background: #eef2f7;
+  border-color: #c8d2df;
 }
 
 .hint {
@@ -283,6 +318,23 @@ button:disabled {
 .dark-mode .status-badge.locked {
   background: #1a2b46;
   border-color: #456ea7;
+}
+
+.dark-mode input:disabled,
+.dark-mode select:disabled {
+  color: #e6edf6;
+  -webkit-text-fill-color: #e6edf6;
+  background: #243142;
+  border-color: #4a5f79;
+}
+
+.dark-mode input:disabled::placeholder {
+  color: #c3cfde;
+}
+
+.dark-mode .radio-row:has(input:disabled:checked) {
+  background: #243142;
+  border-color: #4a5f79;
 }
 
 @keyframes attentionPulse {

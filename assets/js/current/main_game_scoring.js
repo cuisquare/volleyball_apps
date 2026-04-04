@@ -57,7 +57,8 @@ const setupState = {
     rulesProfileLabel: 'Not Set',
     matchStarted: false,
     setupLocked: false,
-    deciderPromptShown: false
+    deciderPromptShown: false,
+    deciderLeftStarter: ''
 };
 
 const elements = {
@@ -442,7 +443,7 @@ function lockPrematchSetup() {
 
 function updateSetupBadge() {
     elements.setupStatusBadge.classList.remove('ready', 'locked');
-    const deciderTossRequired = setupState.matchStarted && mygame.isPreDeciderToss && !mygame.isGameOver;
+    const deciderTossRequired = setupState.matchStarted && !mygame.isGameOver && mygame.isPreDeciderToss;
 
     if (deciderTossRequired) {
         elements.setupStatusBadge.textContent = 'Decider Toss Required';
@@ -451,7 +452,7 @@ function updateSetupBadge() {
     }
 
     if (setupState.matchStarted) {
-        elements.setupStatusBadge.textContent = 'Setup Locked';
+        elements.setupStatusBadge.textContent = 'Toss Choices Locked';
         elements.setupStatusBadge.classList.add('locked');
         return;
     }
@@ -463,11 +464,11 @@ function updateSetupBadge() {
     }
 
     if (setupState.rulesConfirmed) {
-        elements.setupStatusBadge.textContent = `Rules Set (${setupState.rulesProfileLabel}), Setup Pending`;
+        elements.setupStatusBadge.textContent = `Rules Set (${setupState.rulesProfileLabel}), Toss Choices Pending`;
         return;
     }
 
-    elements.setupStatusBadge.textContent = 'Setup Incomplete';
+    elements.setupStatusBadge.textContent = 'Toss Choices Incomplete';
 }
 
 function updateTeamPosition() {
@@ -507,29 +508,52 @@ function updateScoringServingValues() {
     elements.servingStateTeamB.textContent = mygame.servingstate.teamB;
 
     if (!setupState.matchStarted) {
-        elements.gameStatus.textContent = 'Setup required before match start.';
+        elements.gameStatus.textContent = 'Toss choices required before match start.';
     } else {
         elements.gameStatus.textContent = mygame.getGameStatus();
     }
 }
 
 function updateDeciderTossVisibility() {
-    const deciderTossRequired = setupState.matchStarted && mygame.isPreDeciderToss && !mygame.isGameOver;
+    const deciderTossRequired = setupState.matchStarted && !mygame.isGameOver && mygame.isPreDeciderToss;
+    const deciderTossAlreadySet = mygame.team_serving_deciderset === 'teamA' || mygame.team_serving_deciderset === 'teamB';
+    const showDeciderTossSection = setupState.matchStarted && (deciderTossRequired || deciderTossAlreadySet || mygame.isDeciderSet());
 
-    if (deciderTossRequired) {
+    if (showDeciderTossSection) {
         elements.deciderCard.classList.add('visible');
-        elements.toggleSetupPanel.classList.add('needs-attention');
-        elements.setupStatusBadge.classList.add('needs-attention');
-        elements.setupPanel.classList.remove('hidden');
-        elements.rulesPanel.classList.add('hidden');
-        if (!setupState.deciderPromptShown) {
-            setSetupFeedback('Decider set reached: please complete decider toss in pre-match setup.', 'error');
-            setupState.deciderPromptShown = true;
+        if (setupState.deciderLeftStarter) {
+            elements.deciderLeftTeam.value = setupState.deciderLeftStarter;
         }
+
+        if (mygame.team_serving_deciderset === 'teamA' || mygame.team_serving_deciderset === 'teamB') {
+            elements.deciderServingTeam.value = mygame.team_serving_deciderset;
+        }
+
+        const readOnlyConsultation = !deciderTossRequired;
+        elements.deciderLeftTeam.disabled = readOnlyConsultation;
+        elements.deciderServingTeam.disabled = readOnlyConsultation;
+
+        if (deciderTossRequired) {
+            elements.toggleSetupPanel.classList.add('needs-attention');
+            elements.setupStatusBadge.classList.add('needs-attention');
+            elements.setupPanel.classList.remove('hidden');
+            elements.rulesPanel.classList.add('hidden');
+            if (!setupState.deciderPromptShown) {
+                setSetupFeedback('Decider set reached: please complete pre-decider toss choices.', 'error');
+                setupState.deciderPromptShown = true;
+            }
+        } else {
+            elements.toggleSetupPanel.classList.remove('needs-attention');
+            elements.setupStatusBadge.classList.remove('needs-attention');
+            setupState.deciderPromptShown = false;
+        }
+
         return;
     }
 
     elements.deciderCard.classList.remove('visible');
+    elements.deciderLeftTeam.disabled = false;
+    elements.deciderServingTeam.disabled = false;
     elements.toggleSetupPanel.classList.remove('needs-attention');
     elements.setupStatusBadge.classList.remove('needs-attention');
     setupState.deciderPromptShown = false;
@@ -549,7 +573,8 @@ function updateActionAvailability() {
     elements.redoLastPoint.disabled = !canRedo;
     elements.completeSet.disabled = !canManageSet;
     elements.completeGame.disabled = !canManageSet;
-    elements.applyDeciderToss.disabled = !(setupState.matchStarted && mygame.isPreDeciderToss && !mygame.isGameOver);
+    const deciderTossRequired = setupState.matchStarted && !mygame.isGameOver && mygame.isPreDeciderToss;
+    elements.applyDeciderToss.disabled = !deciderTossRequired;
 }
 
 function updateSetsElements() {
@@ -722,12 +747,13 @@ function startMatch() {
     lockPrematchSetup();
     elements.setupPanel.classList.add('hidden');
 
-    setSetupFeedback('Match started. Setup is locked. Rules remain available for viewing.', 'success');
+    setSetupFeedback('Match started. Toss choices are locked. Rules remain available for viewing.', 'success');
     updateSetsElements();
 }
 
 function applyDeciderToss() {
-    if (!setupState.matchStarted || !mygame.isPreDeciderToss) {
+    const deciderTossRequired = setupState.matchStarted && !mygame.isGameOver && mygame.isPreDeciderToss;
+    if (!deciderTossRequired) {
         return;
     }
 
@@ -739,6 +765,7 @@ function applyDeciderToss() {
         return;
     }
 
+    setupState.deciderLeftStarter = leftTeam;
     mygame.onLeft = leftTeam === 'teamA';
     mygame.team_serving_deciderset = servingTeam;
 
@@ -870,7 +897,7 @@ function initSetupDefaults() {
     rebuildRulesProfileOptions(DEFAULT_PROFILE_ID);
     updateRulesPanelView();
 
-    setSetupFeedback('Open Rules to apply a preset or save custom rules, then complete setup.', '');
+    setSetupFeedback('Open Rules to apply a preset or save custom rules, then complete toss choices.', '');
     setRulesFeedback('Select or load a profile and click Apply Profile, or choose Custom and save.', '');
 }
 

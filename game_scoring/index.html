@@ -8,9 +8,9 @@
 <body>
   <header class="top-menu">
     <div class="top-menu-left">
-      <button id="toggle-setup-panel" type="button">Pre-Match Setup</button>
+      <button id="toggle-setup-panel" type="button">Toss Choices</button>
       <button id="toggle-rules-panel" type="button">Rules</button>
-      <span id="setup-status-badge" class="status-badge">Setup Incomplete</span>
+      <span id="setup-status-badge" class="status-badge">Toss Choices Incomplete</span>
       <span id="rules-status-badge" class="status-badge">Rules: Not Set</span>
     </div>
     <div class="top-menu-right">
@@ -22,7 +22,7 @@
   <section id="setup-panel" class="setup-panel">
     <div class="setup-grid">
       <div class="setup-card">
-        <h3>Teams</h3>
+        <h3>Prematch</h3>
         <div class="form-row">
           <label for="home-team-name">Home Team Name</label>
           <input id="home-team-name" type="text" maxlength="60" placeholder="Home team">
@@ -54,7 +54,7 @@
       </div>
 
       <div class="setup-card" id="decider-toss-card">
-        <h3>Decider Toss</h3>
+        <h3>Pre-Decider Set</h3>
         <p class="hint">Only used when the match reaches a decider set.</p>
         <div class="form-row">
           <label for="decider-left-team">Team Starting Left</label>
