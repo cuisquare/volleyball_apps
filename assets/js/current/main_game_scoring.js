@@ -41,7 +41,8 @@ const setupState = {
     rulesConfirmed: false,
     rulesSource: 'none',
     matchStarted: false,
-    setupLocked: false
+    setupLocked: false,
+    deciderPromptShown: false
 };
 
 const elements = {
@@ -55,6 +56,7 @@ const elements = {
     darkModeToggle: document.getElementById('dark-mode-toggle'),
     completeSet: document.getElementById('completeSet'),
     completeGame: document.getElementById('completeGame'),
+    undoLastPoint: document.getElementById('undo-last-point'),
     teamAName: document.getElementById('name-teamA'),
     teamBName: document.getElementById('name-teamB'),
     scoreTeamA: document.getElementById('score-teamA'),
@@ -68,9 +70,7 @@ const elements = {
     gameStatus: document.getElementById('game-status'),
     teamsContainer: document.getElementById('teams-container'),
     incTeamA: document.getElementById('increase-score-teamA'),
-    decTeamA: document.getElementById('decrease-score-teamA'),
     incTeamB: document.getElementById('increase-score-teamB'),
-    decTeamB: document.getElementById('decrease-score-teamB'),
     homeTeamName: document.getElementById('home-team-name'),
     awayTeamName: document.getElementById('away-team-name'),
     regsetpts: document.getElementById('regsetpts'),
@@ -241,6 +241,13 @@ function lockPrematchSetup() {
 
 function updateSetupBadge() {
     elements.setupStatusBadge.classList.remove('ready', 'locked');
+    const deciderTossRequired = setupState.matchStarted && mygame.isPreDeciderToss && !mygame.isGameOver;
+
+    if (deciderTossRequired) {
+        elements.setupStatusBadge.textContent = 'Decider Toss Required';
+        elements.setupStatusBadge.classList.add('locked');
+        return;
+    }
 
     if (setupState.matchStarted) {
         elements.setupStatusBadge.textContent = 'Setup Locked';
@@ -306,12 +313,24 @@ function updateScoringServingValues() {
 }
 
 function updateDeciderTossVisibility() {
-    if (setupState.matchStarted && mygame.isPreDeciderToss && !mygame.isGameOver) {
+    const deciderTossRequired = setupState.matchStarted && mygame.isPreDeciderToss && !mygame.isGameOver;
+
+    if (deciderTossRequired) {
         elements.deciderCard.classList.add('visible');
+        elements.toggleSetupPanel.classList.add('needs-attention');
+        elements.setupStatusBadge.classList.add('needs-attention');
+        elements.setupPanel.classList.remove('hidden');
+        if (!setupState.deciderPromptShown) {
+            setFeedback('Decider set reached: please complete decider toss in setup.', 'error');
+            setupState.deciderPromptShown = true;
+        }
         return;
     }
 
     elements.deciderCard.classList.remove('visible');
+    elements.toggleSetupPanel.classList.remove('needs-attention');
+    elements.setupStatusBadge.classList.remove('needs-attention');
+    setupState.deciderPromptShown = false;
 }
 
 function updateActionAvailability() {
@@ -319,11 +338,11 @@ function updateActionAvailability() {
 
     const canManageSet = setupState.matchStarted && !mygame.isGameOver;
     const canScore = canManageSet && mygame.team_serving_currently !== 'Unknown';
+    const canUndo = canManageSet && mygame.pointHistory.length > 0;
 
     elements.incTeamA.disabled = !canScore;
-    elements.decTeamA.disabled = !canScore;
     elements.incTeamB.disabled = !canScore;
-    elements.decTeamB.disabled = !canScore;
+    elements.undoLastPoint.disabled = !canUndo;
     elements.completeSet.disabled = !canManageSet;
     elements.completeGame.disabled = !canManageSet;
     elements.applyDeciderToss.disabled = !(setupState.matchStarted && mygame.isPreDeciderToss && !mygame.isGameOver);
@@ -387,6 +406,7 @@ function startMatch() {
 
     setupState.matchStarted = true;
     lockPrematchSetup();
+    elements.setupPanel.classList.add('hidden');
 
     setFeedback('Match started. Pre-match setup is now locked.', 'success');
     updateSetsElements();
@@ -442,22 +462,17 @@ function hookEventListeners() {
     elements.completeGame.addEventListener('click', interruptGame);
 
     elements.incTeamA.addEventListener('click', () => {
-        mygame.updateScore('teamA', 1);
-        updateSetsElements();
-    });
-
-    elements.decTeamA.addEventListener('click', () => {
-        mygame.updateScore('teamA', -1);
+        mygame.awardPoint('teamA');
         updateSetsElements();
     });
 
     elements.incTeamB.addEventListener('click', () => {
-        mygame.updateScore('teamB', 1);
+        mygame.awardPoint('teamB');
         updateSetsElements();
     });
 
-    elements.decTeamB.addEventListener('click', () => {
-        mygame.updateScore('teamB', -1);
+    elements.undoLastPoint.addEventListener('click', () => {
+        mygame.undoLastPoint();
         updateSetsElements();
     });
 

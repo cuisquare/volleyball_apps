@@ -15,6 +15,7 @@ class Game {
         this.currentSet = { teamA: 0, teamB: 0 };
         this.setWins = { teamA: 0, teamB: 0 };
         this.totalPoints = { teamA: 0, teamB: 0 };
+        this.pointHistory = [];
 
         //game interrupted
         this.game_interrupted = false;
@@ -188,23 +189,23 @@ class Game {
         //do not allow points to be updated if the current server is unknown
         if (this.team_serving_currently == "Unknown") {
             console_plus_popup_warn("select serving team before points can be added. ")
-            return
+            return false
         }
 
 
         if (!(this.currentSetAcceptingMorePoints) & (points>0)) {
             console_plus_popup_warn("current set cannot accept more points")
-            return
+            return false
         }
 
         if (this.isGameOver) {
             console_plus_popup_warn("game is over, cannot update scores.")
-            return
+            return false
         }
 
         if (!(team === "teamA" || team === "teamB")) {
             console_plus_popup_warn("Invalid team. Use 'teamA' or 'teamB'.");
-            return
+            return false
         }
 
 
@@ -228,6 +229,9 @@ class Game {
         }
 
         this.currentSet[team] += points;
+        if (points == 0) {
+            return false
+        }
 
         //updating the serving team
         if (points ==1) {
@@ -261,6 +265,48 @@ class Game {
             //TODO code the going back to previous position because points reversed...
         }
 
+        return true
+    }
+
+    getUndoSnapshot() {
+        return {
+            currentSet: { ...this.currentSet },
+            currentSetAcceptingMorePoints: this.currentSetAcceptingMorePoints,
+            team_serving_currently: this.team_serving_currently,
+            team_serving_before: this.team_serving_before,
+            onLeft: this.onLeft
+        };
+    }
+
+    awardPoint(team) {
+        const snapshot = this.getUndoSnapshot();
+        const pointAdded = this.updateScore(team, 1);
+        if (pointAdded) {
+            this.pointHistory.push(snapshot);
+            return true;
+        }
+        return false;
+    }
+
+    undoLastPoint() {
+        if (this.pointHistory.length === 0) {
+            console_plus_popup_warn("No points to undo in the current set.");
+            return false;
+        }
+
+        const snapshot = this.pointHistory.pop();
+        this.currentSet = { ...snapshot.currentSet };
+        this.currentSetAcceptingMorePoints = snapshot.currentSetAcceptingMorePoints;
+        this.onLeft = snapshot.onLeft;
+        this.team_serving_before = snapshot.team_serving_before;
+
+        if (snapshot.team_serving_currently === "Unknown") {
+            this.resetCurrentServingState();
+        } else {
+            this.team_serving_currently = snapshot.team_serving_currently;
+        }
+
+        return true;
     }
 
     resetCurrentServingState() {
@@ -335,6 +381,7 @@ class Game {
 
         // Reset current set
         this.currentSet = { teamA: 0, teamB: 0 };
+        this.pointHistory = [];
 
         //Allow point to be added in that currentset
         this.currentSetAcceptingMorePoints = true;

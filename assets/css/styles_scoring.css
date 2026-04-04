@@ -72,6 +72,12 @@ body {
   background: #edf3fd;
 }
 
+.needs-attention {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+  animation: attentionPulse 1.2s ease-in-out infinite;
+}
+
 .setup-panel {
   padding: 12px;
 }
@@ -268,6 +274,12 @@ button:disabled {
 .dark-mode .status-badge.locked {
   background: #1a2b46;
   border-color: #456ea7;
+}
+
+@keyframes attentionPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
 }
 
 @media (max-width: 980px) {
