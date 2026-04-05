@@ -9,8 +9,9 @@
   <header class="top-menu">
     <div class="top-menu-left">
       <button id="toggle-scoreboard-panel" type="button">Scoreboard</button>
-      <button id="toggle-setup-panel" type="button">Toss Choices</button>
       <button id="toggle-rules-panel" type="button">Rules</button>
+      <button id="toggle-team-details-panel" type="button">Team Details</button>
+      <button id="toggle-setup-panel" type="button">Toss Choices</button>
       <span id="setup-status-badge" class="status-badge">Toss Choices Incomplete</span>
       <span id="rules-status-badge" class="status-badge">Rules: Not Set</span>
     </div>
@@ -20,10 +21,10 @@
     </div>
   </header>
 
-  <section id="setup-panel" class="setup-panel">
+  <section id="team-details-panel" class="setup-panel hidden">
     <div class="setup-grid">
       <div class="setup-card">
-        <h3>Prematch</h3>
+        <h3>Team Details</h3>
         <div class="form-row">
           <label for="home-team-name">Home Team Name</label>
           <input id="home-team-name" type="text" maxlength="60" placeholder="Home team">
@@ -32,6 +33,24 @@
           <label for="away-team-name">Away Team Name</label>
           <input id="away-team-name" type="text" maxlength="60" placeholder="Away team">
         </div>
+        <div class="setup-actions">
+          <button id="apply-team-details" type="button">Apply Team Details</button>
+        </div>
+      </div>
+      <div class="setup-card">
+        <h3>Roster (Coming Next)</h3>
+        <p class="hint">Team roster input will be added in a future step.</p>
+        <h3>Lineup (Coming Next)</h3>
+        <p class="hint">Starting lineup input will be added in a future step.</p>
+      </div>
+    </div>
+    <p id="team-details-feedback" class="setup-feedback"></p>
+  </section>
+
+  <section id="setup-panel" class="setup-panel">
+    <div class="setup-grid">
+      <div class="setup-card">
+        <h3>Prematch</h3>
 
         <h3>Starts Left (Scorer View)</h3>
         <label class="radio-row">
