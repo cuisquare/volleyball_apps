@@ -761,7 +761,7 @@ function buildLineupOptionLabel(player) {
     return `#${player.shirtNumber} - ${player.name}`;
 }
 
-function getLineupOptionPrefix(teamSelections, currentPosition, playerId) {
+function getLineupOptionSuffix(teamSelections, currentPosition, playerId) {
     let selectedPosition = 0;
     for (let position = 1; position <= 6; position++) {
         if (teamSelections[position] === playerId) {
@@ -770,15 +770,13 @@ function getLineupOptionPrefix(teamSelections, currentPosition, playerId) {
         }
     }
 
-    const status = selectedPosition ? `P${selectedPosition}` : 'FREE';
-    let action = 'ADD';
-    if (selectedPosition && selectedPosition !== currentPosition) {
-        action = 'SWAP';
-    } else if (selectedPosition === currentPosition) {
-        action = 'KEEP';
+    if (!selectedPosition) {
+        return '+';
     }
-
-    return `[${status.padEnd(4, ' ')} - ${action.padEnd(5, ' ')}]`;
+    if (selectedPosition !== currentPosition) {
+        return `⇄ P${selectedPosition}`;
+    }
+    return `= P${selectedPosition}`;
 }
 
 function getSelectedLineupPosition(teamSelections, playerId) {
@@ -846,7 +844,7 @@ function renderLineupSelect(teamId, position, selectedPlayerId, disabled) {
     for (const player of sortedRoster) {
         const option = document.createElement('option');
         option.value = player.id;
-        option.textContent = `${getLineupOptionPrefix(teamSelections, position, player.id)} ${buildLineupOptionLabel(player)}`;
+        option.textContent = `${buildLineupOptionLabel(player)}  ${getLineupOptionSuffix(teamSelections, position, player.id)}`;
         select.appendChild(option);
     }
 
