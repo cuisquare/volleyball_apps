@@ -116,6 +116,7 @@ const elements = {
     homePlayerNumber: document.getElementById('home-player-number'),
     homePlayerRegNumber: document.getElementById('home-player-reg-number'),
     homePlayerLibero: document.getElementById('home-player-libero'),
+    homePlayerCaptain: document.getElementById('home-player-captain'),
     addHomePlayer: document.getElementById('add-home-player'),
     homeRosterCount: document.getElementById('home-roster-count'),
     homeRegularRosterBody: document.getElementById('home-regular-roster-body'),
@@ -124,6 +125,7 @@ const elements = {
     awayPlayerNumber: document.getElementById('away-player-number'),
     awayPlayerRegNumber: document.getElementById('away-player-reg-number'),
     awayPlayerLibero: document.getElementById('away-player-libero'),
+    awayPlayerCaptain: document.getElementById('away-player-captain'),
     addAwayPlayer: document.getElementById('add-away-player'),
     awayRosterCount: document.getElementById('away-roster-count'),
     awayRegularRosterBody: document.getElementById('away-regular-roster-body'),
@@ -287,6 +289,7 @@ function getRosterInputs(teamSide) {
             numberInput: elements.homePlayerNumber,
             regInput: elements.homePlayerRegNumber,
             liberoInput: elements.homePlayerLibero,
+            captainInput: elements.homePlayerCaptain,
             addButton: elements.addHomePlayer,
             regularBody: elements.homeRegularRosterBody,
             liberoBody: elements.homeLiberoRosterBody,
@@ -299,6 +302,7 @@ function getRosterInputs(teamSide) {
         numberInput: elements.awayPlayerNumber,
         regInput: elements.awayPlayerRegNumber,
         liberoInput: elements.awayPlayerLibero,
+        captainInput: elements.awayPlayerCaptain,
         addButton: elements.addAwayPlayer,
         regularBody: elements.awayRegularRosterBody,
         liberoBody: elements.awayLiberoRosterBody,
@@ -315,12 +319,14 @@ function renderRoster(teamSide) {
     const maxPlayers = getMaxRosterPlayers();
     const nonLiberos = roster.filter((player) => !player.isLibero).length;
     const liberos = roster.length - nonLiberos;
+    const captains = roster.filter((player) => player.isCaptain).length;
     const missingPlayers = Math.max(0, 6 - roster.length);
     const missingNonLiberos = Math.max(0, 6 - nonLiberos);
     let readinessHint = 'Ready';
     const minLiberosIfThirteen = getMinLiberosIfThirteen();
     const missingLiberosAtThirteen = roster.length >= 13 ? Math.max(0, minLiberosIfThirteen - liberos) : 0;
-    if (missingPlayers > 0 || missingNonLiberos > 0 || missingLiberosAtThirteen > 0) {
+    const missingCaptain = captains === 0 ? 1 : 0;
+    if (missingPlayers > 0 || missingNonLiberos > 0 || missingLiberosAtThirteen > 0 || missingCaptain > 0) {
         const parts = [];
         if (missingPlayers > 0) {
             parts.push(`${missingPlayers} total`);
@@ -331,9 +337,12 @@ function renderRoster(teamSide) {
         if (missingLiberosAtThirteen > 0) {
             parts.push(`${missingLiberosAtThirteen} libero(s) for 13-player rule`);
         }
+        if (missingCaptain > 0) {
+            parts.push('1 captain');
+        }
         readinessHint = `Not ready: need ${parts.join(', ')}`;
     }
-    controls.count.textContent = `${roster.length} / ${maxPlayers} players (Regular ${nonLiberos}, Libero ${liberos}/${getMaxLiberosPerRoster()}) - ${readinessHint}`;
+    controls.count.textContent = `${roster.length} / ${maxPlayers} players (Regular ${nonLiberos}, Libero ${liberos}/${getMaxLiberosPerRoster()}, Captain ${captains}) - ${readinessHint}`;
 
     const byShirtNumber = (playerA, playerB) => {
         if (playerA.shirtNumber !== playerB.shirtNumber) {
@@ -348,7 +357,7 @@ function renderRoster(teamSide) {
     const renderRows = (targetBody, players, emptyText) => {
         if (players.length === 0) {
             const emptyRow = document.createElement('tr');
-            emptyRow.innerHTML = `<td class="roster-empty" colspan="4">${emptyText}</td>`;
+            emptyRow.innerHTML = `<td class="roster-empty" colspan="5">${emptyText}</td>`;
             targetBody.appendChild(emptyRow);
             return;
         }
@@ -360,6 +369,7 @@ function renderRoster(teamSide) {
                 <td>${escapeHtml(player.name)}</td>
                 <td>${player.shirtNumber}</td>
                 <td>${player.regNumber ? escapeHtml(player.regNumber) : '-'}</td>
+                <td>${player.isCaptain ? 'Yes' : '-'}</td>
                 <td>
                     <button class="table-action-btn edit-player-btn" data-team="${teamSide}" data-player-id="${player.id}" type="button" ${canRemove ? '' : 'disabled'}>Edit</button>
                     <button class="table-action-btn remove-player-btn" data-team="${teamSide}" data-player-id="${player.id}" type="button" ${canRemove ? '' : 'disabled'}>Remove</button>
@@ -391,7 +401,8 @@ function createDefaultRoster() {
             name: `Player ${i}`,
             shirtNumber: i,
             regNumber: '',
-            isLibero: false
+            isLibero: false,
+            isCaptain: i === 1
         });
     }
     return roster;
@@ -419,6 +430,14 @@ function validateRosterForTeam(teamSide, roster) {
     const maxLiberos = getMaxLiberosPerRoster();
     if (liberos > maxLiberos) {
         return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster cannot have more than ${maxLiberos} liberos.`);
+    }
+
+    const captains = roster.filter((player) => player.isCaptain).length;
+    if (captains < 1) {
+        return `${teamSide === 'home' ? 'Home' : 'Away'} roster must include exactly 1 captain.`;
+    }
+    if (captains > 1) {
+        return `${teamSide === 'home' ? 'Home' : 'Away'} roster must include exactly 1 captain.`;
     }
 
     const nonLiberos = roster.length - liberos;
@@ -458,6 +477,11 @@ function validateRosterEntryForTeam(teamSide, roster) {
         return withRulesContext(`${teamLabel} roster cannot have more than ${maxLiberos} liberos.`);
     }
 
+    const captains = roster.filter((player) => player.isCaptain).length;
+    if (captains > 1) {
+        return `${teamLabel} roster cannot have more than 1 captain.`;
+    }
+
     return '';
 }
 
@@ -467,6 +491,7 @@ function clearRosterInputs(teamSide) {
     controls.numberInput.value = '';
     controls.regInput.value = '';
     controls.liberoInput.checked = false;
+    controls.captainInput.checked = false;
     setupState.editingRosterPlayerId[teamSide] = '';
     renderRoster(teamSide);
 }
@@ -493,6 +518,7 @@ function addRosterPlayer(teamSide) {
     const shirtNumber = Number.parseInt(controls.numberInput.value, 10);
     const regNumber = controls.regInput.value.trim();
     const isLibero = controls.liberoInput.checked;
+    const isCaptain = controls.captainInput.checked;
 
     if (!name) {
         setTeamDetailsFeedback('Player name is required.', 'error');
@@ -515,7 +541,8 @@ function addRosterPlayer(teamSide) {
                 name,
                 shirtNumber,
                 regNumber,
-                isLibero
+                isLibero,
+                isCaptain
             }
             : player))
         : [...roster, {
@@ -523,8 +550,18 @@ function addRosterPlayer(teamSide) {
             name,
             shirtNumber,
             regNumber,
-            isLibero
+            isLibero,
+            isCaptain
         }];
+
+    if (isCaptain) {
+        for (const player of rosterForValidation) {
+            if (editingId && player.id === editingId) {
+                continue;
+            }
+            player.isCaptain = false;
+        }
+    }
 
     const entryValidationError = validateRosterEntryForTeam(teamSide, rosterForValidation);
     if (entryValidationError) {
@@ -540,7 +577,8 @@ function addRosterPlayer(teamSide) {
             name,
             shirtNumber,
             regNumber,
-            isLibero
+            isLibero,
+            isCaptain
         });
     }
 
@@ -584,6 +622,7 @@ function editRosterPlayer(teamSide, playerId) {
     controls.numberInput.value = player.shirtNumber;
     controls.regInput.value = player.regNumber || '';
     controls.liberoInput.checked = Boolean(player.isLibero);
+    controls.captainInput.checked = Boolean(player.isCaptain);
 
     setupState.editingRosterPlayerId[teamSide] = playerId;
     renderRoster(teamSide);
@@ -1349,10 +1388,12 @@ function lockPrematchSetup() {
         elements.homePlayerNumber,
         elements.homePlayerRegNumber,
         elements.homePlayerLibero,
+        elements.homePlayerCaptain,
         elements.awayPlayerName,
         elements.awayPlayerNumber,
         elements.awayPlayerRegNumber,
-        elements.awayPlayerLibero
+        elements.awayPlayerLibero,
+        elements.awayPlayerCaptain
     ]) {
         input.disabled = true;
     }
