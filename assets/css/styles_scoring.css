@@ -305,6 +305,43 @@ input[type="radio"]:disabled {
   white-space: pre-line;
 }
 
+.roster-table-wrap {
+  overflow-x: auto;
+}
+
+.roster-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.roster-table th,
+.roster-table td {
+  border-bottom: 1px solid var(--line);
+  padding: 6px 4px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.roster-table th {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.roster-table td:last-child {
+  text-align: right;
+}
+
+.roster-empty {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.table-action-btn {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+}
+
 .dark-mode {
   --bg: #0f1217;
   --panel: #191f27;

@@ -56,6 +56,15 @@ const setupState = {
     rulesProfileId: 'none',
     rulesProfileLabel: 'Not Set',
     teamDetailsConfirmed: false,
+    rosters: {
+        home: [],
+        away: []
+    },
+    editingRosterPlayerId: {
+        home: '',
+        away: ''
+    },
+    nextRosterPlayerId: 1,
     matchStarted: false,
     setupLocked: false,
     prematchTossConfirmed: false,
@@ -79,6 +88,21 @@ const elements = {
     rulesFeedback: document.getElementById('rules-feedback'),
     teamDetailsFeedback: document.getElementById('team-details-feedback'),
     applyTeamDetails: document.getElementById('apply-team-details'),
+    rosterRulesHint: document.getElementById('roster-rules-hint'),
+    homePlayerName: document.getElementById('home-player-name'),
+    homePlayerNumber: document.getElementById('home-player-number'),
+    homePlayerRegNumber: document.getElementById('home-player-reg-number'),
+    homePlayerLibero: document.getElementById('home-player-libero'),
+    addHomePlayer: document.getElementById('add-home-player'),
+    homeRosterCount: document.getElementById('home-roster-count'),
+    homeRosterBody: document.getElementById('home-roster-body'),
+    awayPlayerName: document.getElementById('away-player-name'),
+    awayPlayerNumber: document.getElementById('away-player-number'),
+    awayPlayerRegNumber: document.getElementById('away-player-reg-number'),
+    awayPlayerLibero: document.getElementById('away-player-libero'),
+    addAwayPlayer: document.getElementById('add-away-player'),
+    awayRosterCount: document.getElementById('away-roster-count'),
+    awayRosterBody: document.getElementById('away-roster-body'),
     applyPrematchToss: document.getElementById('apply-prematch-toss'),
     startMatch: document.getElementById('start-match'),
     rulesProfile: document.getElementById('rules-profile'),
@@ -161,6 +185,344 @@ function setTeamDetailsFeedback(message, variant = '') {
     if (variant) {
         elements.teamDetailsFeedback.classList.add(variant);
     }
+}
+
+function getActiveRulesLabelForMessage() {
+    if (setupState.rulesProfileLabel && setupState.rulesProfileLabel !== 'Not Set') {
+        return setupState.rulesProfileLabel;
+    }
+
+    const selectedProfile = parseProfileSelection(elements.rulesProfile.value);
+    if (selectedProfile.type === 'preset' || selectedProfile.type === 'saved') {
+        return selectedProfile.label;
+    }
+    if (selectedProfile.type === 'custom') {
+        return 'Custom';
+    }
+
+    return 'Selected';
+}
+
+function withRulesContext(message) {
+    return `${message} (${getActiveRulesLabelForMessage()} rules)`;
+}
+
+function getMaxRosterPlayers() {
+    return Number(mygame.fixture.rules.maxnumberplayers) || 14;
+}
+
+function getMinLiberosIfThirteen() {
+    return Number(mygame.fixture.rules.minliberoifthirteen) || 0;
+}
+
+function getMaxLiberosPerRoster() {
+    return 2;
+}
+
+function markTeamDetailsDirty() {
+    if (setupState.matchStarted) {
+        return;
+    }
+
+    setupState.teamDetailsConfirmed = false;
+    setupState.prematchTossConfirmed = false;
+}
+
+function updateRosterRuleHint() {
+    const maxPlayers = getMaxRosterPlayers();
+    const minLiberos = getMinLiberosIfThirteen();
+    const maxLiberos = getMaxLiberosPerRoster();
+    elements.rosterRulesHint.textContent = `Roster limits: up to ${maxPlayers} players per team, max ${maxLiberos} liberos, and at least 6 non-libero players. If roster has exactly 13 players, at least ${minLiberos} libero(s) are required.`;
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function getRosterInputs(teamSide) {
+    if (teamSide === 'home') {
+        return {
+            nameInput: elements.homePlayerName,
+            numberInput: elements.homePlayerNumber,
+            regInput: elements.homePlayerRegNumber,
+            liberoInput: elements.homePlayerLibero,
+            addButton: elements.addHomePlayer,
+            body: elements.homeRosterBody,
+            count: elements.homeRosterCount
+        };
+    }
+
+    return {
+        nameInput: elements.awayPlayerName,
+        numberInput: elements.awayPlayerNumber,
+        regInput: elements.awayPlayerRegNumber,
+        liberoInput: elements.awayPlayerLibero,
+        addButton: elements.addAwayPlayer,
+        body: elements.awayRosterBody,
+        count: elements.awayRosterCount
+    };
+}
+
+function renderRoster(teamSide) {
+    const roster = setupState.rosters[teamSide];
+    const controls = getRosterInputs(teamSide);
+    controls.body.innerHTML = '';
+
+    const maxPlayers = getMaxRosterPlayers();
+    controls.count.textContent = `${roster.length} / ${maxPlayers} players`;
+
+    if (roster.length === 0) {
+        const emptyRow = document.createElement('tr');
+        emptyRow.innerHTML = '<td class="roster-empty" colspan="5">No players added yet.</td>';
+        controls.body.appendChild(emptyRow);
+        return;
+    }
+
+    for (const player of roster) {
+        const canRemove = !setupState.matchStarted;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${escapeHtml(player.name)}</td>
+            <td>${player.shirtNumber}</td>
+            <td>${player.isLibero ? 'Yes' : 'No'}</td>
+            <td>${player.regNumber ? escapeHtml(player.regNumber) : '-'}</td>
+            <td>
+                <button class="table-action-btn edit-player-btn" data-team="${teamSide}" data-player-id="${player.id}" type="button" ${canRemove ? '' : 'disabled'}>Edit</button>
+                <button class="table-action-btn remove-player-btn" data-team="${teamSide}" data-player-id="${player.id}" type="button" ${canRemove ? '' : 'disabled'}>Remove</button>
+            </td>
+        `;
+        controls.body.appendChild(row);
+    }
+
+    const isEditing = Boolean(setupState.editingRosterPlayerId[teamSide]);
+    controls.addButton.textContent = isEditing
+        ? (teamSide === 'home' ? 'Save Home Player' : 'Save Away Player')
+        : (teamSide === 'home' ? 'Add Home Player' : 'Add Away Player');
+}
+
+function renderRosters() {
+    renderRoster('home');
+    renderRoster('away');
+}
+
+function createDefaultRoster() {
+    const roster = [];
+    for (let i = 1; i <= 6; i++) {
+        roster.push({
+            id: `p_${setupState.nextRosterPlayerId++}`,
+            name: `Player ${i}`,
+            shirtNumber: i,
+            regNumber: '',
+            isLibero: false
+        });
+    }
+    return roster;
+}
+
+function validateRosterForTeam(teamSide, roster) {
+    if (roster.length < 6) {
+        return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster needs at least 6 players.`);
+    }
+
+    const maxPlayers = getMaxRosterPlayers();
+    if (roster.length > maxPlayers) {
+        return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster cannot exceed ${maxPlayers} players.`);
+    }
+
+    const numbers = new Set();
+    for (const player of roster) {
+        if (numbers.has(player.shirtNumber)) {
+            return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster has duplicate shirt number ${player.shirtNumber}.`);
+        }
+        numbers.add(player.shirtNumber);
+    }
+
+    const liberos = roster.filter((player) => player.isLibero).length;
+    const maxLiberos = getMaxLiberosPerRoster();
+    if (liberos > maxLiberos) {
+        return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster cannot have more than ${maxLiberos} liberos.`);
+    }
+
+    const nonLiberos = roster.length - liberos;
+    if (nonLiberos < 6) {
+        return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster needs at least 6 non-libero players.`);
+    }
+
+    if (roster.length === 13) {
+        const minLiberos = getMinLiberosIfThirteen();
+        if (liberos < minLiberos) {
+            return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster needs at least ${minLiberos} libero(s) when 13 players are listed.`);
+        }
+    }
+
+    return '';
+}
+
+function clearRosterInputs(teamSide) {
+    const controls = getRosterInputs(teamSide);
+    controls.nameInput.value = '';
+    controls.numberInput.value = '';
+    controls.regInput.value = '';
+    controls.liberoInput.checked = false;
+    setupState.editingRosterPlayerId[teamSide] = '';
+    renderRoster(teamSide);
+}
+
+function addRosterPlayer(teamSide) {
+    if (setupState.matchStarted) {
+        return;
+    }
+    if (!setupState.rulesConfirmed) {
+        setTeamDetailsFeedback('Confirm rules before adding roster players.', 'error');
+        return;
+    }
+
+    const controls = getRosterInputs(teamSide);
+    const roster = setupState.rosters[teamSide];
+    const editingId = setupState.editingRosterPlayerId[teamSide];
+
+    if (!editingId && roster.length >= getMaxRosterPlayers()) {
+        setTeamDetailsFeedback(withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster is at max size for current rules.`), 'error');
+        return;
+    }
+
+    const name = controls.nameInput.value.trim();
+    const shirtNumber = Number.parseInt(controls.numberInput.value, 10);
+    const regNumber = controls.regInput.value.trim();
+    const isLibero = controls.liberoInput.checked;
+
+    if (!name) {
+        setTeamDetailsFeedback('Player name is required.', 'error');
+        return;
+    }
+    if (!Number.isInteger(shirtNumber) || shirtNumber <= 0) {
+        setTeamDetailsFeedback('Shirt number must be a positive integer.', 'error');
+        return;
+    }
+    const duplicateNumber = roster.some((player) => player.shirtNumber === shirtNumber && player.id !== editingId);
+    if (duplicateNumber) {
+        setTeamDetailsFeedback(`Shirt number ${shirtNumber} is already used in ${teamSide} roster.`, 'error');
+        return;
+    }
+
+    const rosterForValidation = editingId
+        ? roster.map((player) => (player.id === editingId
+            ? {
+                ...player,
+                name,
+                shirtNumber,
+                regNumber,
+                isLibero
+            }
+            : player))
+        : [...roster, {
+            id: `p_${setupState.nextRosterPlayerId}`,
+            name,
+            shirtNumber,
+            regNumber,
+            isLibero
+        }];
+
+    const currentLiberos = roster.filter((player) => player.isLibero).length;
+    const existingEditedPlayer = editingId ? roster.find((player) => player.id === editingId) : null;
+    const baselineLiberos = existingEditedPlayer && existingEditedPlayer.isLibero ? currentLiberos - 1 : currentLiberos;
+    const nextRosterSize = rosterForValidation.length;
+    const nextLiberos = baselineLiberos + (isLibero ? 1 : 0);
+    const minLiberosIfThirteen = getMinLiberosIfThirteen();
+
+    if (!editingId && nextRosterSize === 13 && nextLiberos < minLiberosIfThirteen) {
+        if (!isLibero) {
+            setTeamDetailsFeedback(withRulesContext(`Cannot add a 13th non-libero player: ${teamSide === 'home' ? 'Home' : 'Away'} roster needs at least ${minLiberosIfThirteen} libero(s) at 13 players.`), 'error');
+        } else {
+            setTeamDetailsFeedback(withRulesContext(`At 13 players, ${teamSide === 'home' ? 'Home' : 'Away'} roster needs at least ${minLiberosIfThirteen} libero(s). Add another libero before reaching 13 players.`), 'error');
+        }
+        return;
+    }
+
+    if (isLibero) {
+        const maxLiberos = getMaxLiberosPerRoster();
+        if (baselineLiberos >= maxLiberos) {
+            setTeamDetailsFeedback(withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster cannot have more than ${maxLiberos} liberos.`), 'error');
+            return;
+        }
+    }
+
+    const rosterValidationError = validateRosterForTeam(teamSide, rosterForValidation);
+    if (rosterValidationError) {
+        setTeamDetailsFeedback(rosterValidationError, 'error');
+        return;
+    }
+
+    if (editingId) {
+        setupState.rosters[teamSide] = rosterForValidation;
+    } else {
+        roster.push({
+            id: `p_${setupState.nextRosterPlayerId++}`,
+            name,
+            shirtNumber,
+            regNumber,
+            isLibero
+        });
+    }
+
+    markTeamDetailsDirty();
+    renderRosters();
+    clearRosterInputs(teamSide);
+    setTeamDetailsFeedback(
+        `${teamSide === 'home' ? 'Home' : 'Away'} player ${editingId ? 'updated' : 'added'}. Click Apply Team Details when ready.`,
+        ''
+    );
+    updateSetupBadge();
+    updateActionAvailability();
+}
+
+function editRosterPlayer(teamSide, playerId) {
+    if (setupState.matchStarted) {
+        return;
+    }
+
+    const roster = setupState.rosters[teamSide];
+    const player = roster.find((item) => item.id === playerId);
+    if (!player) {
+        return;
+    }
+
+    const controls = getRosterInputs(teamSide);
+    controls.nameInput.value = player.name;
+    controls.numberInput.value = player.shirtNumber;
+    controls.regInput.value = player.regNumber || '';
+    controls.liberoInput.checked = Boolean(player.isLibero);
+
+    setupState.editingRosterPlayerId[teamSide] = playerId;
+    renderRoster(teamSide);
+    setTeamDetailsFeedback(`${teamSide === 'home' ? 'Home' : 'Away'} player loaded for edit. Update fields and click Save.`, '');
+}
+
+function removeRosterPlayer(teamSide, playerId) {
+    if (setupState.matchStarted) {
+        return;
+    }
+
+    const roster = setupState.rosters[teamSide];
+    const nextRoster = roster.filter((player) => player.id !== playerId);
+    if (nextRoster.length === roster.length) {
+        return;
+    }
+
+    setupState.rosters[teamSide] = nextRoster;
+    if (setupState.editingRosterPlayerId[teamSide] === playerId) {
+        setupState.editingRosterPlayerId[teamSide] = '';
+    }
+    markTeamDetailsDirty();
+    renderRosters();
+    setTeamDetailsFeedback('Roster updated. Click Apply Team Details to confirm.', '');
+    updateSetupBadge();
+    updateActionAvailability();
 }
 
 function asPositiveInteger(value, fieldName, minValue = 1) {
@@ -396,6 +758,8 @@ function markRulesDirty() {
     if (setupState.rulesConfirmed && setupState.rulesSource === 'custom') {
         setupState.rulesConfirmed = false;
         setupState.rulesSource = 'none';
+        setupState.teamDetailsConfirmed = false;
+        setupState.prematchTossConfirmed = false;
         setRulesFeedback('Custom rules changed. Save custom rules to confirm.', 'error');
     }
 
@@ -434,7 +798,24 @@ function validateTeamDetails() {
         return null;
     }
 
-    return { homeName, awayName };
+    const homeRosterError = validateRosterForTeam('home', setupState.rosters.home);
+    if (homeRosterError) {
+        setTeamDetailsFeedback(homeRosterError, 'error');
+        return null;
+    }
+
+    const awayRosterError = validateRosterForTeam('away', setupState.rosters.away);
+    if (awayRosterError) {
+        setTeamDetailsFeedback(awayRosterError, 'error');
+        return null;
+    }
+
+    return {
+        homeName,
+        awayName,
+        homeRoster: setupState.rosters.home.map((player) => ({ ...player })),
+        awayRoster: setupState.rosters.away.map((player) => ({ ...player }))
+    };
 }
 
 function hasReadySelections() {
@@ -444,6 +825,10 @@ function hasReadySelections() {
 function validateBeforeStart() {
     if (!setupState.rulesConfirmed) {
         setSetupFeedback('Rules are required. Apply a preset or save custom rules first.', 'error');
+        return null;
+    }
+    if (!setupState.teamDetailsConfirmed) {
+        setSetupFeedback('Apply team details and rosters before starting the match.', 'error');
         return null;
     }
 
@@ -509,6 +894,19 @@ function lockPrematchSetup() {
         input.disabled = true;
     }
 
+    for (const input of [
+        elements.homePlayerName,
+        elements.homePlayerNumber,
+        elements.homePlayerRegNumber,
+        elements.homePlayerLibero,
+        elements.awayPlayerName,
+        elements.awayPlayerNumber,
+        elements.awayPlayerRegNumber,
+        elements.awayPlayerLibero
+    ]) {
+        input.disabled = true;
+    }
+
     for (const radio of document.querySelectorAll('input[name="setup-left-starter"], input[name="setup-first-server"]')) {
         radio.disabled = true;
     }
@@ -520,6 +918,9 @@ function lockPrematchSetup() {
     elements.newRulesProfileName.disabled = true;
     elements.applyTeamDetails.disabled = true;
     elements.applyPrematchToss.disabled = true;
+    elements.addHomePlayer.disabled = true;
+    elements.addAwayPlayer.disabled = true;
+    renderRosters();
 }
 
 function updateSetupBadge() {
@@ -545,7 +946,7 @@ function updateSetupBadge() {
     }
 
     if (setupState.rulesConfirmed && !setupState.teamDetailsConfirmed) {
-        elements.setupStatusBadge.textContent = `Rules Set (${setupState.rulesProfileLabel}), Team Details Pending`;
+        elements.setupStatusBadge.textContent = `Rules Set (${setupState.rulesProfileLabel}), Team Details/Rosters Pending`;
         return;
     }
 
@@ -648,6 +1049,8 @@ function updateActionAvailability() {
     elements.startMatch.disabled = setupState.matchStarted || !hasReadySelections();
     elements.applyTeamDetails.disabled = setupState.matchStarted || !setupState.rulesConfirmed;
     elements.applyPrematchToss.disabled = setupState.matchStarted || !setupState.rulesConfirmed || !setupState.teamDetailsConfirmed;
+    elements.addHomePlayer.disabled = setupState.matchStarted || !setupState.rulesConfirmed || setupState.rosters.home.length >= getMaxRosterPlayers();
+    elements.addAwayPlayer.disabled = setupState.matchStarted || !setupState.rulesConfirmed || setupState.rosters.away.length >= getMaxRosterPlayers();
 
     const canManageSet = setupState.matchStarted && !mygame.isGameOver;
     const canScore = canManageSet && mygame.team_serving_currently !== 'Unknown';
@@ -665,6 +1068,8 @@ function updateActionAvailability() {
 }
 
 function updateSetsElements() {
+    updateRosterRuleHint();
+    renderRosters();
     updateTeamPosition();
     updateScoringServingValues();
     updateDeciderTossVisibility();
@@ -686,10 +1091,12 @@ function applyPresetProfile(profileId) {
     setupState.rulesSource = selection.type;
     setupState.rulesProfileId = profileId;
     setupState.rulesProfileLabel = selection.label;
+    setupState.teamDetailsConfirmed = false;
+    setupState.prematchTossConfirmed = false;
 
     setRulesFeedback(`${selection.label} rules applied.`, 'success');
-    setSetupFeedback('Rules profile applied. Next step: complete Team Details, then toss choices.', 'success');
-    setTeamDetailsFeedback('Complete team names before prematch toss choices.', '');
+    setSetupFeedback('Rules profile applied. Next step: complete Team Details and rosters, then toss choices.', 'success');
+    setTeamDetailsFeedback('Complete team names and both rosters before prematch toss choices.', '');
     if (!setupState.matchStarted) {
         setActivePanel('teamDetails');
     }
@@ -717,10 +1124,12 @@ function saveCustomRules() {
         setupState.rulesSource = 'custom';
         setupState.rulesProfileId = 'custom';
         setupState.rulesProfileLabel = 'Custom';
+        setupState.teamDetailsConfirmed = false;
+        setupState.prematchTossConfirmed = false;
 
         setRulesFeedback('Custom rules saved and confirmed.', 'success');
-        setSetupFeedback('Custom rules saved. Next step: complete Team Details, then toss choices.', 'success');
-        setTeamDetailsFeedback('Complete team names before prematch toss choices.', '');
+        setSetupFeedback('Custom rules saved. Next step: complete Team Details and rosters, then toss choices.', 'success');
+        setTeamDetailsFeedback('Complete team names and both rosters before prematch toss choices.', '');
         if (!setupState.matchStarted) {
             setActivePanel('teamDetails');
         }
@@ -809,6 +1218,8 @@ function handleRulesProfileChange() {
 
     setupState.rulesConfirmed = false;
     setupState.rulesSource = 'none';
+    setupState.teamDetailsConfirmed = false;
+    setupState.prematchTossConfirmed = false;
 
     if (selectedProfile.type === 'custom') {
         setupState.rulesProfileLabel = 'Custom';
@@ -896,11 +1307,13 @@ function applyTeamDetails() {
 
     mygame.fixture.hometeam_name = teamDetails.homeName;
     mygame.fixture.awayteam_name = teamDetails.awayName;
+    mygame.fixture.home_roster = teamDetails.homeRoster;
+    mygame.fixture.away_roster = teamDetails.awayRoster;
     setupState.teamDetailsConfirmed = true;
     setupState.prematchTossConfirmed = false;
 
-    setTeamDetailsFeedback('Team details applied. Continue to prematch toss choices.', 'success');
-    setSetupFeedback('Team details applied. Complete prematch toss choices next.', '');
+    setTeamDetailsFeedback('Team details and rosters applied. Continue to prematch toss choices.', 'success');
+    setSetupFeedback('Team details and rosters applied. Complete prematch toss choices next.', '');
     setActivePanel('setup');
     updateSetsElements();
 }
@@ -932,6 +1345,31 @@ function hookEventListeners() {
     elements.saveCustomRules.addEventListener('click', saveCustomRules);
     elements.saveRulesProfile.addEventListener('click', saveCurrentRulesAsNewProfile);
     elements.deleteRulesProfile.addEventListener('click', deleteSelectedSavedProfile);
+
+    elements.addHomePlayer.addEventListener('click', () => addRosterPlayer('home'));
+    elements.addAwayPlayer.addEventListener('click', () => addRosterPlayer('away'));
+    elements.homeRosterBody.addEventListener('click', (event) => {
+        const button = event.target.closest('.remove-player-btn, .edit-player-btn');
+        if (!button) {
+            return;
+        }
+        if (button.classList.contains('edit-player-btn')) {
+            editRosterPlayer(button.dataset.team, button.dataset.playerId);
+            return;
+        }
+        removeRosterPlayer(button.dataset.team, button.dataset.playerId);
+    });
+    elements.awayRosterBody.addEventListener('click', (event) => {
+        const button = event.target.closest('.remove-player-btn, .edit-player-btn');
+        if (!button) {
+            return;
+        }
+        if (button.classList.contains('edit-player-btn')) {
+            editRosterPlayer(button.dataset.team, button.dataset.playerId);
+            return;
+        }
+        removeRosterPlayer(button.dataset.team, button.dataset.playerId);
+    });
 
     elements.applyTeamDetails.addEventListener('click', applyTeamDetails);
     elements.applyPrematchToss.addEventListener('click', applyPrematchTossChoices);
@@ -978,10 +1416,7 @@ function hookEventListeners() {
     for (const input of [elements.homeTeamName, elements.awayTeamName]) {
         input.addEventListener('input', () => {
             if (!setupState.matchStarted) {
-                setupState.teamDetailsConfirmed = false;
-                setupState.prematchTossConfirmed = false;
-            }
-            if (!setupState.matchStarted) {
+                markTeamDetailsDirty();
                 setTeamDetailsFeedback('Names changed. Click Apply Team Details to confirm.', '');
             }
             updateSetupBadge();
@@ -1021,6 +1456,26 @@ function initSetupDefaults() {
     elements.homeTeamName.value = mygame.fixture.hometeam_name;
     elements.awayTeamName.value = mygame.fixture.awayteam_name;
     setupState.teamDetailsConfirmed = false;
+    setupState.rosters.home = Array.isArray(mygame.fixture.home_roster) ? mygame.fixture.home_roster.map((player) => ({ ...player })) : [];
+    setupState.rosters.away = Array.isArray(mygame.fixture.away_roster) ? mygame.fixture.away_roster.map((player) => ({ ...player })) : [];
+    setupState.editingRosterPlayerId.home = '';
+    setupState.editingRosterPlayerId.away = '';
+    setupState.nextRosterPlayerId = 1;
+    for (const player of [...setupState.rosters.home, ...setupState.rosters.away]) {
+        if (typeof player.id === 'string' && player.id.startsWith('p_')) {
+            const numericPart = Number.parseInt(player.id.slice(2), 10);
+            if (Number.isInteger(numericPart) && numericPart >= setupState.nextRosterPlayerId) {
+                setupState.nextRosterPlayerId = numericPart + 1;
+            }
+        }
+    }
+
+    if (setupState.rosters.home.length === 0) {
+        setupState.rosters.home = createDefaultRoster();
+    }
+    if (setupState.rosters.away.length === 0) {
+        setupState.rosters.away = createDefaultRoster();
+    }
 
     const defaultLeftStarter = document.querySelector('input[name="setup-left-starter"][value="home"]');
     const defaultServer = document.querySelector('input[name="setup-first-server"][value="teamA"]');
@@ -1035,9 +1490,11 @@ function initSetupDefaults() {
     loadSavedRuleProfiles();
     rebuildRulesProfileOptions(DEFAULT_PROFILE_ID);
     updateRulesPanelView();
+    updateRosterRuleHint();
+    renderRosters();
 
-    setSetupFeedback('After rules are confirmed, complete Team Details, then toss choices to start match.', '');
-    setTeamDetailsFeedback('Enter both team names and click Apply Team Details.', '');
+    setSetupFeedback('After rules are confirmed, complete Team Details and rosters, then toss choices to start match.', '');
+    setTeamDetailsFeedback('Enter both team names, build both rosters, then click Apply Team Details.', '');
     setRulesFeedback('Select or load a profile and click Apply Profile, or choose Custom and save.', '');
 }
 

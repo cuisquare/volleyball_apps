@@ -36,12 +36,81 @@
         <div class="setup-actions">
           <button id="apply-team-details" type="button">Apply Team Details</button>
         </div>
+        <p id="roster-rules-hint" class="hint"></p>
       </div>
       <div class="setup-card">
-        <h3>Roster (Coming Next)</h3>
-        <p class="hint">Team roster input will be added in a future step.</p>
-        <h3>Lineup (Coming Next)</h3>
-        <p class="hint">Starting lineup input will be added in a future step.</p>
+        <h3>Home Roster</h3>
+        <div class="form-row">
+          <label for="home-player-name">Player Name</label>
+          <input id="home-player-name" type="text" maxlength="60" placeholder="Player name">
+        </div>
+        <div class="form-row">
+          <label for="home-player-number">Shirt Number</label>
+          <input id="home-player-number" type="number" min="1" step="1" placeholder="e.g. 8">
+        </div>
+        <div class="form-row">
+          <label for="home-player-reg-number">Reg Number (Optional)</label>
+          <input id="home-player-reg-number" type="text" maxlength="40" placeholder="Optional">
+        </div>
+        <label class="radio-row">
+          <input id="home-player-libero" type="checkbox">
+          Libero
+        </label>
+        <div class="setup-actions">
+          <button id="add-home-player" type="button">Add Home Player</button>
+        </div>
+        <p id="home-roster-count" class="hint">0 players</p>
+        <div class="roster-table-wrap">
+          <table class="roster-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>#</th>
+                <th>Lib</th>
+                <th>Reg</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="home-roster-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="setup-card">
+        <h3>Away Roster</h3>
+        <div class="form-row">
+          <label for="away-player-name">Player Name</label>
+          <input id="away-player-name" type="text" maxlength="60" placeholder="Player name">
+        </div>
+        <div class="form-row">
+          <label for="away-player-number">Shirt Number</label>
+          <input id="away-player-number" type="number" min="1" step="1" placeholder="e.g. 12">
+        </div>
+        <div class="form-row">
+          <label for="away-player-reg-number">Reg Number (Optional)</label>
+          <input id="away-player-reg-number" type="text" maxlength="40" placeholder="Optional">
+        </div>
+        <label class="radio-row">
+          <input id="away-player-libero" type="checkbox">
+          Libero
+        </label>
+        <div class="setup-actions">
+          <button id="add-away-player" type="button">Add Away Player</button>
+        </div>
+        <p id="away-roster-count" class="hint">0 players</p>
+        <div class="roster-table-wrap">
+          <table class="roster-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>#</th>
+                <th>Lib</th>
+                <th>Reg</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="away-roster-body"></tbody>
+          </table>
+        </div>
       </div>
     </div>
     <p id="team-details-feedback" class="setup-feedback"></p>
