@@ -93,6 +93,10 @@ const elements = {
     teamDetailsFeedback: document.getElementById('team-details-feedback'),
     lineupsFeedback: document.getElementById('lineups-feedback'),
     lineupsSetLabel: document.getElementById('lineups-set-label'),
+    lineupsTeamACard: document.getElementById('lineups-teamA-card'),
+    lineupsTeamBCard: document.getElementById('lineups-teamB-card'),
+    lineupsTeamATitle: document.getElementById('lineups-teamA-title'),
+    lineupsTeamBTitle: document.getElementById('lineups-teamB-title'),
     applyLineups: document.getElementById('apply-lineups'),
     lineupTeamAPos1: document.getElementById('lineup-teamA-pos1'),
     lineupTeamAPos2: document.getElementById('lineup-teamA-pos2'),
@@ -684,11 +688,61 @@ function getLineupOptionPrefix(teamSelections, currentPosition, playerId) {
     return `[${status.padEnd(4, ' ')} - ${action.padEnd(5, ' ')}]`;
 }
 
+function getSelectedLineupPosition(teamSelections, playerId) {
+    for (let position = 1; position <= 6; position++) {
+        if (teamSelections[position] === playerId) {
+            return position;
+        }
+    }
+    return 0;
+}
+
+function getLineupDisplaySides() {
+    if (mygame.onLeft === true) {
+        return { leftTeamId: 'teamA', rightTeamId: 'teamB' };
+    }
+    if (mygame.onLeft === false) {
+        return { leftTeamId: 'teamB', rightTeamId: 'teamA' };
+    }
+    return { leftTeamId: 'teamA', rightTeamId: 'teamB' };
+}
+
+function updateLineupsPanelTeamOrder() {
+    const { leftTeamId, rightTeamId } = getLineupDisplaySides();
+    const teamAIsLeft = leftTeamId === 'teamA';
+
+    elements.lineupsTeamACard.style.order = teamAIsLeft ? '2' : '3';
+    elements.lineupsTeamBCard.style.order = teamAIsLeft ? '3' : '2';
+
+    elements.lineupsTeamATitle.textContent = `${getTeamLabelOrFallback('teamA')} Lineup (${teamAIsLeft ? 'Left' : 'Right'})`;
+    elements.lineupsTeamBTitle.textContent = `${getTeamLabelOrFallback('teamB')} Lineup (${rightTeamId === 'teamB' ? 'Right' : 'Left'})`;
+}
+
 function renderLineupSelect(teamId, position, selectedPlayerId, disabled) {
     const select = getLineupSelectElements(teamId)[position - 1];
     const roster = getNonLiberoRosterForTeamId(teamId);
     const lineupState = ensureLineupStateForCurrentSet();
     const teamSelections = lineupState[teamId] || {};
+    const sortedRoster = [...roster].sort((playerA, playerB) => {
+        const selectedPosA = getSelectedLineupPosition(teamSelections, playerA.id);
+        const selectedPosB = getSelectedLineupPosition(teamSelections, playerB.id);
+        const isFreeA = selectedPosA === 0;
+        const isFreeB = selectedPosB === 0;
+
+        if (isFreeA !== isFreeB) {
+            return isFreeA ? -1 : 1;
+        }
+
+        if (!isFreeA && selectedPosA !== selectedPosB) {
+            return selectedPosA - selectedPosB;
+        }
+
+        if (playerA.shirtNumber !== playerB.shirtNumber) {
+            return playerA.shirtNumber - playerB.shirtNumber;
+        }
+
+        return playerA.name.localeCompare(playerB.name);
+    });
     select.innerHTML = '';
 
     const placeholderOption = document.createElement('option');
@@ -696,7 +750,7 @@ function renderLineupSelect(teamId, position, selectedPlayerId, disabled) {
     placeholderOption.textContent = 'Select player';
     select.appendChild(placeholderOption);
 
-    for (const player of roster) {
+    for (const player of sortedRoster) {
         const option = document.createElement('option');
         option.value = player.id;
         option.textContent = `${getLineupOptionPrefix(teamSelections, position, player.id)} ${buildLineupOptionLabel(player)}`;
@@ -710,6 +764,7 @@ function renderLineupSelect(teamId, position, selectedPlayerId, disabled) {
 function renderLineupsPanel() {
     const setNumber = getCurrentSetNumberForLineup();
     elements.lineupsSetLabel.textContent = `Set ${setNumber}`;
+    updateLineupsPanelTeamOrder();
     const lineupState = ensureLineupStateForCurrentSet();
     const sanitizedA = sanitizeLineupSelections('teamA', lineupState.teamA);
     const sanitizedB = sanitizeLineupSelections('teamB', lineupState.teamB);
