@@ -118,14 +118,16 @@ const elements = {
     homePlayerLibero: document.getElementById('home-player-libero'),
     addHomePlayer: document.getElementById('add-home-player'),
     homeRosterCount: document.getElementById('home-roster-count'),
-    homeRosterBody: document.getElementById('home-roster-body'),
+    homeRegularRosterBody: document.getElementById('home-regular-roster-body'),
+    homeLiberoRosterBody: document.getElementById('home-libero-roster-body'),
     awayPlayerName: document.getElementById('away-player-name'),
     awayPlayerNumber: document.getElementById('away-player-number'),
     awayPlayerRegNumber: document.getElementById('away-player-reg-number'),
     awayPlayerLibero: document.getElementById('away-player-libero'),
     addAwayPlayer: document.getElementById('add-away-player'),
     awayRosterCount: document.getElementById('away-roster-count'),
-    awayRosterBody: document.getElementById('away-roster-body'),
+    awayRegularRosterBody: document.getElementById('away-regular-roster-body'),
+    awayLiberoRosterBody: document.getElementById('away-libero-roster-body'),
     applyPrematchToss: document.getElementById('apply-prematch-toss'),
     startMatch: document.getElementById('start-match'),
     rulesProfile: document.getElementById('rules-profile'),
@@ -286,7 +288,8 @@ function getRosterInputs(teamSide) {
             regInput: elements.homePlayerRegNumber,
             liberoInput: elements.homePlayerLibero,
             addButton: elements.addHomePlayer,
-            body: elements.homeRosterBody,
+            regularBody: elements.homeRegularRosterBody,
+            liberoBody: elements.homeLiberoRosterBody,
             count: elements.homeRosterCount
         };
     }
@@ -297,7 +300,8 @@ function getRosterInputs(teamSide) {
         regInput: elements.awayPlayerRegNumber,
         liberoInput: elements.awayPlayerLibero,
         addButton: elements.addAwayPlayer,
-        body: elements.awayRosterBody,
+        regularBody: elements.awayRegularRosterBody,
+        liberoBody: elements.awayLiberoRosterBody,
         count: elements.awayRosterCount
     };
 }
@@ -305,7 +309,8 @@ function getRosterInputs(teamSide) {
 function renderRoster(teamSide) {
     const roster = setupState.rosters[teamSide];
     const controls = getRosterInputs(teamSide);
-    controls.body.innerHTML = '';
+    controls.regularBody.innerHTML = '';
+    controls.liberoBody.innerHTML = '';
 
     const maxPlayers = getMaxRosterPlayers();
     const nonLiberos = roster.filter((player) => !player.isLibero).length;
@@ -328,30 +333,37 @@ function renderRoster(teamSide) {
         }
         readinessHint = `Not ready: need ${parts.join(', ')}`;
     }
-    controls.count.textContent = `${roster.length} / ${maxPlayers} players - ${readinessHint}`;
+    controls.count.textContent = `${roster.length} / ${maxPlayers} players (Regular ${nonLiberos}, Libero ${liberos}/${getMaxLiberosPerRoster()}) - ${readinessHint}`;
 
-    if (roster.length === 0) {
-        const emptyRow = document.createElement('tr');
-        emptyRow.innerHTML = '<td class="roster-empty" colspan="5">No players added yet.</td>';
-        controls.body.appendChild(emptyRow);
-        return;
-    }
+    const regularPlayers = roster.filter((player) => !player.isLibero);
+    const liberoPlayers = roster.filter((player) => player.isLibero);
 
-    for (const player of roster) {
-        const canRemove = !setupState.matchStarted;
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${escapeHtml(player.name)}</td>
-            <td>${player.shirtNumber}</td>
-            <td>${player.isLibero ? 'Yes' : 'No'}</td>
-            <td>${player.regNumber ? escapeHtml(player.regNumber) : '-'}</td>
-            <td>
-                <button class="table-action-btn edit-player-btn" data-team="${teamSide}" data-player-id="${player.id}" type="button" ${canRemove ? '' : 'disabled'}>Edit</button>
-                <button class="table-action-btn remove-player-btn" data-team="${teamSide}" data-player-id="${player.id}" type="button" ${canRemove ? '' : 'disabled'}>Remove</button>
-            </td>
-        `;
-        controls.body.appendChild(row);
-    }
+    const renderRows = (targetBody, players, emptyText) => {
+        if (players.length === 0) {
+            const emptyRow = document.createElement('tr');
+            emptyRow.innerHTML = `<td class="roster-empty" colspan="4">${emptyText}</td>`;
+            targetBody.appendChild(emptyRow);
+            return;
+        }
+
+        for (const player of players) {
+            const canRemove = !setupState.matchStarted;
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${escapeHtml(player.name)}</td>
+                <td>${player.shirtNumber}</td>
+                <td>${player.regNumber ? escapeHtml(player.regNumber) : '-'}</td>
+                <td>
+                    <button class="table-action-btn edit-player-btn" data-team="${teamSide}" data-player-id="${player.id}" type="button" ${canRemove ? '' : 'disabled'}>Edit</button>
+                    <button class="table-action-btn remove-player-btn" data-team="${teamSide}" data-player-id="${player.id}" type="button" ${canRemove ? '' : 'disabled'}>Remove</button>
+                </td>
+            `;
+            targetBody.appendChild(row);
+        }
+    };
+
+    renderRows(controls.regularBody, regularPlayers, 'No regular players yet.');
+    renderRows(controls.liberoBody, liberoPlayers, 'No libero players yet.');
 
     const isEditing = Boolean(setupState.editingRosterPlayerId[teamSide]);
     controls.addButton.textContent = isEditing
@@ -1840,7 +1852,7 @@ function hookEventListeners() {
 
     elements.addHomePlayer.addEventListener('click', () => addRosterPlayer('home'));
     elements.addAwayPlayer.addEventListener('click', () => addRosterPlayer('away'));
-    elements.homeRosterBody.addEventListener('click', (event) => {
+    const onRosterBodyClick = (event) => {
         const button = event.target.closest('.remove-player-btn, .edit-player-btn');
         if (!button) {
             return;
@@ -1850,18 +1862,15 @@ function hookEventListeners() {
             return;
         }
         removeRosterPlayer(button.dataset.team, button.dataset.playerId);
-    });
-    elements.awayRosterBody.addEventListener('click', (event) => {
-        const button = event.target.closest('.remove-player-btn, .edit-player-btn');
-        if (!button) {
-            return;
-        }
-        if (button.classList.contains('edit-player-btn')) {
-            editRosterPlayer(button.dataset.team, button.dataset.playerId);
-            return;
-        }
-        removeRosterPlayer(button.dataset.team, button.dataset.playerId);
-    });
+    };
+    for (const body of [
+        elements.homeRegularRosterBody,
+        elements.homeLiberoRosterBody,
+        elements.awayRegularRosterBody,
+        elements.awayLiberoRosterBody
+    ]) {
+        body.addEventListener('click', onRosterBodyClick);
+    }
 
     elements.applyTeamDetails.addEventListener('click', applyTeamDetails);
     elements.applyPrematchToss.addEventListener('click', applyPrematchTossChoices);

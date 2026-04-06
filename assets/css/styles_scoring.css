@@ -342,6 +342,12 @@ input[type="radio"]:disabled {
   font-size: 0.8rem;
 }
 
+.roster-section-title {
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
 #lineups-panel select {
   font-family: "Consolas", "Courier New", monospace;
 }
