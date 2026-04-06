@@ -308,7 +308,21 @@ function renderRoster(teamSide) {
     controls.body.innerHTML = '';
 
     const maxPlayers = getMaxRosterPlayers();
-    controls.count.textContent = `${roster.length} / ${maxPlayers} players`;
+    const nonLiberos = roster.filter((player) => !player.isLibero).length;
+    const missingPlayers = Math.max(0, 6 - roster.length);
+    const missingNonLiberos = Math.max(0, 6 - nonLiberos);
+    let readinessHint = 'Ready';
+    if (missingPlayers > 0 || missingNonLiberos > 0) {
+        const parts = [];
+        if (missingPlayers > 0) {
+            parts.push(`${missingPlayers} total`);
+        }
+        if (missingNonLiberos > 0) {
+            parts.push(`${missingNonLiberos} non-libero`);
+        }
+        readinessHint = `Not ready: need ${parts.join(', ')}`;
+    }
+    controls.count.textContent = `${roster.length} / ${maxPlayers} players - ${readinessHint}`;
 
     if (roster.length === 0) {
         const emptyRow = document.createElement('tr');
@@ -397,6 +411,38 @@ function validateRosterForTeam(teamSide, roster) {
     return '';
 }
 
+function validateRosterEntryForTeam(teamSide, roster) {
+    const teamLabel = teamSide === 'home' ? 'Home' : 'Away';
+
+    const maxPlayers = getMaxRosterPlayers();
+    if (roster.length > maxPlayers) {
+        return withRulesContext(`${teamLabel} roster cannot exceed ${maxPlayers} players.`);
+    }
+
+    const numbers = new Set();
+    for (const player of roster) {
+        if (numbers.has(player.shirtNumber)) {
+            return withRulesContext(`${teamLabel} roster has duplicate shirt number ${player.shirtNumber}.`);
+        }
+        numbers.add(player.shirtNumber);
+    }
+
+    const liberos = roster.filter((player) => player.isLibero).length;
+    const maxLiberos = getMaxLiberosPerRoster();
+    if (liberos > maxLiberos) {
+        return withRulesContext(`${teamLabel} roster cannot have more than ${maxLiberos} liberos.`);
+    }
+
+    if (roster.length === 13) {
+        const minLiberos = getMinLiberosIfThirteen();
+        if (liberos < minLiberos) {
+            return withRulesContext(`${teamLabel} roster needs at least ${minLiberos} libero(s) when 13 players are listed.`);
+        }
+    }
+
+    return '';
+}
+
 function clearRosterInputs(teamSide) {
     const controls = getRosterInputs(teamSide);
     controls.nameInput.value = '';
@@ -462,33 +508,9 @@ function addRosterPlayer(teamSide) {
             isLibero
         }];
 
-    const currentLiberos = roster.filter((player) => player.isLibero).length;
-    const existingEditedPlayer = editingId ? roster.find((player) => player.id === editingId) : null;
-    const baselineLiberos = existingEditedPlayer && existingEditedPlayer.isLibero ? currentLiberos - 1 : currentLiberos;
-    const nextRosterSize = rosterForValidation.length;
-    const nextLiberos = baselineLiberos + (isLibero ? 1 : 0);
-    const minLiberosIfThirteen = getMinLiberosIfThirteen();
-
-    if (!editingId && nextRosterSize === 13 && nextLiberos < minLiberosIfThirteen) {
-        if (!isLibero) {
-            setTeamDetailsFeedback(withRulesContext(`Cannot add a 13th non-libero player: ${teamSide === 'home' ? 'Home' : 'Away'} roster needs at least ${minLiberosIfThirteen} libero(s) at 13 players.`), 'error');
-        } else {
-            setTeamDetailsFeedback(withRulesContext(`At 13 players, ${teamSide === 'home' ? 'Home' : 'Away'} roster needs at least ${minLiberosIfThirteen} libero(s). Add another libero before reaching 13 players.`), 'error');
-        }
-        return;
-    }
-
-    if (isLibero) {
-        const maxLiberos = getMaxLiberosPerRoster();
-        if (baselineLiberos >= maxLiberos) {
-            setTeamDetailsFeedback(withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster cannot have more than ${maxLiberos} liberos.`), 'error');
-            return;
-        }
-    }
-
-    const rosterValidationError = validateRosterForTeam(teamSide, rosterForValidation);
-    if (rosterValidationError) {
-        setTeamDetailsFeedback(rosterValidationError, 'error');
+    const entryValidationError = validateRosterEntryForTeam(teamSide, rosterForValidation);
+    if (entryValidationError) {
+        setTeamDetailsFeedback(entryValidationError, 'error');
         return;
     }
 
