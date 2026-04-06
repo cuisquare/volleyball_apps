@@ -309,16 +309,22 @@ function renderRoster(teamSide) {
 
     const maxPlayers = getMaxRosterPlayers();
     const nonLiberos = roster.filter((player) => !player.isLibero).length;
+    const liberos = roster.length - nonLiberos;
     const missingPlayers = Math.max(0, 6 - roster.length);
     const missingNonLiberos = Math.max(0, 6 - nonLiberos);
     let readinessHint = 'Ready';
-    if (missingPlayers > 0 || missingNonLiberos > 0) {
+    const minLiberosIfThirteen = getMinLiberosIfThirteen();
+    const missingLiberosAtThirteen = roster.length >= 13 ? Math.max(0, minLiberosIfThirteen - liberos) : 0;
+    if (missingPlayers > 0 || missingNonLiberos > 0 || missingLiberosAtThirteen > 0) {
         const parts = [];
         if (missingPlayers > 0) {
             parts.push(`${missingPlayers} total`);
         }
         if (missingNonLiberos > 0) {
             parts.push(`${missingNonLiberos} non-libero`);
+        }
+        if (missingLiberosAtThirteen > 0) {
+            parts.push(`${missingLiberosAtThirteen} libero(s) for 13-player rule`);
         }
         readinessHint = `Not ready: need ${parts.join(', ')}`;
     }
@@ -401,7 +407,7 @@ function validateRosterForTeam(teamSide, roster) {
         return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster needs at least 6 non-libero players.`);
     }
 
-    if (roster.length === 13) {
+    if (roster.length >= 13) {
         const minLiberos = getMinLiberosIfThirteen();
         if (liberos < minLiberos) {
             return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster needs at least ${minLiberos} libero(s) when 13 players are listed.`);
@@ -431,13 +437,6 @@ function validateRosterEntryForTeam(teamSide, roster) {
     const maxLiberos = getMaxLiberosPerRoster();
     if (liberos > maxLiberos) {
         return withRulesContext(`${teamLabel} roster cannot have more than ${maxLiberos} liberos.`);
-    }
-
-    if (roster.length === 13) {
-        const minLiberos = getMinLiberosIfThirteen();
-        if (liberos < minLiberos) {
-            return withRulesContext(`${teamLabel} roster needs at least ${minLiberos} libero(s) when 13 players are listed.`);
-        }
     }
 
     return '';
@@ -529,10 +528,23 @@ function addRosterPlayer(teamSide) {
     markTeamDetailsDirty();
     renderRosters();
     clearRosterInputs(teamSide);
-    setTeamDetailsFeedback(
-        `${teamSide === 'home' ? 'Home' : 'Away'} player ${editingId ? 'updated' : 'added'}. Click Apply Team Details when ready.`,
-        ''
-    );
+    const updatedRoster = setupState.rosters[teamSide];
+    const liberos = updatedRoster.filter((player) => player.isLibero).length;
+    const minLiberosAtThirteen = getMinLiberosIfThirteen();
+    const unmetThirteenRule = updatedRoster.length >= 13 && liberos < minLiberosAtThirteen;
+    if (unmetThirteenRule) {
+        setTeamDetailsFeedback(
+            withRulesContext(
+                `${teamSide === 'home' ? 'Home' : 'Away'} roster can still be edited, but currently needs ${minLiberosAtThirteen} libero(s) at 13 players before Team Details can be applied.`
+            ),
+            ''
+        );
+    } else {
+        setTeamDetailsFeedback(
+            `${teamSide === 'home' ? 'Home' : 'Away'} player ${editingId ? 'updated' : 'added'}. Click Apply Team Details when ready.`,
+            ''
+        );
+    }
     updateSetupBadge();
     updateActionAvailability();
 }
@@ -557,6 +569,7 @@ function editRosterPlayer(teamSide, playerId) {
     setupState.editingRosterPlayerId[teamSide] = playerId;
     renderRoster(teamSide);
     setTeamDetailsFeedback(`${teamSide === 'home' ? 'Home' : 'Away'} player loaded for edit. Update fields and click Save.`, '');
+    updateActionAvailability();
 }
 
 function removeRosterPlayer(teamSide, playerId) {
@@ -1504,8 +1517,13 @@ function updateActionAvailability() {
     elements.startMatch.disabled = setupState.matchStarted || !hasReadySelections();
     elements.applyTeamDetails.disabled = setupState.matchStarted || !setupState.rulesConfirmed;
     elements.applyPrematchToss.disabled = setupState.matchStarted || !setupState.rulesConfirmed || !setupState.teamDetailsConfirmed;
-    elements.addHomePlayer.disabled = setupState.matchStarted || !setupState.rulesConfirmed || setupState.rosters.home.length >= getMaxRosterPlayers();
-    elements.addAwayPlayer.disabled = setupState.matchStarted || !setupState.rulesConfirmed || setupState.rosters.away.length >= getMaxRosterPlayers();
+    const homeAtMax = setupState.rosters.home.length >= getMaxRosterPlayers();
+    const awayAtMax = setupState.rosters.away.length >= getMaxRosterPlayers();
+    const editingHome = Boolean(setupState.editingRosterPlayerId.home);
+    const editingAway = Boolean(setupState.editingRosterPlayerId.away);
+
+    elements.addHomePlayer.disabled = setupState.matchStarted || !setupState.rulesConfirmed || (homeAtMax && !editingHome);
+    elements.addAwayPlayer.disabled = setupState.matchStarted || !setupState.rulesConfirmed || (awayAtMax && !editingAway);
 
     const canManageSet = setupState.matchStarted && !mygame.isGameOver;
     const lineupReady = currentSetLineupConfirmed();
