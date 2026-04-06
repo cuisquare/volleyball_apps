@@ -12,6 +12,7 @@
       <button id="toggle-rules-panel" type="button">Rules</button>
       <button id="toggle-team-details-panel" type="button">Team Details</button>
       <button id="toggle-setup-panel" type="button">Toss Choices</button>
+      <button id="toggle-lineups-panel" type="button">Lineups</button>
       <span id="setup-status-badge" class="status-badge">Toss Choices Incomplete</span>
       <span id="rules-status-badge" class="status-badge">Rules: Not Set</span>
     </div>
@@ -242,6 +243,74 @@
       </div>
     </div>
     <p id="rules-feedback" class="setup-feedback"></p>
+  </section>
+
+  <section id="lineups-panel" class="setup-panel hidden">
+    <div class="setup-grid">
+      <div class="setup-card">
+        <h3>Current Set Lineups</h3>
+        <p id="lineups-set-label" class="hint">Set 1</p>
+        <p class="hint">Select 6 non-libero players for each team, one per position.</p>
+      </div>
+      <div class="setup-card">
+        <h3>Team A Lineup</h3>
+        <div class="form-row">
+          <label for="lineup-teamA-pos1">Position 1</label>
+          <select id="lineup-teamA-pos1"></select>
+        </div>
+        <div class="form-row">
+          <label for="lineup-teamA-pos2">Position 2</label>
+          <select id="lineup-teamA-pos2"></select>
+        </div>
+        <div class="form-row">
+          <label for="lineup-teamA-pos3">Position 3</label>
+          <select id="lineup-teamA-pos3"></select>
+        </div>
+        <div class="form-row">
+          <label for="lineup-teamA-pos4">Position 4</label>
+          <select id="lineup-teamA-pos4"></select>
+        </div>
+        <div class="form-row">
+          <label for="lineup-teamA-pos5">Position 5</label>
+          <select id="lineup-teamA-pos5"></select>
+        </div>
+        <div class="form-row">
+          <label for="lineup-teamA-pos6">Position 6</label>
+          <select id="lineup-teamA-pos6"></select>
+        </div>
+      </div>
+      <div class="setup-card">
+        <h3>Team B Lineup</h3>
+        <div class="form-row">
+          <label for="lineup-teamB-pos1">Position 1</label>
+          <select id="lineup-teamB-pos1"></select>
+        </div>
+        <div class="form-row">
+          <label for="lineup-teamB-pos2">Position 2</label>
+          <select id="lineup-teamB-pos2"></select>
+        </div>
+        <div class="form-row">
+          <label for="lineup-teamB-pos3">Position 3</label>
+          <select id="lineup-teamB-pos3"></select>
+        </div>
+        <div class="form-row">
+          <label for="lineup-teamB-pos4">Position 4</label>
+          <select id="lineup-teamB-pos4"></select>
+        </div>
+        <div class="form-row">
+          <label for="lineup-teamB-pos5">Position 5</label>
+          <select id="lineup-teamB-pos5"></select>
+        </div>
+        <div class="form-row">
+          <label for="lineup-teamB-pos6">Position 6</label>
+          <select id="lineup-teamB-pos6"></select>
+        </div>
+      </div>
+    </div>
+    <div class="setup-actions">
+      <button id="apply-lineups" type="button">Apply Lineups For Current Set</button>
+    </div>
+    <p id="lineups-feedback" class="setup-feedback"></p>
   </section>
 
   <main class="scoreboard hidden" id="scoreboard-panel">

@@ -342,6 +342,10 @@ input[type="radio"]:disabled {
   font-size: 0.8rem;
 }
 
+#lineups-panel select {
+  font-family: "Consolas", "Courier New", monospace;
+}
+
 .dark-mode {
   --bg: #0f1217;
   --panel: #191f27;

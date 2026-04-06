@@ -70,23 +70,42 @@ const setupState = {
     prematchTossConfirmed: false,
     deciderPromptShown: false,
     deciderLeftStarter: '',
+    lineupsBySet: {},
+    lineupPromptedSet: 0,
     activePanel: 'rules'
 };
 
 const elements = {
     scoreboardPanel: document.getElementById('scoreboard-panel'),
+    lineupsPanel: document.getElementById('lineups-panel'),
     teamDetailsPanel: document.getElementById('team-details-panel'),
     setupPanel: document.getElementById('setup-panel'),
     rulesPanel: document.getElementById('rules-panel'),
     toggleScoreboardPanel: document.getElementById('toggle-scoreboard-panel'),
     toggleTeamDetailsPanel: document.getElementById('toggle-team-details-panel'),
     toggleSetupPanel: document.getElementById('toggle-setup-panel'),
+    toggleLineupsPanel: document.getElementById('toggle-lineups-panel'),
     toggleRulesPanel: document.getElementById('toggle-rules-panel'),
     setupStatusBadge: document.getElementById('setup-status-badge'),
     rulesStatusBadge: document.getElementById('rules-status-badge'),
     setupFeedback: document.getElementById('setup-feedback'),
     rulesFeedback: document.getElementById('rules-feedback'),
     teamDetailsFeedback: document.getElementById('team-details-feedback'),
+    lineupsFeedback: document.getElementById('lineups-feedback'),
+    lineupsSetLabel: document.getElementById('lineups-set-label'),
+    applyLineups: document.getElementById('apply-lineups'),
+    lineupTeamAPos1: document.getElementById('lineup-teamA-pos1'),
+    lineupTeamAPos2: document.getElementById('lineup-teamA-pos2'),
+    lineupTeamAPos3: document.getElementById('lineup-teamA-pos3'),
+    lineupTeamAPos4: document.getElementById('lineup-teamA-pos4'),
+    lineupTeamAPos5: document.getElementById('lineup-teamA-pos5'),
+    lineupTeamAPos6: document.getElementById('lineup-teamA-pos6'),
+    lineupTeamBPos1: document.getElementById('lineup-teamB-pos1'),
+    lineupTeamBPos2: document.getElementById('lineup-teamB-pos2'),
+    lineupTeamBPos3: document.getElementById('lineup-teamB-pos3'),
+    lineupTeamBPos4: document.getElementById('lineup-teamB-pos4'),
+    lineupTeamBPos5: document.getElementById('lineup-teamB-pos5'),
+    lineupTeamBPos6: document.getElementById('lineup-teamB-pos6'),
     applyTeamDetails: document.getElementById('apply-team-details'),
     rosterRulesHint: document.getElementById('roster-rules-hint'),
     homePlayerName: document.getElementById('home-player-name'),
@@ -153,14 +172,24 @@ function setActivePanel(panelName) {
     setupState.activePanel = panelName;
 
     elements.scoreboardPanel.classList.toggle('hidden', panelName !== 'scoreboard');
+    elements.lineupsPanel.classList.toggle('hidden', panelName !== 'lineups');
     elements.teamDetailsPanel.classList.toggle('hidden', panelName !== 'teamDetails');
     elements.setupPanel.classList.toggle('hidden', panelName !== 'setup');
     elements.rulesPanel.classList.toggle('hidden', panelName !== 'rules');
 
     elements.toggleScoreboardPanel.classList.toggle('active-tab', panelName === 'scoreboard');
+    elements.toggleLineupsPanel.classList.toggle('active-tab', panelName === 'lineups');
     elements.toggleTeamDetailsPanel.classList.toggle('active-tab', panelName === 'teamDetails');
     elements.toggleSetupPanel.classList.toggle('active-tab', panelName === 'setup');
     elements.toggleRulesPanel.classList.toggle('active-tab', panelName === 'rules');
+}
+
+function setLineupsFeedback(message, variant = '') {
+    elements.lineupsFeedback.textContent = message;
+    elements.lineupsFeedback.classList.remove('error', 'success');
+    if (variant) {
+        elements.lineupsFeedback.classList.add(variant);
+    }
 }
 
 function setSetupFeedback(message, variant = '') {
@@ -226,6 +255,7 @@ function markTeamDetailsDirty() {
 
     setupState.teamDetailsConfirmed = false;
     setupState.prematchTossConfirmed = false;
+    resetLineupsState();
 }
 
 function updateRosterRuleHint() {
@@ -525,6 +555,312 @@ function removeRosterPlayer(teamSide, playerId) {
     updateActionAvailability();
 }
 
+function getCurrentSetNumberForLineup() {
+    const current = mygame.getCurrentSet();
+    return current > 0 ? current : 1;
+}
+
+function getLineupSelectElements(teamId) {
+    if (teamId === 'teamA') {
+        return [
+            elements.lineupTeamAPos1,
+            elements.lineupTeamAPos2,
+            elements.lineupTeamAPos3,
+            elements.lineupTeamAPos4,
+            elements.lineupTeamAPos5,
+            elements.lineupTeamAPos6
+        ];
+    }
+
+    return [
+        elements.lineupTeamBPos1,
+        elements.lineupTeamBPos2,
+        elements.lineupTeamBPos3,
+        elements.lineupTeamBPos4,
+        elements.lineupTeamBPos5,
+        elements.lineupTeamBPos6
+    ];
+}
+
+function getAllLineupSelectElements() {
+    return [
+        ...getLineupSelectElements('teamA'),
+        ...getLineupSelectElements('teamB')
+    ];
+}
+
+function getRosterForTeamId(teamId) {
+    const homeOrAway = teamId === 'teamA' ? mygame.teamA : mygame.teamB;
+    if (homeOrAway !== 'home' && homeOrAway !== 'away') {
+        return [];
+    }
+    return setupState.rosters[homeOrAway] || [];
+}
+
+function getNonLiberoRosterForTeamId(teamId) {
+    return getRosterForTeamId(teamId).filter((player) => !player.isLibero);
+}
+
+function isCurrentSetInProgress() {
+    return mygame.currentSet.teamA > 0 || mygame.currentSet.teamB > 0;
+}
+
+function ensureLineupStateForCurrentSet() {
+    const setNumber = getCurrentSetNumberForLineup();
+    if (!setupState.lineupsBySet[setNumber]) {
+        setupState.lineupsBySet[setNumber] = {
+            confirmed: false,
+            locked: false,
+            teamA: {},
+            teamB: {}
+        };
+    }
+    return setupState.lineupsBySet[setNumber];
+}
+
+function sanitizeLineupSelections(teamId, lineupSelections) {
+    const validIds = new Set(getNonLiberoRosterForTeamId(teamId).map((player) => player.id));
+    const nextSelections = {};
+    let changed = false;
+
+    for (let position = 1; position <= 6; position++) {
+        const selectedId = lineupSelections[position] || '';
+        if (!selectedId || !validIds.has(selectedId)) {
+            nextSelections[position] = '';
+            if (selectedId) {
+                changed = true;
+            }
+            continue;
+        }
+        nextSelections[position] = selectedId;
+    }
+
+    return { nextSelections, changed };
+}
+
+function resetLineupsState() {
+    setupState.lineupsBySet = {};
+    setupState.lineupPromptedSet = 0;
+    setLineupsFeedback('', '');
+}
+
+function currentSetLineupConfirmed() {
+    if (!setupState.prematchTossConfirmed || mygame.isGameOver) {
+        return false;
+    }
+    const lineupState = ensureLineupStateForCurrentSet();
+    return Boolean(lineupState.confirmed);
+}
+
+function markCurrentSetLineupLocked() {
+    if (!setupState.matchStarted || mygame.isGameOver) {
+        return;
+    }
+    const lineupState = ensureLineupStateForCurrentSet();
+    lineupState.locked = true;
+}
+
+function buildLineupOptionLabel(player) {
+    return `#${player.shirtNumber} - ${player.name}`;
+}
+
+function getLineupOptionPrefix(teamSelections, currentPosition, playerId) {
+    let selectedPosition = 0;
+    for (let position = 1; position <= 6; position++) {
+        if (teamSelections[position] === playerId) {
+            selectedPosition = position;
+            break;
+        }
+    }
+
+    const status = selectedPosition ? `P${selectedPosition}` : 'FREE';
+    let action = 'ADD';
+    if (selectedPosition && selectedPosition !== currentPosition) {
+        action = 'SWAP';
+    } else if (selectedPosition === currentPosition) {
+        action = 'KEEP';
+    }
+
+    return `[${status.padEnd(4, ' ')} - ${action.padEnd(5, ' ')}]`;
+}
+
+function renderLineupSelect(teamId, position, selectedPlayerId, disabled) {
+    const select = getLineupSelectElements(teamId)[position - 1];
+    const roster = getNonLiberoRosterForTeamId(teamId);
+    const lineupState = ensureLineupStateForCurrentSet();
+    const teamSelections = lineupState[teamId] || {};
+    select.innerHTML = '';
+
+    const placeholderOption = document.createElement('option');
+    placeholderOption.value = '';
+    placeholderOption.textContent = 'Select player';
+    select.appendChild(placeholderOption);
+
+    for (const player of roster) {
+        const option = document.createElement('option');
+        option.value = player.id;
+        option.textContent = `${getLineupOptionPrefix(teamSelections, position, player.id)} ${buildLineupOptionLabel(player)}`;
+        select.appendChild(option);
+    }
+
+    select.value = selectedPlayerId || '';
+    select.disabled = disabled;
+}
+
+function renderLineupsPanel() {
+    const setNumber = getCurrentSetNumberForLineup();
+    elements.lineupsSetLabel.textContent = `Set ${setNumber}`;
+    const lineupState = ensureLineupStateForCurrentSet();
+    const sanitizedA = sanitizeLineupSelections('teamA', lineupState.teamA);
+    const sanitizedB = sanitizeLineupSelections('teamB', lineupState.teamB);
+    if (sanitizedA.changed || sanitizedB.changed) {
+        lineupState.teamA = sanitizedA.nextSelections;
+        lineupState.teamB = sanitizedB.nextSelections;
+        lineupState.confirmed = false;
+        if (!lineupState.locked) {
+            setLineupsFeedback('Lineup selections were updated to match current eligible roster players.', '');
+        }
+    } else {
+        lineupState.teamA = sanitizedA.nextSelections;
+        lineupState.teamB = sanitizedB.nextSelections;
+    }
+
+    const readOnly = lineupState.locked || mygame.isGameOver || !setupState.prematchTossConfirmed;
+
+    for (let position = 1; position <= 6; position++) {
+        renderLineupSelect('teamA', position, lineupState.teamA[position] || '', readOnly);
+        renderLineupSelect('teamB', position, lineupState.teamB[position] || '', readOnly);
+    }
+}
+
+function getLineupSelectionsFromForm(teamId) {
+    const selections = {};
+    const selects = getLineupSelectElements(teamId);
+    for (let i = 0; i < selects.length; i++) {
+        selections[i + 1] = selects[i].value;
+    }
+    return selections;
+}
+
+function validateLineupForTeam(teamId, lineupSelections) {
+    const teamLabel = teamId === 'teamA' ? 'Team A' : 'Team B';
+    const roster = getNonLiberoRosterForTeamId(teamId);
+    const allowedIds = new Set(roster.map((player) => player.id));
+
+    for (let position = 1; position <= 6; position++) {
+        const playerId = lineupSelections[position];
+        if (!playerId) {
+            return `${teamLabel}: every position from 1 to 6 must be filled.`;
+        }
+        if (!allowedIds.has(playerId)) {
+            return `${teamLabel}: selected player at position ${position} is invalid or is a libero.`;
+        }
+    }
+
+    const selectedIds = Object.values(lineupSelections);
+    if (new Set(selectedIds).size !== 6) {
+        return `${teamLabel}: the same player cannot be used in multiple positions.`;
+    }
+
+    return '';
+}
+
+function applyLineupsForCurrentSet() {
+    if (!setupState.prematchTossConfirmed || mygame.isGameOver) {
+        setLineupsFeedback('Apply prematch toss choices before setting lineups.', 'error');
+        return;
+    }
+
+    const lineupState = ensureLineupStateForCurrentSet();
+    if (lineupState.locked) {
+        setLineupsFeedback('Lineups are locked for this set because scoring already started.', 'error');
+        return;
+    }
+
+    const teamALineup = getLineupSelectionsFromForm('teamA');
+    const teamBLineup = getLineupSelectionsFromForm('teamB');
+
+    const teamAError = validateLineupForTeam('teamA', teamALineup);
+    if (teamAError) {
+        setLineupsFeedback(teamAError, 'error');
+        return;
+    }
+
+    const teamBError = validateLineupForTeam('teamB', teamBLineup);
+    if (teamBError) {
+        setLineupsFeedback(teamBError, 'error');
+        return;
+    }
+
+    lineupState.teamA = { ...teamALineup };
+    lineupState.teamB = { ...teamBLineup };
+    lineupState.confirmed = true;
+    if (setupState.matchStarted) {
+        lineupState.locked = true;
+    }
+    setLineupsFeedback('Lineups applied for current set.', 'success');
+    if (setupState.matchStarted) {
+        setActivePanel('scoreboard');
+    }
+    updateSetsElements();
+}
+
+function getLineupIdentityFromSelect(selectElement) {
+    const id = selectElement.id || '';
+    const match = id.match(/^lineup-(teamA|teamB)-pos([1-6])$/);
+    if (!match) {
+        return null;
+    }
+    return {
+        teamId: match[1],
+        position: Number.parseInt(match[2], 10)
+    };
+}
+
+function markLineupDirtyFromFormChange(changedSelect = null) {
+    if (!setupState.prematchTossConfirmed || mygame.isGameOver) {
+        return;
+    }
+    const lineupState = ensureLineupStateForCurrentSet();
+    if (lineupState.locked) {
+        return;
+    }
+
+    if (changedSelect) {
+        const identity = getLineupIdentityFromSelect(changedSelect);
+        if (identity) {
+            const teamSelections = getLineupSelectionsFromForm(identity.teamId);
+            const selectedPlayerId = teamSelections[identity.position] || '';
+            const previousAtChangedPosition = lineupState[identity.teamId][identity.position] || '';
+
+            if (selectedPlayerId) {
+                for (let position = 1; position <= 6; position++) {
+                    if (position === identity.position) {
+                        continue;
+                    }
+                    if (teamSelections[position] === selectedPlayerId) {
+                        teamSelections[position] = previousAtChangedPosition && previousAtChangedPosition !== selectedPlayerId
+                            ? previousAtChangedPosition
+                            : '';
+                        break;
+                    }
+                }
+            }
+
+            lineupState[identity.teamId] = teamSelections;
+        }
+    } else {
+        lineupState.teamA = getLineupSelectionsFromForm('teamA');
+        lineupState.teamB = getLineupSelectionsFromForm('teamB');
+    }
+
+    if (lineupState.confirmed) {
+        lineupState.confirmed = false;
+        lineupState.locked = false;
+        setLineupsFeedback('Lineups changed. Click Apply Lineups For Current Set to confirm.', '');
+    }
+}
+
 function asPositiveInteger(value, fieldName, minValue = 1) {
     const parsed = Number.parseInt(value, 10);
     if (!Number.isInteger(parsed) || parsed < minValue) {
@@ -760,6 +1096,7 @@ function markRulesDirty() {
         setupState.rulesSource = 'none';
         setupState.teamDetailsConfirmed = false;
         setupState.prematchTossConfirmed = false;
+        resetLineupsState();
         setRulesFeedback('Custom rules changed. Save custom rules to confirm.', 'error');
     }
 
@@ -819,7 +1156,7 @@ function validateTeamDetails() {
 }
 
 function hasReadySelections() {
-    return setupState.rulesConfirmed && setupState.teamDetailsConfirmed && setupState.prematchTossConfirmed;
+    return setupState.rulesConfirmed && setupState.teamDetailsConfirmed && setupState.prematchTossConfirmed && currentSetLineupConfirmed();
 }
 
 function validateBeforeStart() {
@@ -834,6 +1171,10 @@ function validateBeforeStart() {
 
     if (!setupState.prematchTossConfirmed) {
         setSetupFeedback('Apply prematch toss choices before starting the match.', 'error');
+        return null;
+    }
+    if (!currentSetLineupConfirmed()) {
+        setSetupFeedback('Apply lineups for Set 1 before starting the match.', 'error');
         return null;
     }
 
@@ -926,6 +1267,7 @@ function lockPrematchSetup() {
 function updateSetupBadge() {
     elements.setupStatusBadge.classList.remove('ready', 'locked');
     const deciderTossRequired = setupState.matchStarted && !mygame.isGameOver && mygame.isPreDeciderToss;
+    const lineupRequired = setupState.prematchTossConfirmed && !mygame.isGameOver && !currentSetLineupConfirmed();
 
     if (deciderTossRequired) {
         elements.setupStatusBadge.textContent = 'Decider Toss Required';
@@ -934,8 +1276,18 @@ function updateSetupBadge() {
     }
 
     if (setupState.matchStarted) {
+        if (lineupRequired) {
+            elements.setupStatusBadge.textContent = `Lineups Required (Set ${getCurrentSetNumberForLineup()})`;
+            elements.setupStatusBadge.classList.add('locked');
+            return;
+        }
         elements.setupStatusBadge.textContent = 'Toss Choices Locked';
         elements.setupStatusBadge.classList.add('locked');
+        return;
+    }
+
+    if (lineupRequired) {
+        elements.setupStatusBadge.textContent = `Prematch done, Lineups Pending (Set ${getCurrentSetNumberForLineup()})`;
         return;
     }
 
@@ -995,7 +1347,13 @@ function updateScoringServingValues() {
     elements.servingStateTeamB.textContent = mygame.servingstate.teamB;
 
     if (!setupState.matchStarted) {
-        elements.gameStatus.textContent = 'Toss choices required before match start.';
+        if (setupState.prematchTossConfirmed && !currentSetLineupConfirmed()) {
+            elements.gameStatus.textContent = 'Set 1 lineups required before match start.';
+        } else {
+            elements.gameStatus.textContent = 'Toss choices required before match start.';
+        }
+    } else if (!currentSetLineupConfirmed() && !mygame.isGameOver) {
+        elements.gameStatus.textContent = `Set ${getCurrentSetNumberForLineup()} lineups required before scoring.`;
     } else {
         elements.gameStatus.textContent = mygame.getGameStatus();
     }
@@ -1045,6 +1403,26 @@ function updateDeciderTossVisibility() {
     setupState.deciderPromptShown = false;
 }
 
+function updateLineupPromptVisibility() {
+    const lineupRequired = setupState.prematchTossConfirmed && !mygame.isGameOver && !currentSetLineupConfirmed();
+    const blockedByDeciderToss = setupState.matchStarted && !mygame.isGameOver && mygame.isPreDeciderToss;
+    const currentSetNumber = getCurrentSetNumberForLineup();
+
+    if (lineupRequired && !blockedByDeciderToss) {
+        elements.toggleLineupsPanel.classList.add('needs-attention');
+        if (setupState.lineupPromptedSet !== currentSetNumber) {
+            setActivePanel('lineups');
+            setupState.lineupPromptedSet = currentSetNumber;
+        }
+        if (elements.lineupsFeedback.textContent.trim() === '') {
+            setLineupsFeedback(`Please apply lineups for Set ${currentSetNumber}.`, '');
+        }
+        return;
+    }
+
+    elements.toggleLineupsPanel.classList.remove('needs-attention');
+}
+
 function updateActionAvailability() {
     elements.startMatch.disabled = setupState.matchStarted || !hasReadySelections();
     elements.applyTeamDetails.disabled = setupState.matchStarted || !setupState.rulesConfirmed;
@@ -1053,7 +1431,8 @@ function updateActionAvailability() {
     elements.addAwayPlayer.disabled = setupState.matchStarted || !setupState.rulesConfirmed || setupState.rosters.away.length >= getMaxRosterPlayers();
 
     const canManageSet = setupState.matchStarted && !mygame.isGameOver;
-    const canScore = canManageSet && mygame.team_serving_currently !== 'Unknown';
+    const lineupReady = currentSetLineupConfirmed();
+    const canScore = canManageSet && lineupReady && mygame.team_serving_currently !== 'Unknown';
     const canUndo = canManageSet && mygame.pointHistory.length > 0;
     const canRedo = canManageSet && mygame.redoHistory.length > 0;
 
@@ -1065,14 +1444,18 @@ function updateActionAvailability() {
     elements.completeGame.disabled = !canManageSet;
     const deciderTossRequired = setupState.matchStarted && !mygame.isGameOver && mygame.isPreDeciderToss;
     elements.applyDeciderToss.disabled = !deciderTossRequired;
+    const lineupState = ensureLineupStateForCurrentSet();
+    elements.applyLineups.disabled = !setupState.prematchTossConfirmed || mygame.isGameOver || lineupState.locked;
 }
 
 function updateSetsElements() {
     updateRosterRuleHint();
     renderRosters();
+    renderLineupsPanel();
     updateTeamPosition();
     updateScoringServingValues();
     updateDeciderTossVisibility();
+    updateLineupPromptVisibility();
     updateSetupBadge();
     updateRulesStatusBadge();
     updateActionAvailability();
@@ -1093,6 +1476,7 @@ function applyPresetProfile(profileId) {
     setupState.rulesProfileLabel = selection.label;
     setupState.teamDetailsConfirmed = false;
     setupState.prematchTossConfirmed = false;
+    resetLineupsState();
 
     setRulesFeedback(`${selection.label} rules applied.`, 'success');
     setSetupFeedback('Rules profile applied. Next step: complete Team Details and rosters, then toss choices.', 'success');
@@ -1126,6 +1510,7 @@ function saveCustomRules() {
         setupState.rulesProfileLabel = 'Custom';
         setupState.teamDetailsConfirmed = false;
         setupState.prematchTossConfirmed = false;
+        resetLineupsState();
 
         setRulesFeedback('Custom rules saved and confirmed.', 'success');
         setSetupFeedback('Custom rules saved. Next step: complete Team Details and rosters, then toss choices.', 'success');
@@ -1220,6 +1605,7 @@ function handleRulesProfileChange() {
     setupState.rulesSource = 'none';
     setupState.teamDetailsConfirmed = false;
     setupState.prematchTossConfirmed = false;
+    resetLineupsState();
 
     if (selectedProfile.type === 'custom') {
         setupState.rulesProfileLabel = 'Custom';
@@ -1244,6 +1630,9 @@ function startMatch() {
     }
 
     setupState.matchStarted = true;
+    ensureLineupStateForCurrentSet();
+    markCurrentSetLineupLocked();
+    setLineupsFeedback('', '');
     lockPrematchSetup();
     setActivePanel('scoreboard');
 
@@ -1290,7 +1679,11 @@ function applyPrematchTossChoices() {
     mygame.team_serving_startset = selections.firstServer;
 
     setupState.prematchTossConfirmed = true;
+    resetLineupsState();
+    ensureLineupStateForCurrentSet();
     setSetupFeedback('Prematch toss choices applied. You can now start the match.', 'success');
+    setLineupsFeedback('Prematch toss complete. Please set lineups for Set 1.', '');
+    setActivePanel('lineups');
     updateSetsElements();
 }
 
@@ -1311,6 +1704,7 @@ function applyTeamDetails() {
     mygame.fixture.away_roster = teamDetails.awayRoster;
     setupState.teamDetailsConfirmed = true;
     setupState.prematchTossConfirmed = false;
+    resetLineupsState();
 
     setTeamDetailsFeedback('Team details and rosters applied. Continue to prematch toss choices.', 'success');
     setSetupFeedback('Team details and rosters applied. Complete prematch toss choices next.', '');
@@ -1320,6 +1714,8 @@ function applyTeamDetails() {
 
 function completeCurrentSet() {
     mygame.completeSet();
+    ensureLineupStateForCurrentSet();
+    setLineupsFeedback('', '');
     updateSetsElements();
 }
 
@@ -1336,6 +1732,7 @@ function interruptGame() {
 
 function hookEventListeners() {
     elements.toggleScoreboardPanel.addEventListener('click', () => setActivePanel('scoreboard'));
+    elements.toggleLineupsPanel.addEventListener('click', () => setActivePanel('lineups'));
     elements.toggleTeamDetailsPanel.addEventListener('click', () => setActivePanel('teamDetails'));
     elements.toggleSetupPanel.addEventListener('click', () => setActivePanel('setup'));
     elements.toggleRulesPanel.addEventListener('click', () => setActivePanel('rules'));
@@ -1373,19 +1770,35 @@ function hookEventListeners() {
 
     elements.applyTeamDetails.addEventListener('click', applyTeamDetails);
     elements.applyPrematchToss.addEventListener('click', applyPrematchTossChoices);
+    elements.applyLineups.addEventListener('click', applyLineupsForCurrentSet);
     elements.startMatch.addEventListener('click', startMatch);
     elements.applyDeciderToss.addEventListener('click', applyDeciderToss);
+
+    for (const select of getAllLineupSelectElements()) {
+        select.addEventListener('change', () => {
+            markLineupDirtyFromFormChange(select);
+            renderLineupsPanel();
+            updateSetupBadge();
+            updateActionAvailability();
+        });
+    }
 
     elements.completeSet.addEventListener('click', completeCurrentSet);
     elements.completeGame.addEventListener('click', interruptGame);
 
     elements.incTeamA.addEventListener('click', () => {
-        mygame.awardPoint('teamA');
+        const didScore = mygame.awardPoint('teamA');
+        if (didScore) {
+            markCurrentSetLineupLocked();
+        }
         updateSetsElements();
     });
 
     elements.incTeamB.addEventListener('click', () => {
-        mygame.awardPoint('teamB');
+        const didScore = mygame.awardPoint('teamB');
+        if (didScore) {
+            markCurrentSetLineupLocked();
+        }
         updateSetsElements();
     });
 
@@ -1476,6 +1889,7 @@ function initSetupDefaults() {
     if (setupState.rosters.away.length === 0) {
         setupState.rosters.away = createDefaultRoster();
     }
+    resetLineupsState();
 
     const defaultLeftStarter = document.querySelector('input[name="setup-left-starter"][value="home"]');
     const defaultServer = document.querySelector('input[name="setup-first-server"][value="teamA"]');
@@ -1495,6 +1909,7 @@ function initSetupDefaults() {
 
     setSetupFeedback('After rules are confirmed, complete Team Details and rosters, then toss choices to start match.', '');
     setTeamDetailsFeedback('Enter both team names, build both rosters, then click Apply Team Details.', '');
+    setLineupsFeedback('Lineups are required at the start of each set after the match starts.', '');
     setRulesFeedback('Select or load a profile and click Apply Profile, or choose Custom and save.', '');
 }
 
