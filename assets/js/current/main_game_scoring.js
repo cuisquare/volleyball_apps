@@ -335,8 +335,15 @@ function renderRoster(teamSide) {
     }
     controls.count.textContent = `${roster.length} / ${maxPlayers} players (Regular ${nonLiberos}, Libero ${liberos}/${getMaxLiberosPerRoster()}) - ${readinessHint}`;
 
-    const regularPlayers = roster.filter((player) => !player.isLibero);
-    const liberoPlayers = roster.filter((player) => player.isLibero);
+    const byShirtNumber = (playerA, playerB) => {
+        if (playerA.shirtNumber !== playerB.shirtNumber) {
+            return playerA.shirtNumber - playerB.shirtNumber;
+        }
+        return playerA.name.localeCompare(playerB.name);
+    };
+
+    const regularPlayers = roster.filter((player) => !player.isLibero).sort(byShirtNumber);
+    const liberoPlayers = roster.filter((player) => player.isLibero).sort(byShirtNumber);
 
     const renderRows = (targetBody, players, emptyText) => {
         if (players.length === 0) {
