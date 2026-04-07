@@ -1,6 +1,7 @@
 import Fixture from '../core/Fixture.js';
 import Rules from '../core/Rules.js';
 import Game from '../core/Game.js';
+import { buildSnapshot, applySnapshot } from '../core/MatchStateSerializer.js';
 
 const RULE_PRESETS = {
     london_league: {
@@ -35,6 +36,7 @@ const RULE_PRESETS = {
 
 const DEFAULT_PROFILE_ID = 'preset:london_league';
 const RULE_PROFILE_STORAGE_KEY = 'volleyball_rules_profiles_v1';
+const MATCH_SNAPSHOT_STORAGE_KEY = 'volleyball_match_snapshot_v1';
 let savedRuleProfiles = [];
 
 const myfixture = new Fixture(
@@ -132,6 +134,11 @@ const elements = {
     awayLiberoRosterBody: document.getElementById('away-libero-roster-body'),
     applyPrematchToss: document.getElementById('apply-prematch-toss'),
     startMatch: document.getElementById('start-match'),
+    quickSaveMatch: document.getElementById('quick-save-match'),
+    quickLoadMatch: document.getElementById('quick-load-match'),
+    exportMatchJson: document.getElementById('export-match-json'),
+    importMatchJson: document.getElementById('import-match-json'),
+    importMatchJsonInput: document.getElementById('import-match-json-input'),
     rulesProfile: document.getElementById('rules-profile'),
     applyRulesProfile: document.getElementById('apply-rules-profile'),
     newRulesProfileName: document.getElementById('new-rules-profile-name'),
@@ -221,6 +228,214 @@ function setTeamDetailsFeedback(message, variant = '') {
     elements.teamDetailsFeedback.classList.remove('error', 'success');
     if (variant) {
         elements.teamDetailsFeedback.classList.add(variant);
+    }
+}
+
+function setGlobalFeedback(message, variant = '') {
+    setSetupFeedback(message, variant);
+    setRulesFeedback(message, variant);
+    setTeamDetailsFeedback(message, variant);
+    setLineupsFeedback(message, variant);
+}
+
+function getCurrentRulesValuesFromFixture() {
+    return {
+        regsetpts: mygame.fixture.rules.regsetpts,
+        nbsetswin: mygame.fixture.rules.nbsetswin,
+        decidersetpts: mygame.fixture.rules.decidersetpts,
+        ptsdiffwinpts: mygame.fixture.rules.ptsdiffwinpts,
+        ptsdiffwinset: mygame.fixture.rules.ptsdiffwinset,
+        swapsidesindecider: mygame.fixture.rules.swapsidesindecider,
+        nbptsforswap: mygame.fixture.rules.nbptsforswap,
+        maxnumberplayers: mygame.fixture.rules.maxnumberplayers,
+        minliberoifthirteen: mygame.fixture.rules.minliberoifthirteen
+    };
+}
+
+function setRadioCheckedValue(groupName, value) {
+    for (const radio of document.querySelectorAll(`input[name="${groupName}"]`)) {
+        radio.checked = radio.value === value;
+    }
+}
+
+function clearRadioGroup(groupName) {
+    for (const radio of document.querySelectorAll(`input[name="${groupName}"]`)) {
+        radio.checked = false;
+    }
+}
+
+function setSavedRuleProfilesFromSnapshot(profiles) {
+    const nextProfiles = [];
+    if (Array.isArray(profiles)) {
+        for (const profile of profiles) {
+            if (!profile || typeof profile.id !== 'string' || typeof profile.name !== 'string') {
+                continue;
+            }
+            try {
+                nextProfiles.push({
+                    id: profile.id,
+                    name: profile.name.trim(),
+                    values: normalizeRulesValues(profile.values || {})
+                });
+            } catch {
+                continue;
+            }
+        }
+    }
+    savedRuleProfiles = nextProfiles;
+    persistSavedRuleProfiles();
+}
+
+function syncUiFromLoadedState() {
+    elements.homeTeamName.value = mygame.fixture.hometeam_name || '';
+    elements.awayTeamName.value = mygame.fixture.awayteam_name || '';
+
+    if (mygame.teamA === 'home' || mygame.teamA === 'away') {
+        setRadioCheckedValue('setup-left-starter', mygame.teamA);
+    } else {
+        clearRadioGroup('setup-left-starter');
+    }
+    if (mygame.team_serving_startset === 'teamA' || mygame.team_serving_startset === 'teamB') {
+        setRadioCheckedValue('setup-first-server', mygame.team_serving_startset);
+    } else {
+        clearRadioGroup('setup-first-server');
+    }
+
+    elements.deciderLeftTeam.value = setupState.deciderLeftStarter || '';
+    if (mygame.team_serving_deciderset === 'teamA' || mygame.team_serving_deciderset === 'teamB') {
+        elements.deciderServingTeam.value = mygame.team_serving_deciderset;
+    } else {
+        elements.deciderServingTeam.value = '';
+    }
+
+    const selectedProfileId = setupState.rulesProfileId && setupState.rulesProfileId !== 'none'
+        ? setupState.rulesProfileId
+        : DEFAULT_PROFILE_ID;
+    rebuildRulesProfileOptions(selectedProfileId);
+    setRulesFormValues(getCurrentRulesValuesFromFixture());
+    updateRulesPanelView();
+    renderRosters();
+}
+
+function exportSnapshotToJsonFile(snapshot) {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `volleyball_match_snapshot_${timestamp}.json`;
+    const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function refreshPrematchLockState() {
+    if (setupState.matchStarted) {
+        lockPrematchSetup();
+        return;
+    }
+
+    setupState.setupLocked = false;
+    for (const input of [
+        elements.homeTeamName,
+        elements.awayTeamName,
+        elements.rulesProfile,
+        elements.homePlayerName,
+        elements.homePlayerNumber,
+        elements.homePlayerRegNumber,
+        elements.homePlayerLibero,
+        elements.homePlayerCaptain,
+        elements.awayPlayerName,
+        elements.awayPlayerNumber,
+        elements.awayPlayerRegNumber,
+        elements.awayPlayerLibero,
+        elements.awayPlayerCaptain
+    ]) {
+        input.disabled = false;
+    }
+    for (const radio of document.querySelectorAll('input[name="setup-left-starter"], input[name="setup-first-server"]')) {
+        radio.disabled = false;
+    }
+}
+
+function applyLoadedSnapshotData(snapshot, sourceLabel) {
+    applySnapshot({
+        snapshot,
+        mygame,
+        setupState,
+        setSavedRuleProfiles: setSavedRuleProfilesFromSnapshot
+    });
+
+    syncUiFromLoadedState();
+    refreshPrematchLockState();
+    updateRulesPanelView();
+
+    const allowedPanels = new Set(['scoreboard', 'rules', 'teamDetails', 'setup', 'lineups']);
+    const preferredPanel = allowedPanels.has(setupState.activePanel)
+        ? setupState.activePanel
+        : (setupState.matchStarted ? 'scoreboard' : 'rules');
+    setActivePanel(preferredPanel);
+
+    setGlobalFeedback(`Loaded ${sourceLabel}.`, 'success');
+    updateSetsElements();
+}
+
+function quickSaveMatchState() {
+    try {
+        const snapshot = buildSnapshot({ mygame, setupState, savedRuleProfiles });
+        localStorage.setItem(MATCH_SNAPSHOT_STORAGE_KEY, JSON.stringify(snapshot));
+        setGlobalFeedback('Quick save complete.', 'success');
+    } catch (error) {
+        setGlobalFeedback(`Quick save failed: ${error.message}`, 'error');
+    }
+}
+
+function quickLoadMatchState() {
+    const rawSnapshot = localStorage.getItem(MATCH_SNAPSHOT_STORAGE_KEY);
+    if (!rawSnapshot) {
+        setGlobalFeedback('No quick save found in browser storage.', 'error');
+        return;
+    }
+
+    try {
+        const snapshot = JSON.parse(rawSnapshot);
+        applyLoadedSnapshotData(snapshot, 'quick save');
+    } catch (error) {
+        setGlobalFeedback(`Quick load failed: ${error.message}`, 'error');
+    }
+}
+
+function exportMatchStateAsJson() {
+    try {
+        const snapshot = buildSnapshot({ mygame, setupState, savedRuleProfiles });
+        exportSnapshotToJsonFile(snapshot);
+        setGlobalFeedback('Match snapshot exported to JSON.', 'success');
+    } catch (error) {
+        setGlobalFeedback(`Export failed: ${error.message}`, 'error');
+    }
+}
+
+function importMatchStateFromJson() {
+    elements.importMatchJsonInput.value = '';
+    elements.importMatchJsonInput.click();
+}
+
+async function handleImportMatchJsonFile(event) {
+    const selectedFile = event.target.files && event.target.files[0];
+    if (!selectedFile) {
+        return;
+    }
+
+    try {
+        const text = await selectedFile.text();
+        const snapshot = JSON.parse(text);
+        applyLoadedSnapshotData(snapshot, `JSON file "${selectedFile.name}"`);
+    } catch (error) {
+        setGlobalFeedback(`Import failed: ${error.message}`, 'error');
+    } finally {
+        elements.importMatchJsonInput.value = '';
     }
 }
 
@@ -941,6 +1156,12 @@ function applyLineupsForCurrentSet() {
     lineupState.teamA = { ...teamALineup };
     lineupState.teamB = { ...teamBLineup };
     lineupState.confirmed = true;
+    mygame.addExternalEvent('lineups_applied', {
+        setNumber: getCurrentSetNumberForLineup(),
+        teamA: { ...teamALineup },
+        teamB: { ...teamBLineup },
+        duringMatch: setupState.matchStarted
+    });
     if (setupState.matchStarted) {
         lineupState.locked = true;
     }
@@ -1630,6 +1851,12 @@ function applyPresetProfile(profileId) {
     setupState.teamDetailsConfirmed = false;
     setupState.prematchTossConfirmed = false;
     resetLineupsState();
+    mygame.addExternalEvent('rules_applied', {
+        source: selection.type,
+        profileId,
+        profileLabel: selection.label,
+        values: { ...selection.values }
+    });
 
     setRulesFeedback(`${selection.label} rules applied.`, 'success');
     setSetupFeedback('Rules profile applied. Next step: complete Team Details and rosters, then toss choices.', 'success');
@@ -1664,6 +1891,12 @@ function saveCustomRules() {
         setupState.teamDetailsConfirmed = false;
         setupState.prematchTossConfirmed = false;
         resetLineupsState();
+        mygame.addExternalEvent('rules_applied', {
+            source: 'custom',
+            profileId: 'custom',
+            profileLabel: 'Custom',
+            values: { ...customRules }
+        });
 
         setRulesFeedback('Custom rules saved and confirmed.', 'success');
         setSetupFeedback('Custom rules saved. Next step: complete Team Details and rosters, then toss choices.', 'success');
@@ -1788,6 +2021,12 @@ function startMatch() {
     setLineupsFeedback('', '');
     lockPrematchSetup();
     setActivePanel('scoreboard');
+    mygame.addExternalEvent('match_started', {
+        setNumber: mygame.getCurrentSet(),
+        teamA: mygame.teamA,
+        teamB: mygame.teamB,
+        firstServer: mygame.team_serving_startset
+    });
 
     setSetupFeedback('Match started. Toss choices are locked. Rules remain available for viewing.', 'success');
     updateSetsElements();
@@ -1810,6 +2049,11 @@ function applyDeciderToss() {
     setupState.deciderLeftStarter = leftTeam;
     mygame.onLeft = leftTeam === 'teamA';
     mygame.team_serving_deciderset = servingTeam;
+    mygame.addExternalEvent('decider_toss_applied', {
+        setNumber: mygame.getCurrentSet(),
+        leftTeam,
+        servingTeam
+    });
 
     setSetupFeedback('Decider toss applied.', 'success');
     setActivePanel('scoreboard');
@@ -1830,6 +2074,12 @@ function applyPrematchTossChoices() {
     mygame.teamA = selections.leftStarter;
     mygame.onLeft = true;
     mygame.team_serving_startset = selections.firstServer;
+    mygame.addExternalEvent('prematch_toss_applied', {
+        leftStarter: selections.leftStarter,
+        firstServer: selections.firstServer,
+        homeTeam: selections.homeName,
+        awayTeam: selections.awayName
+    });
 
     setupState.prematchTossConfirmed = true;
     resetLineupsState();
@@ -1858,6 +2108,12 @@ function applyTeamDetails() {
     setupState.teamDetailsConfirmed = true;
     setupState.prematchTossConfirmed = false;
     resetLineupsState();
+    mygame.addExternalEvent('team_details_applied', {
+        homeTeam: teamDetails.homeName,
+        awayTeam: teamDetails.awayName,
+        homeRosterCount: teamDetails.homeRoster.length,
+        awayRosterCount: teamDetails.awayRoster.length
+    });
 
     setTeamDetailsFeedback('Team details and rosters applied. Continue to prematch toss choices.', 'success');
     setSetupFeedback('Team details and rosters applied. Complete prematch toss choices next.', '');
@@ -1878,8 +2134,8 @@ function interruptGame() {
         return;
     }
 
-    mygame.completeGame();
     mygame.interruptReason = window.prompt('Please enter an interruption reason (optional):') || 'No reason provided';
+    mygame.completeGame();
     updateSetsElements();
 }
 
@@ -1923,6 +2179,11 @@ function hookEventListeners() {
     elements.applyLineups.addEventListener('click', applyLineupsForCurrentSet);
     elements.startMatch.addEventListener('click', startMatch);
     elements.applyDeciderToss.addEventListener('click', applyDeciderToss);
+    elements.quickSaveMatch.addEventListener('click', quickSaveMatchState);
+    elements.quickLoadMatch.addEventListener('click', quickLoadMatchState);
+    elements.exportMatchJson.addEventListener('click', exportMatchStateAsJson);
+    elements.importMatchJson.addEventListener('click', importMatchStateFromJson);
+    elements.importMatchJsonInput.addEventListener('change', handleImportMatchJsonFile);
 
     for (const select of getAllLineupSelectElements()) {
         select.addEventListener('change', () => {
@@ -2053,6 +2314,7 @@ function initSetupDefaults() {
 
     loadSavedRuleProfiles();
     rebuildRulesProfileOptions(DEFAULT_PROFILE_ID);
+    setRulesFormValues(getCurrentRulesValuesFromFixture());
     updateRulesPanelView();
     updateRosterRuleHint();
     renderRosters();

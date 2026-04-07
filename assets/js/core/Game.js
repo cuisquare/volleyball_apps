@@ -17,6 +17,16 @@ class Game {
         this.totalPoints = { teamA: 0, teamB: 0 };
         this.pointHistory = [];
         this.redoHistory = [];
+        this.history = {
+            version: 1,
+            events: [],
+            sets: [],
+            placeholders: {
+                substitutions: [],
+                penalties: [],
+                setTimes: []
+            }
+        };
 
         //game interrupted
         this.game_interrupted = false;
@@ -286,6 +296,12 @@ class Game {
             this.pointHistory.push(snapshot);
             // New scoring action supersedes any pending redo chain.
             this.redoHistory = [];
+            this.logEvent('point_awarded', {
+                team,
+                currentSet: { ...this.currentSet },
+                servingTeam: this.team_serving_currently,
+                setNumber: this.getCurrentSet()
+            });
             return true;
         }
         return false;
@@ -309,6 +325,11 @@ class Game {
         } else {
             this.team_serving_currently = snapshot.team_serving_currently;
         }
+        this.logEvent('point_undone', {
+            currentSet: { ...this.currentSet },
+            servingTeam: this.team_serving_currently,
+            setNumber: this.getCurrentSet()
+        });
 
         return true;
     }
@@ -331,6 +352,11 @@ class Game {
         } else {
             this.team_serving_currently = snapshot.team_serving_currently;
         }
+        this.logEvent('point_redone', {
+            currentSet: { ...this.currentSet },
+            servingTeam: this.team_serving_currently,
+            setNumber: this.getCurrentSet()
+        });
 
         return true;
     }
@@ -394,6 +420,7 @@ class Game {
         }
 
 
+        const completedSetNumber = this.getCurrentSet();
         const { teamA, teamB } = this.currentSet;
         this.sets.push({ teamA, teamB });
 
@@ -404,6 +431,13 @@ class Game {
         if (teamB >= (teamA +this.fixture.rules.ptsdiffwinset)) {
             this.setWins.teamB += 1;
         }
+        this.history.sets.push({
+            setNumber: completedSetNumber,
+            score: { teamA, teamB },
+            setWinsAfterSet: { ...this.setWins },
+            sideAtEnd: this.onLeft,
+            servingAtEnd: this.team_serving_currently
+        });
 
         // Reset current set
         this.currentSet = { teamA: 0, teamB: 0 };
@@ -421,6 +455,12 @@ class Game {
             this.updateTeamServingCurrentlyAtStartSet();
             this.updateTeamSides();
         }
+        this.logEvent('set_completed', {
+            setNumber: completedSetNumber,
+            score: { teamA, teamB },
+            setWins: { ...this.setWins },
+            nextSetNumber: this.getCurrentSet()
+        });
 
     }
 
@@ -430,6 +470,10 @@ class Game {
         this._team_serving_deciderset = "Game_interrupted";
         this.resetCurrentServingState();
         this.completeSet(false);
+        this.logEvent('game_interrupted', {
+            reason: this.interruptReason,
+            gameWinner: this.gameWinner
+        });
     }
 
     determineGameWinner() {
@@ -539,6 +583,18 @@ class Game {
         return output
     }
 
+    logEvent(type, payload = {}) {
+        this.history.events.push({
+            index: this.history.events.length + 1,
+            type,
+            at: new Date().toISOString(),
+            payload
+        });
+    }
+
+    addExternalEvent(type, payload = {}) {
+        this.logEvent(type, payload);
+    }
 
 
 }
