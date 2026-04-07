@@ -758,7 +758,7 @@ function markCurrentSetLineupLocked() {
 }
 
 function buildLineupOptionLabel(player) {
-    return `#${player.shirtNumber} - ${player.name}`;
+    return `#${player.shirtNumber} (${player.name})`;
 }
 
 function getLineupOptionSuffix(teamSelections, currentPosition, playerId) {
