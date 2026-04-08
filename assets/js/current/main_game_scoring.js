@@ -1388,10 +1388,28 @@ function ensureLineupStateForCurrentSet() {
     if (!setupState.lineupsBySet[setNumber]) {
         setupState.lineupsBySet[setNumber] = {
             confirmed: false,
+            started: false,
             locked: false,
             teamA: {},
             teamB: {}
         };
+    } else {
+        const lineupState = setupState.lineupsBySet[setNumber];
+        if (typeof lineupState.confirmed !== 'boolean') {
+            lineupState.confirmed = false;
+        }
+        if (typeof lineupState.locked !== 'boolean') {
+            lineupState.locked = false;
+        }
+        if (typeof lineupState.started !== 'boolean') {
+            lineupState.started = Boolean(lineupState.locked);
+        }
+        if (!lineupState.teamA || typeof lineupState.teamA !== 'object') {
+            lineupState.teamA = {};
+        }
+        if (!lineupState.teamB || typeof lineupState.teamB !== 'object') {
+            lineupState.teamB = {};
+        }
     }
     return setupState.lineupsBySet[setNumber];
 }
@@ -1430,11 +1448,20 @@ function currentSetLineupConfirmed() {
     return Boolean(lineupState.confirmed);
 }
 
-function markCurrentSetLineupLocked() {
+function currentSetStarted() {
     if (!setupState.matchStarted || mygame.isGameOver) {
+        return false;
+    }
+    const lineupState = ensureLineupStateForCurrentSet();
+    return Boolean(lineupState.started);
+}
+
+function markCurrentSetStarted() {
+    if (mygame.isGameOver) {
         return;
     }
     const lineupState = ensureLineupStateForCurrentSet();
+    lineupState.started = true;
     lineupState.locked = true;
 }
 
@@ -1544,6 +1571,7 @@ function renderLineupsPanel() {
         lineupState.teamA = sanitizedA.nextSelections;
         lineupState.teamB = sanitizedB.nextSelections;
         lineupState.confirmed = false;
+        lineupState.started = false;
         if (!lineupState.locked) {
             setLineupsFeedback('Lineup selections were updated to match current eligible roster players.', '');
         }
@@ -1622,19 +1650,15 @@ function applyLineupsForCurrentSet() {
     lineupState.teamA = { ...teamALineup };
     lineupState.teamB = { ...teamBLineup };
     lineupState.confirmed = true;
+    lineupState.started = false;
+    lineupState.locked = false;
     mygame.addExternalEvent('lineups_applied', {
         setNumber: getCurrentSetNumberForLineup(),
         teamA: { ...teamALineup },
         teamB: { ...teamBLineup },
         duringMatch: setupState.matchStarted
     });
-    if (setupState.matchStarted) {
-        lineupState.locked = true;
-    }
-    setLineupsFeedback('Lineups applied for current set.', 'success');
-    if (setupState.matchStarted) {
-        setActivePanel('scoreboard');
-    }
+    setLineupsFeedback(`Set ${getCurrentSetNumberForLineup()} lineup staged. Click Start Set when ready.`, 'success');
     updateSetsElements();
 }
 
@@ -1689,8 +1713,9 @@ function markLineupDirtyFromFormChange(changedSelect = null) {
 
     if (lineupState.confirmed) {
         lineupState.confirmed = false;
+        lineupState.started = false;
         lineupState.locked = false;
-        setLineupsFeedback('Lineups changed. Click Apply Lineups For Current Set to confirm.', '');
+        setLineupsFeedback('Lineups changed. Click Apply Lineups For Set to stage them again.', '');
     }
 }
 
@@ -1998,22 +2023,31 @@ function hasReadySelections() {
     return setupState.rulesConfirmed && setupState.teamDetailsConfirmed && setupState.prematchTossConfirmed && currentSetLineupConfirmed();
 }
 
-function validateBeforeStart() {
-    if (!setupState.rulesConfirmed) {
-        setSetupFeedback('Rules are required. Apply a preset or save custom rules first.', 'error');
-        return null;
+function validateBeforeSetStart() {
+    const currentSetNumber = getCurrentSetNumberForLineup();
+
+    if (!setupState.matchStarted) {
+        if (!setupState.rulesConfirmed) {
+            setSetupFeedback('Rules are required. Apply a preset or save custom rules first.', 'error');
+            return null;
+        }
+        if (!setupState.teamDetailsConfirmed) {
+            setSetupFeedback('Apply team details and rosters before starting Set 1.', 'error');
+            return null;
+        }
+        if (!setupState.prematchTossConfirmed) {
+            setSetupFeedback('Apply prematch toss choices before starting Set 1.', 'error');
+            return null;
+        }
     }
-    if (!setupState.teamDetailsConfirmed) {
-        setSetupFeedback('Apply team details and rosters before starting the match.', 'error');
+
+    if (mygame.isPreDeciderToss) {
+        setSetupFeedback('Apply decider toss choices before starting the next set.', 'error');
         return null;
     }
 
-    if (!setupState.prematchTossConfirmed) {
-        setSetupFeedback('Apply prematch toss choices before starting the match.', 'error');
-        return null;
-    }
     if (!currentSetLineupConfirmed()) {
-        setSetupFeedback('Apply lineups for Set 1 before starting the match.', 'error');
+        setSetupFeedback(`Apply lineups for Set ${currentSetNumber} before starting it.`, 'error');
         return null;
     }
 
@@ -2053,7 +2087,6 @@ function validatePrematchSelections() {
 
 function lockPrematchSetup() {
     setupState.setupLocked = true;
-    elements.startMatch.disabled = true;
 
     const prematchInputs = [
         elements.homeTeamName,
@@ -2117,6 +2150,7 @@ function updateSetupBadge() {
     elements.setupStatusBadge.classList.remove('ready', 'locked');
     const deciderTossRequired = setupState.matchStarted && !mygame.isGameOver && mygame.isPreDeciderToss;
     const lineupRequired = setupState.prematchTossConfirmed && !mygame.isGameOver && !currentSetLineupConfirmed();
+    const setReadyToStart = setupState.prematchTossConfirmed && !mygame.isGameOver && currentSetLineupConfirmed() && !currentSetStarted();
 
     if (deciderTossRequired) {
         elements.setupStatusBadge.textContent = 'Decider Toss Required';
@@ -2130,8 +2164,19 @@ function updateSetupBadge() {
             elements.setupStatusBadge.classList.add('locked');
             return;
         }
-        elements.setupStatusBadge.textContent = 'Toss Choices Locked';
+        if (setReadyToStart) {
+            elements.setupStatusBadge.textContent = `Ready To Start Set ${getCurrentSetNumberForLineup()}`;
+            elements.setupStatusBadge.classList.add('ready');
+            return;
+        }
+        elements.setupStatusBadge.textContent = 'Set In Progress';
         elements.setupStatusBadge.classList.add('locked');
+        return;
+    }
+
+    if (setReadyToStart) {
+        elements.setupStatusBadge.textContent = 'Ready To Start Set 1';
+        elements.setupStatusBadge.classList.add('ready');
         return;
     }
 
@@ -2197,12 +2242,16 @@ function updateScoringServingValues() {
 
     if (!setupState.matchStarted) {
         if (setupState.prematchTossConfirmed && !currentSetLineupConfirmed()) {
-            elements.gameStatus.textContent = 'Set 1 lineups required before match start.';
+            elements.gameStatus.textContent = 'Set 1 lineups required before starting play.';
+        } else if (setupState.prematchTossConfirmed && currentSetLineupConfirmed()) {
+            elements.gameStatus.textContent = 'Set 1 lineup staged. Click Start Set to begin play.';
         } else {
             elements.gameStatus.textContent = 'Toss choices required before match start.';
         }
     } else if (!currentSetLineupConfirmed() && !mygame.isGameOver) {
-        elements.gameStatus.textContent = `Set ${getCurrentSetNumberForLineup()} lineups required before scoring.`;
+            elements.gameStatus.textContent = `Set ${getCurrentSetNumberForLineup()} lineups are required before starting play.`;
+    } else if (!currentSetStarted() && !mygame.isGameOver) {
+        elements.gameStatus.textContent = `Set ${getCurrentSetNumberForLineup()} lineup staged. Click Start Set to begin play.`;
     } else {
         elements.gameStatus.textContent = mygame.getGameStatus();
     }
@@ -2273,7 +2322,14 @@ function updateLineupPromptVisibility() {
 }
 
 function updateActionAvailability() {
-    elements.startMatch.disabled = setupState.matchStarted || !hasReadySelections();
+    const lineupState = ensureLineupStateForCurrentSet();
+    const canStartSet = !mygame.isGameOver
+        && currentSetLineupConfirmed()
+        && !lineupState.started
+        && (!setupState.matchStarted || !mygame.isPreDeciderToss)
+        && (setupState.matchStarted || hasReadySelections());
+    elements.startMatch.textContent = `Start Set ${getCurrentSetNumberForLineup()}`;
+    elements.startMatch.disabled = !canStartSet;
     elements.applyTeamDetails.disabled = setupState.matchStarted || !setupState.rulesConfirmed;
     elements.applyPrematchToss.disabled = setupState.matchStarted || !setupState.rulesConfirmed || !setupState.teamDetailsConfirmed;
     const homeAtMax = setupState.rosters.home.filter((player) => player.isPlayer).length >= getMaxRosterPlayers();
@@ -2288,9 +2344,8 @@ function updateActionAvailability() {
         || !setupState.rulesConfirmed
         || (awayAtMax && !editingAway && elements.awayPlayerIsPlayer.checked);
 
-    const canManageSet = setupState.matchStarted && !mygame.isGameOver;
-    const lineupReady = currentSetLineupConfirmed();
-    const canScore = canManageSet && lineupReady && mygame.team_serving_currently !== 'Unknown';
+    const canManageSet = setupState.matchStarted && !mygame.isGameOver && currentSetStarted();
+    const canScore = canManageSet && mygame.team_serving_currently !== 'Unknown';
     const canUndo = canManageSet && mygame.pointHistory.length > 0;
     const canRedo = canManageSet && mygame.redoHistory.length > 0;
 
@@ -2302,7 +2357,6 @@ function updateActionAvailability() {
     elements.completeGame.disabled = !canManageSet;
     const deciderTossRequired = setupState.matchStarted && !mygame.isGameOver && mygame.isPreDeciderToss;
     elements.applyDeciderToss.disabled = !deciderTossRequired;
-    const lineupState = ensureLineupStateForCurrentSet();
     elements.applyLineups.disabled = !setupState.prematchTossConfirmed || mygame.isGameOver || lineupState.locked;
     elements.importRulesJson.disabled = setupState.matchStarted;
     elements.importHomeRosterJson.disabled = setupState.matchStarted;
@@ -2494,31 +2548,42 @@ function handleRulesProfileChange() {
     updateSetsElements();
 }
 
-function startMatch() {
-    if (setupState.matchStarted) {
+function startCurrentSet() {
+    if (mygame.isGameOver) {
         return;
     }
 
-    const selections = validateBeforeStart();
+    const selections = validateBeforeSetStart();
     if (!selections) {
         updateSetsElements();
         return;
     }
 
+    const startingSetNumber = mygame.getCurrentSet();
+    const firstSetStart = !setupState.matchStarted;
     setupState.matchStarted = true;
     ensureLineupStateForCurrentSet();
-    markCurrentSetLineupLocked();
+    markCurrentSetStarted();
     setLineupsFeedback('', '');
-    lockPrematchSetup();
+    if (firstSetStart) {
+        lockPrematchSetup();
+        mygame.addExternalEvent('match_started', {
+            setNumber: startingSetNumber,
+            teamA: mygame.teamA,
+            teamB: mygame.teamB,
+            firstServer: mygame.team_serving_startset
+        });
+    }
     setActivePanel('scoreboard');
-    mygame.addExternalEvent('match_started', {
-        setNumber: mygame.getCurrentSet(),
+    mygame.addExternalEvent('set_started', {
+        setNumber: startingSetNumber,
+        firstSetStart,
         teamA: mygame.teamA,
-        teamB: mygame.teamB,
-        firstServer: mygame.team_serving_startset
+        teamB: mygame.teamB
     });
 
-    setSetupFeedback('Match started. Toss choices are locked. Rules remain available for viewing.', 'success');
+    setSetupFeedback(`Set ${startingSetNumber} started. Lineups are now locked for this set.`, 'success');
+    setLineupsFeedback(`Set ${startingSetNumber} started. Lineups are now locked for this set.`, 'success');
     updateSetsElements();
 }
 
@@ -2574,7 +2639,7 @@ function applyPrematchTossChoices() {
     setupState.prematchTossConfirmed = true;
     resetLineupsState();
     ensureLineupStateForCurrentSet();
-    setSetupFeedback('Prematch toss choices applied. You can now start the match.', 'success');
+    setSetupFeedback('Prematch toss choices applied. You can now stage lineups and start Set 1.', 'success');
     setLineupsFeedback('Prematch toss complete. Please set lineups for Set 1.', '');
     setActivePanel('lineups');
     updateSetsElements();
@@ -2682,7 +2747,7 @@ function hookEventListeners() {
     elements.applyTeamDetails.addEventListener('click', applyTeamDetails);
     elements.applyPrematchToss.addEventListener('click', applyPrematchTossChoices);
     elements.applyLineups.addEventListener('click', applyLineupsForCurrentSet);
-    elements.startMatch.addEventListener('click', startMatch);
+    elements.startMatch.addEventListener('click', startCurrentSet);
     elements.applyDeciderToss.addEventListener('click', applyDeciderToss);
     elements.quickSaveMatch.addEventListener('click', quickSaveMatchState);
     elements.quickLoadMatch.addEventListener('click', quickLoadMatchState);
@@ -2703,18 +2768,12 @@ function hookEventListeners() {
     elements.completeGame.addEventListener('click', interruptGame);
 
     elements.incTeamA.addEventListener('click', () => {
-        const didScore = mygame.awardPoint('teamA');
-        if (didScore) {
-            markCurrentSetLineupLocked();
-        }
+        mygame.awardPoint('teamA');
         updateSetsElements();
     });
 
     elements.incTeamB.addEventListener('click', () => {
-        const didScore = mygame.awardPoint('teamB');
-        if (didScore) {
-            markCurrentSetLineupLocked();
-        }
+        mygame.awardPoint('teamB');
         updateSetsElements();
     });
 
@@ -2839,7 +2898,7 @@ function initSetupDefaults() {
     syncRosterEntryFormState('home');
     syncRosterEntryFormState('away');
 
-    setSetupFeedback('After rules are confirmed, complete Team Details and rosters, then toss choices to start match.', '');
+    setSetupFeedback('After rules are confirmed, complete Team Details and rosters, then toss choices to prepare Set 1.', '');
     setTeamDetailsFeedback('Enter both team names, build both rosters, then click Apply Team Details.', '');
     setLineupsFeedback('Lineups are required at the start of each set after the match starts.', '');
     setRulesFeedback('Select or load a profile and click Apply Profile, or choose Custom and save.', '');
