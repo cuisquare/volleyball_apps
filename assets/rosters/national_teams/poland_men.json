@@ -1,0 +1,23 @@
+{
+  "type": "volleyball_team_roster",
+  "version": 2,
+  "exportedAt": "2026-04-08T00:00:00.000Z",
+  "teamName": "Poland Men",
+  "roster": [
+    { "name": "Jakub Popiwczak", "shirtNumber": 3, "regNumber": "", "isPlayer": true, "isLibero": true, "isCaptain": false, "benchRole": "" },
+    { "name": "Marcin Komenda", "shirtNumber": 4, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Bartosz Kurek", "shirtNumber": 6, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": true, "benchRole": "" },
+    { "name": "Wilfredo León", "shirtNumber": 9, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Artur Szalpuk", "shirtNumber": 12, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Jakub Kochanowski", "shirtNumber": 15, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Kamil Semeniuk", "shirtNumber": 16, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Maksymilian Granieczny", "shirtNumber": 18, "regNumber": "", "isPlayer": true, "isLibero": true, "isCaptain": false, "benchRole": "" },
+    { "name": "Tomasz Fornal", "shirtNumber": 21, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Szymon Jakubiszak", "shirtNumber": 34, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Kewin Sasak", "shirtNumber": 35, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Jakub Nowak", "shirtNumber": 73, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Jan Firlej", "shirtNumber": 96, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Norbert Huber", "shirtNumber": 99, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Nikola Grbić", "shirtNumber": null, "regNumber": "", "isPlayer": false, "isLibero": false, "isCaptain": false, "benchRole": "Coach" }
+  ]
+}

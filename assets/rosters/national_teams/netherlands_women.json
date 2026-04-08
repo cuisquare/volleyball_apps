@@ -1,0 +1,23 @@
+{
+  "type": "volleyball_team_roster",
+  "version": 2,
+  "exportedAt": "2026-04-08T00:00:00.000Z",
+  "teamName": "Netherlands Women",
+  "roster": [
+    { "name": "Marije ten Brinke", "shirtNumber": 2, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Suus Gerritsen", "shirtNumber": 8, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Sarah van Aalen", "shirtNumber": 10, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Britt Bongaerts", "shirtNumber": 12, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": true, "benchRole": "" },
+    { "name": "Nicole van de Vosse", "shirtNumber": 13, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Iris Vos", "shirtNumber": 17, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Marrit Jasper", "shirtNumber": 18, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Nika Daalderop", "shirtNumber": 19, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Jet Kok", "shirtNumber": 20, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Britte Stuut", "shirtNumber": 21, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Eline Timmerman", "shirtNumber": 23, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Florien Reesink", "shirtNumber": 25, "regNumber": "", "isPlayer": true, "isLibero": true, "isCaptain": false, "benchRole": "" },
+    { "name": "Elles Dambrink", "shirtNumber": 26, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Laura Jansen", "shirtNumber": 30, "regNumber": "", "isPlayer": true, "isLibero": true, "isCaptain": false, "benchRole": "" },
+    { "name": "Felix Koslowski", "shirtNumber": null, "regNumber": "", "isPlayer": false, "isLibero": false, "isCaptain": false, "benchRole": "Coach" }
+  ]
+}

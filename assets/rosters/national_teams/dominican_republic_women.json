@@ -1,0 +1,23 @@
+{
+  "type": "volleyball_team_roster",
+  "version": 2,
+  "exportedAt": "2026-04-08T00:00:00.000Z",
+  "teamName": "Dominican Republic Women",
+  "roster": [
+    { "name": "Yaneirys Rodriguez", "shirtNumber": 2, "regNumber": "", "isPlayer": true, "isLibero": true, "isCaptain": false, "benchRole": "" },
+    { "name": "Florangel Terrero", "shirtNumber": 3, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Brenda Castillo", "shirtNumber": 5, "regNumber": "", "isPlayer": true, "isLibero": true, "isCaptain": true, "benchRole": "" },
+    { "name": "Alondra Tapia", "shirtNumber": 8, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Geraldine Gonzalez", "shirtNumber": 11, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Yokaty Perez", "shirtNumber": 12, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Massiel Matos", "shirtNumber": 13, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Madeline Guillen", "shirtNumber": 15, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Yonkaira Pena", "shirtNumber": 16, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Camila de la Rosa", "shirtNumber": 18, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Brayelin Martinez", "shirtNumber": 20, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Jineiry Martinez", "shirtNumber": 21, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Samaret Caraballo", "shirtNumber": 22, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Gaila Gonzalez", "shirtNumber": 23, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Marcos Kwiek", "shirtNumber": null, "regNumber": "", "isPlayer": false, "isLibero": false, "isCaptain": false, "benchRole": "Coach" }
+  ]
+}

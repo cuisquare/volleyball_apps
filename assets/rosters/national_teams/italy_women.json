@@ -1,0 +1,23 @@
+{
+  "type": "volleyball_team_roster",
+  "version": 2,
+  "exportedAt": "2026-04-08T00:00:00.000Z",
+  "teamName": "Italy Women",
+  "roster": [
+    { "name": "Carlotta Cambi", "shirtNumber": 3, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Monica De Gennaro", "shirtNumber": 6, "regNumber": "", "isPlayer": true, "isLibero": true, "isCaptain": false, "benchRole": "" },
+    { "name": "Eleonora Fersino", "shirtNumber": 7, "regNumber": "", "isPlayer": true, "isLibero": true, "isCaptain": false, "benchRole": "" },
+    { "name": "Alessia Orro", "shirtNumber": 8, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Benedetta Sartori", "shirtNumber": 10, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Anna Danesi", "shirtNumber": 11, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": true, "benchRole": "" },
+    { "name": "Stella Nervini", "shirtNumber": 16, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Myriam Sylla", "shirtNumber": 17, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Paola Egonu", "shirtNumber": 18, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Sarah Fahr", "shirtNumber": 19, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Loveth Omoruyi", "shirtNumber": 21, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Gaia Giovannini", "shirtNumber": 22, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Ekaterina Antropova", "shirtNumber": 24, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Yasmina Akrari", "shirtNumber": 25, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Julio Velasco", "shirtNumber": null, "regNumber": "", "isPlayer": false, "isLibero": false, "isCaptain": false, "benchRole": "Coach" }
+  ]
+}

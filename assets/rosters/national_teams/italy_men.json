@@ -1,0 +1,23 @@
+{
+  "type": "volleyball_team_roster",
+  "version": 2,
+  "exportedAt": "2026-04-08T00:00:00.000Z",
+  "teamName": "Italy Men",
+  "roster": [
+    { "name": "Alessandro Michieletto", "shirtNumber": 5, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Simone Giannelli", "shirtNumber": 6, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": true, "benchRole": "" },
+    { "name": "Fabio Balaso", "shirtNumber": 7, "regNumber": "", "isPlayer": true, "isLibero": true, "isCaptain": false, "benchRole": "" },
+    { "name": "Riccardo Sbertoli", "shirtNumber": 8, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Francesco Sani", "shirtNumber": 9, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Kamil Rychlicki", "shirtNumber": 11, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Mattia Bottolo", "shirtNumber": 12, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Gianluca Galassi", "shirtNumber": 14, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Yuri Romanò", "shirtNumber": 16, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Simone Anzani", "shirtNumber": 17, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Roberto Russo", "shirtNumber": 19, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Giovanni Gargiulo", "shirtNumber": 25, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Domenico Pace", "shirtNumber": 28, "regNumber": "", "isPlayer": true, "isLibero": true, "isCaptain": false, "benchRole": "" },
+    { "name": "Luca Porro", "shirtNumber": 31, "regNumber": "", "isPlayer": true, "isLibero": false, "isCaptain": false, "benchRole": "" },
+    { "name": "Ferdinando De Giorgi", "shirtNumber": null, "regNumber": "", "isPlayer": false, "isLibero": false, "isCaptain": false, "benchRole": "Coach" }
+  ]
+}
