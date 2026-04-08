@@ -104,6 +104,10 @@ body {
   grid-template-columns: repeat(2, minmax(240px, 1fr));
 }
 
+.team-details-grid {
+  grid-template-columns: repeat(2, minmax(240px, 1fr));
+}
+
 .setup-card {
   border: 1px solid var(--line);
   border-radius: 8px;

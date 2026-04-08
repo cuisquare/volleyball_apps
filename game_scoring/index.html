@@ -28,24 +28,13 @@
   </header>
 
   <section id="team-details-panel" class="setup-panel hidden">
-    <div class="setup-grid">
+    <div class="setup-grid team-details-grid">
       <div class="setup-card">
-        <h3>Team Details</h3>
+        <h3>Home Roster</h3>
         <div class="form-row">
           <label for="home-team-name">Home Team Name</label>
           <input id="home-team-name" type="text" maxlength="60" placeholder="Home team">
         </div>
-        <div class="form-row">
-          <label for="away-team-name">Away Team Name</label>
-          <input id="away-team-name" type="text" maxlength="60" placeholder="Away team">
-        </div>
-        <div class="setup-actions">
-          <button id="apply-team-details" type="button">Apply Team Details</button>
-        </div>
-        <p id="roster-rules-hint" class="hint"></p>
-      </div>
-      <div class="setup-card">
-        <h3>Home Roster</h3>
         <div class="form-row">
           <label for="home-player-name">Player Name</label>
           <input id="home-player-name" type="text" maxlength="60" placeholder="Player name">
@@ -68,6 +57,11 @@
         </label>
         <div class="setup-actions">
           <button id="add-home-player" type="button">Add Home Player</button>
+        </div>
+        <div class="setup-actions">
+          <button id="export-home-roster-json" type="button">Export Home Roster JSON</button>
+          <button id="import-home-roster-json" type="button">Import Home Roster JSON</button>
+          <input id="import-home-roster-json-input" type="file" accept="application/json" class="hidden">
         </div>
         <p id="home-roster-count" class="hint">0 players</p>
         <h4 class="roster-section-title">Regular Players</h4>
@@ -104,6 +98,10 @@
       <div class="setup-card">
         <h3>Away Roster</h3>
         <div class="form-row">
+          <label for="away-team-name">Away Team Name</label>
+          <input id="away-team-name" type="text" maxlength="60" placeholder="Away team">
+        </div>
+        <div class="form-row">
           <label for="away-player-name">Player Name</label>
           <input id="away-player-name" type="text" maxlength="60" placeholder="Player name">
         </div>
@@ -125,6 +123,11 @@
         </label>
         <div class="setup-actions">
           <button id="add-away-player" type="button">Add Away Player</button>
+        </div>
+        <div class="setup-actions">
+          <button id="export-away-roster-json" type="button">Export Away Roster JSON</button>
+          <button id="import-away-roster-json" type="button">Import Away Roster JSON</button>
+          <input id="import-away-roster-json-input" type="file" accept="application/json" class="hidden">
         </div>
         <p id="away-roster-count" class="hint">0 players</p>
         <h4 class="roster-section-title">Regular Players</h4>
@@ -159,6 +162,10 @@
         </div>
       </div>
     </div>
+    <div class="setup-actions">
+      <button id="apply-team-details" type="button">Apply Team Details</button>
+    </div>
+    <p id="roster-rules-hint" class="hint"></p>
     <p id="team-details-feedback" class="setup-feedback"></p>
   </section>
 
@@ -241,6 +248,11 @@
         <div class="setup-actions">
           <button id="save-rules-profile" type="button">Save New Profile</button>
           <button id="delete-rules-profile" type="button">Delete Selected Saved Profile</button>
+        </div>
+        <div class="setup-actions">
+          <button id="export-rules-json" type="button">Export Rules JSON</button>
+          <button id="import-rules-json" type="button">Import Rules JSON</button>
+          <input id="import-rules-json-input" type="file" accept="application/json" class="hidden">
         </div>
       </div>
 

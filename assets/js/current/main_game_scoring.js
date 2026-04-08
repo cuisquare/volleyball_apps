@@ -37,6 +37,10 @@ const RULE_PRESETS = {
 const DEFAULT_PROFILE_ID = 'preset:london_league';
 const RULE_PROFILE_STORAGE_KEY = 'volleyball_rules_profiles_v1';
 const MATCH_SNAPSHOT_STORAGE_KEY = 'volleyball_match_snapshot_v1';
+const RULES_JSON_TYPE = 'volleyball_rules';
+const RULES_JSON_VERSION = 1;
+const TEAM_ROSTER_JSON_TYPE = 'volleyball_team_roster';
+const TEAM_ROSTER_JSON_VERSION = 1;
 let savedRuleProfiles = [];
 
 const myfixture = new Fixture(
@@ -113,6 +117,12 @@ const elements = {
     lineupTeamBPos5: document.getElementById('lineup-teamB-pos5'),
     lineupTeamBPos6: document.getElementById('lineup-teamB-pos6'),
     applyTeamDetails: document.getElementById('apply-team-details'),
+    exportHomeRosterJson: document.getElementById('export-home-roster-json'),
+    importHomeRosterJson: document.getElementById('import-home-roster-json'),
+    importHomeRosterJsonInput: document.getElementById('import-home-roster-json-input'),
+    exportAwayRosterJson: document.getElementById('export-away-roster-json'),
+    importAwayRosterJson: document.getElementById('import-away-roster-json'),
+    importAwayRosterJsonInput: document.getElementById('import-away-roster-json-input'),
     rosterRulesHint: document.getElementById('roster-rules-hint'),
     homePlayerName: document.getElementById('home-player-name'),
     homePlayerNumber: document.getElementById('home-player-number'),
@@ -141,6 +151,9 @@ const elements = {
     importMatchJsonInput: document.getElementById('import-match-json-input'),
     rulesProfile: document.getElementById('rules-profile'),
     applyRulesProfile: document.getElementById('apply-rules-profile'),
+    exportRulesJson: document.getElementById('export-rules-json'),
+    importRulesJson: document.getElementById('import-rules-json'),
+    importRulesJsonInput: document.getElementById('import-rules-json-input'),
     newRulesProfileName: document.getElementById('new-rules-profile-name'),
     saveRulesProfile: document.getElementById('save-rules-profile'),
     deleteRulesProfile: document.getElementById('delete-rules-profile'),
@@ -318,9 +331,17 @@ function syncUiFromLoadedState() {
 }
 
 function exportSnapshotToJsonFile(snapshot) {
+    const homeName = (mygame.fixture.hometeam_name || 'home').trim();
+    const awayName = (mygame.fixture.awayteam_name || 'away').trim();
+    const stageTag = getMatchStageTagForFilename();
+    const matchLabel = `${homeName}_vs_${awayName}_${stageTag}`;
+    exportJsonToFile(`volleyball_match_snapshot_${toSafeFilenameToken(matchLabel)}`, snapshot);
+}
+
+function exportJsonToFile(prefix, payload) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `volleyball_match_snapshot_${timestamp}.json`;
-    const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+    const filename = `${prefix}_${timestamp}.json`;
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -329,6 +350,36 @@ function exportSnapshotToJsonFile(snapshot) {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+}
+
+function toSafeFilenameToken(rawValue) {
+    return String(rawValue || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '') || 'item';
+}
+
+function getMatchStageTagForFilename() {
+    if (mygame.isGameOver) {
+        return 'game_over';
+    }
+    if (!setupState.matchStarted) {
+        return 'pre_match';
+    }
+    const setNumber = mygame.getCurrentSet();
+    if (setNumber > 0) {
+        return `set_${setNumber}`;
+    }
+    return 'in_progress';
+}
+
+function canImportSetupJson(kindLabel) {
+    if (!setupState.matchStarted) {
+        return true;
+    }
+    setGlobalFeedback(`${kindLabel} import is only available before match start.`, 'error');
+    return false;
 }
 
 function refreshPrematchLockState() {
@@ -351,7 +402,10 @@ function refreshPrematchLockState() {
         elements.awayPlayerNumber,
         elements.awayPlayerRegNumber,
         elements.awayPlayerLibero,
-        elements.awayPlayerCaptain
+        elements.awayPlayerCaptain,
+        elements.importRulesJson,
+        elements.importHomeRosterJson,
+        elements.importAwayRosterJson
     ]) {
         input.disabled = false;
     }
@@ -436,6 +490,258 @@ async function handleImportMatchJsonFile(event) {
         setGlobalFeedback(`Import failed: ${error.message}`, 'error');
     } finally {
         elements.importMatchJsonInput.value = '';
+    }
+}
+
+function getRulesJsonExportValues() {
+    const selectedProfile = parseProfileSelection(elements.rulesProfile.value);
+    if (!setupState.matchStarted && selectedProfile.type === 'custom') {
+        return getRulesFromForm();
+    }
+    return normalizeRulesValues(getCurrentRulesValuesFromFixture());
+}
+
+function buildRulesJsonPayload() {
+    const values = getRulesJsonExportValues();
+    return {
+        type: RULES_JSON_TYPE,
+        version: RULES_JSON_VERSION,
+        exportedAt: new Date().toISOString(),
+        profile: {
+            id: setupState.rulesProfileId || 'custom',
+            label: setupState.rulesProfileLabel || 'Custom'
+        },
+        values
+    };
+}
+
+function exportRulesAsJson() {
+    try {
+        const payload = buildRulesJsonPayload();
+        const profileLabel = payload.profile && payload.profile.label ? payload.profile.label : 'rules';
+        exportJsonToFile(`volleyball_rules_${toSafeFilenameToken(profileLabel)}`, payload);
+        setGlobalFeedback('Rules exported to JSON.', 'success');
+    } catch (error) {
+        setGlobalFeedback(`Rules export failed: ${error.message}`, 'error');
+    }
+}
+
+function importRulesFromJson() {
+    if (!canImportSetupJson('Rules')) {
+        return;
+    }
+    elements.importRulesJsonInput.value = '';
+    elements.importRulesJsonInput.click();
+}
+
+function parseImportedRulesPayload(parsed) {
+    if (!parsed || typeof parsed !== 'object') {
+        throw new Error('Rules JSON must be an object.');
+    }
+
+    if (typeof parsed.type === 'string' && parsed.type !== RULES_JSON_TYPE) {
+        throw new Error(`Unsupported rules JSON type: ${parsed.type}.`);
+    }
+    if (parsed.type === RULES_JSON_TYPE && Number(parsed.version) !== RULES_JSON_VERSION) {
+        throw new Error(`Unsupported rules JSON version: ${parsed.version}.`);
+    }
+
+    const valuesSource = parsed.values && typeof parsed.values === 'object' ? parsed.values : parsed;
+    const values = normalizeRulesValues(valuesSource);
+    const profileLabel = parsed.profile && typeof parsed.profile.label === 'string'
+        ? parsed.profile.label.trim() || 'Imported JSON'
+        : 'Imported JSON';
+
+    return { values, profileLabel };
+}
+
+async function handleImportRulesJsonFile(event) {
+    const selectedFile = event.target.files && event.target.files[0];
+    if (!selectedFile) {
+        return;
+    }
+
+    try {
+        if (!canImportSetupJson('Rules')) {
+            return;
+        }
+
+        const text = await selectedFile.text();
+        const parsed = JSON.parse(text);
+        const imported = parseImportedRulesPayload(parsed);
+
+        applyRules(imported.values);
+        setRulesFormValues(imported.values);
+        rebuildRulesProfileOptions('custom');
+        elements.rulesProfile.value = 'custom';
+
+        setupState.rulesConfirmed = true;
+        setupState.rulesSource = 'custom';
+        setupState.rulesProfileId = 'custom';
+        setupState.rulesProfileLabel = imported.profileLabel;
+        setupState.teamDetailsConfirmed = false;
+        setupState.prematchTossConfirmed = false;
+        resetLineupsState();
+
+        mygame.addExternalEvent('rules_imported_json', {
+            fileName: selectedFile.name,
+            values: { ...imported.values }
+        });
+
+        setRulesFeedback('Rules imported from JSON. Team details/toss choices need confirmation.', 'success');
+        setSetupFeedback('Rules imported. Next step: apply team details, then prematch toss choices.', 'success');
+        setActivePanel('teamDetails');
+        updateRulesPanelView();
+        updateSetsElements();
+    } catch (error) {
+        setGlobalFeedback(`Rules import failed: ${error.message}`, 'error');
+    } finally {
+        elements.importRulesJsonInput.value = '';
+    }
+}
+
+function normalizeImportedRosterPlayer(rawPlayer, teamLabel, index) {
+    if (!rawPlayer || typeof rawPlayer !== 'object') {
+        throw new Error(`${teamLabel} roster entry ${index + 1} is invalid.`);
+    }
+
+    const name = typeof rawPlayer.name === 'string' ? rawPlayer.name.trim() : '';
+    if (!name) {
+        throw new Error(`${teamLabel} roster entry ${index + 1} is missing a player name.`);
+    }
+
+    const shirtNumber = Number.parseInt(rawPlayer.shirtNumber, 10);
+    if (!Number.isInteger(shirtNumber) || shirtNumber <= 0) {
+        throw new Error(`${teamLabel} roster entry ${index + 1} has invalid shirt number.`);
+    }
+
+    const regNumber = rawPlayer.regNumber == null ? '' : String(rawPlayer.regNumber).trim();
+    const isLibero = Boolean(rawPlayer.isLibero);
+    const isCaptain = Boolean(rawPlayer.isCaptain);
+
+    return {
+        id: '',
+        name,
+        shirtNumber,
+        regNumber,
+        isLibero,
+        isCaptain
+    };
+}
+
+function withGeneratedRosterIds(roster) {
+    return roster.map((player) => ({
+        ...player,
+        id: `p_${setupState.nextRosterPlayerId++}`
+    }));
+}
+
+function getTeamSideLabel(teamSide) {
+    return teamSide === 'home' ? 'Home' : 'Away';
+}
+
+function buildSingleTeamRosterJsonPayload(teamSide) {
+    const teamName = teamSide === 'home'
+        ? (elements.homeTeamName.value || '').trim()
+        : (elements.awayTeamName.value || '').trim();
+    const roster = (setupState.rosters[teamSide] || []).map((player) => ({ ...player }));
+    return {
+        type: TEAM_ROSTER_JSON_TYPE,
+        version: TEAM_ROSTER_JSON_VERSION,
+        exportedAt: new Date().toISOString(),
+        teamName,
+        roster
+    };
+}
+
+function exportSingleTeamRosterAsJson(teamSide) {
+    try {
+        const payload = buildSingleTeamRosterJsonPayload(teamSide);
+        const rawTeamName = payload.teamName || getTeamSideLabel(teamSide);
+        const safeTeamName = toSafeFilenameToken(rawTeamName);
+        exportJsonToFile(`volleyball_roster_${safeTeamName}`, payload);
+        setGlobalFeedback(`${getTeamSideLabel(teamSide)} roster exported to JSON.`, 'success');
+    } catch (error) {
+        setGlobalFeedback(`${getTeamSideLabel(teamSide)} roster export failed: ${error.message}`, 'error');
+    }
+}
+
+function parseImportedSingleRosterPayload(parsed, expectedTeamSide) {
+    if (!parsed || typeof parsed !== 'object') {
+        throw new Error('Team roster JSON must be an object.');
+    }
+
+    if (typeof parsed.type === 'string' && parsed.type !== TEAM_ROSTER_JSON_TYPE) {
+        throw new Error(`Unsupported team roster JSON type: ${parsed.type}.`);
+    }
+    if (parsed.type === TEAM_ROSTER_JSON_TYPE && Number(parsed.version) !== TEAM_ROSTER_JSON_VERSION) {
+        throw new Error(`Unsupported team roster JSON version: ${parsed.version}.`);
+    }
+
+    const teamName = typeof parsed.teamName === 'string' ? parsed.teamName.trim() : '';
+    const rawRoster = Array.isArray(parsed.roster) ? parsed.roster : [];
+    const roster = rawRoster.map((player, index) => normalizeImportedRosterPlayer(player, getTeamSideLabel(expectedTeamSide), index));
+    const rosterEntryError = validateRosterEntryForTeam(expectedTeamSide, roster);
+    if (rosterEntryError) {
+        throw new Error(rosterEntryError);
+    }
+
+    return { teamName, roster };
+}
+
+function importSingleTeamRosterFromJson(teamSide) {
+    if (!canImportSetupJson(`${getTeamSideLabel(teamSide)} roster`)) {
+        return;
+    }
+    const input = teamSide === 'home' ? elements.importHomeRosterJsonInput : elements.importAwayRosterJsonInput;
+    input.value = '';
+    input.click();
+}
+
+async function handleImportSingleTeamRosterJsonFile(event, teamSide) {
+    const selectedFile = event.target.files && event.target.files[0];
+    if (!selectedFile) {
+        return;
+    }
+
+    try {
+        if (!canImportSetupJson(`${getTeamSideLabel(teamSide)} roster`)) {
+            return;
+        }
+
+        const text = await selectedFile.text();
+        const parsed = JSON.parse(text);
+        const imported = parseImportedSingleRosterPayload(parsed, teamSide);
+        setupState.editingRosterPlayerId[teamSide] = '';
+        setupState.rosters[teamSide] = withGeneratedRosterIds(imported.roster);
+
+        if (imported.teamName) {
+            if (teamSide === 'home') {
+                elements.homeTeamName.value = imported.teamName;
+            } else {
+                elements.awayTeamName.value = imported.teamName;
+            }
+        }
+
+        setupState.teamDetailsConfirmed = false;
+        setupState.prematchTossConfirmed = false;
+        resetLineupsState();
+
+        mygame.addExternalEvent('single_roster_imported_json', {
+            fileName: selectedFile.name,
+            teamSide,
+            teamCount: setupState.rosters[teamSide].length
+        });
+
+        renderRosters();
+        setTeamDetailsFeedback(`${getTeamSideLabel(teamSide)} roster imported. Click Apply Team Details to confirm this setup.`, 'success');
+        setSetupFeedback(`${getTeamSideLabel(teamSide)} roster imported. Apply Team Details before prematch toss choices.`, 'success');
+        setActivePanel('teamDetails');
+        updateSetsElements();
+    } catch (error) {
+        setGlobalFeedback(`${getTeamSideLabel(teamSide)} roster import failed: ${error.message}`, 'error');
+    } finally {
+        event.target.value = '';
     }
 }
 
@@ -1630,6 +1936,9 @@ function lockPrematchSetup() {
     elements.applyPrematchToss.disabled = true;
     elements.addHomePlayer.disabled = true;
     elements.addAwayPlayer.disabled = true;
+    elements.importRulesJson.disabled = true;
+    elements.importHomeRosterJson.disabled = true;
+    elements.importAwayRosterJson.disabled = true;
     renderRosters();
 }
 
@@ -1820,6 +2129,12 @@ function updateActionAvailability() {
     elements.applyDeciderToss.disabled = !deciderTossRequired;
     const lineupState = ensureLineupStateForCurrentSet();
     elements.applyLineups.disabled = !setupState.prematchTossConfirmed || mygame.isGameOver || lineupState.locked;
+    elements.importRulesJson.disabled = setupState.matchStarted;
+    elements.importHomeRosterJson.disabled = setupState.matchStarted;
+    elements.importAwayRosterJson.disabled = setupState.matchStarted;
+    elements.exportRulesJson.disabled = false;
+    elements.exportHomeRosterJson.disabled = false;
+    elements.exportAwayRosterJson.disabled = false;
 }
 
 function updateSetsElements() {
@@ -2151,9 +2466,22 @@ function hookEventListeners() {
     elements.saveCustomRules.addEventListener('click', saveCustomRules);
     elements.saveRulesProfile.addEventListener('click', saveCurrentRulesAsNewProfile);
     elements.deleteRulesProfile.addEventListener('click', deleteSelectedSavedProfile);
+    elements.exportRulesJson.addEventListener('click', exportRulesAsJson);
+    elements.importRulesJson.addEventListener('click', importRulesFromJson);
+    elements.importRulesJsonInput.addEventListener('change', handleImportRulesJsonFile);
 
     elements.addHomePlayer.addEventListener('click', () => addRosterPlayer('home'));
     elements.addAwayPlayer.addEventListener('click', () => addRosterPlayer('away'));
+    elements.exportHomeRosterJson.addEventListener('click', () => exportSingleTeamRosterAsJson('home'));
+    elements.importHomeRosterJson.addEventListener('click', () => importSingleTeamRosterFromJson('home'));
+    elements.importHomeRosterJsonInput.addEventListener('change', (event) => {
+        handleImportSingleTeamRosterJsonFile(event, 'home');
+    });
+    elements.exportAwayRosterJson.addEventListener('click', () => exportSingleTeamRosterAsJson('away'));
+    elements.importAwayRosterJson.addEventListener('click', () => importSingleTeamRosterFromJson('away'));
+    elements.importAwayRosterJsonInput.addEventListener('change', (event) => {
+        handleImportSingleTeamRosterJsonFile(event, 'away');
+    });
     const onRosterBodyClick = (event) => {
         const button = event.target.closest('.remove-player-btn, .edit-player-btn');
         if (!button) {
