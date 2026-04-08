@@ -360,6 +360,14 @@
           <label for="breakbetweensetsmins">Official Break Between Sets (mins)</label>
           <input id="breakbetweensetsmins" type="number" min="0" step="1">
         </div>
+        <div class="form-row">
+          <label for="maxtimeoutsregularset">Max Timeouts In Regular Set</label>
+          <input id="maxtimeoutsregularset" type="number" min="0" step="1">
+        </div>
+        <div class="form-row">
+          <label for="maxtimeoutsdeciderset">Max Timeouts In Decider Set</label>
+          <input id="maxtimeoutsdeciderset" type="number" min="0" step="1">
+        </div>
         <div class="form-row checkbox-row">
           <label for="allow-player-staff-role-cumulation">Allow Player/Staff Role Cumulation</label>
           <input id="allow-player-staff-role-cumulation" type="checkbox">
@@ -450,6 +458,8 @@
           <p class="score" id="score-teamA">0</p>
           <button id="increase-score-teamA" type="button">+</button>
           <p id="servingstate-teamA">Unknown</p>
+          <button id="timeout-teamA" type="button">TIME OUT</button>
+          <p id="timeouts-left-teamA">0 / 0</p>
         </div>
         <div id="accruedSetsPointsTeamA">
           <h2>Sets:</h2>
@@ -467,6 +477,8 @@
           <p class="score" id="score-teamB">0</p>
           <button id="increase-score-teamB" type="button">+</button>
           <p id="servingstate-teamB">Unknown</p>
+          <button id="timeout-teamB" type="button">TIME OUT</button>
+          <p id="timeouts-left-teamB">0 / 0</p>
         </div>
         <div id="accruedSetsPointsTeamB">
           <h2>Sets:</h2>

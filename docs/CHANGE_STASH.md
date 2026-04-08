@@ -17,10 +17,6 @@ Update this file whenever an item is added, completed, or reprioritized.
 - [ ] Add an optional non-libero player `subrole` field selected from fully spelled role values `Setter`, `Outside Hitter`, `Opposite`, and `Middle Blocker`, and display the corresponding symbols `S`, `OH`, `OP`, and `MB` in the roster tables.
 - [ ] Introduce match-wide action undo/redo that restores full prior states rather than only current-set points, and move the undo/redo controls from the scoreboard into a globally visible app-level controls section alongside save/load and JSON import/export.
 - [ ] Display points-scored history and recorded set start/end times in the scoring app.
-- [ ] Timeout input during sets with rule validation.
-- [ ] Rules support for timeouts-per-set with decider differences:
-  - FIVB: 2 all sets
-  - London League: 2 regular sets, 0 decider set
 
 ### Positions App
 - [ ] Saved named formations/patterns for persisted court layouts, linked to role symbols across rotations.
@@ -46,6 +42,7 @@ Update this file whenever an item is added, completed, or reprioritized.
 - [x] Team details extension with bench personnel input and display, including rules-controlled player/staff role cumulation.
 - [x] Introduced a pending set-start workflow where applying a lineup stages the next set and `Start Set` finalizes the lineup and begins play.
 - [x] Set start/end time tracking with official and actual set times, including rules-controlled break duration between sets.
+- [x] Timeout recording during sets with rules-controlled limits, scoreboard request buttons, and used/max timeout tracking per team.
 - [x] Save/load game state and history (quick save/load + JSON import/export) with pre-toss restore fix.
 
 ### Positions App

@@ -24,7 +24,8 @@ class Game {
             placeholders: {
                 substitutions: [],
                 penalties: [],
-                setTimes: []
+                setTimes: [],
+                timeouts: []
             }
         };
 
@@ -632,6 +633,32 @@ class Game {
         }
         entry.endTime = endTime || '';
         entry.actualEndTime = actualEndTime || '';
+    }
+
+    getTimeoutsForSet(setNumber) {
+        if (!Number.isInteger(setNumber) || setNumber < 1) {
+            return [];
+        }
+        const timeoutEntries = Array.isArray(this.history.placeholders.timeouts)
+            ? this.history.placeholders.timeouts
+            : [];
+        return timeoutEntries.filter((entry) => entry.setNumber === setNumber);
+    }
+
+    recordTimeout(setNumber, team, score) {
+        if (!Array.isArray(this.history.placeholders.timeouts)) {
+            this.history.placeholders.timeouts = [];
+        }
+
+        const entry = {
+            setNumber,
+            team,
+            score,
+            at: new Date().toISOString()
+        };
+        this.history.placeholders.timeouts.push(entry);
+        this.logEvent('timeout_recorded', entry);
+        return entry;
     }
 
 

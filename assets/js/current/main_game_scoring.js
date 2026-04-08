@@ -17,7 +17,9 @@ const RULE_PRESETS = {
             maxnumberplayers: 14,
             minliberoifthirteen: 1,
             allowPlayerStaffRoleCumulation: true,
-            breakBetweenSetsMins: 3
+            breakBetweenSetsMins: 3,
+            maxTimeoutsRegularSet: 2,
+            maxTimeoutsDeciderSet: 1
         }
     },
     fivb: {
@@ -33,7 +35,9 @@ const RULE_PRESETS = {
             maxnumberplayers: 14,
             minliberoifthirteen: 2,
             allowPlayerStaffRoleCumulation: true,
-            breakBetweenSetsMins: 3
+            breakBetweenSetsMins: 3,
+            maxTimeoutsRegularSet: 2,
+            maxTimeoutsDeciderSet: 2
         }
     }
 };
@@ -186,10 +190,14 @@ const elements = {
     pointsTeamB: document.getElementById('points-teamB'),
     servingStateTeamA: document.getElementById('servingstate-teamA'),
     servingStateTeamB: document.getElementById('servingstate-teamB'),
+    timeoutsLeftTeamA: document.getElementById('timeouts-left-teamA'),
+    timeoutsLeftTeamB: document.getElementById('timeouts-left-teamB'),
     gameStatus: document.getElementById('game-status'),
     teamsContainer: document.getElementById('teams-container'),
     incTeamA: document.getElementById('increase-score-teamA'),
     incTeamB: document.getElementById('increase-score-teamB'),
+    timeoutTeamA: document.getElementById('timeout-teamA'),
+    timeoutTeamB: document.getElementById('timeout-teamB'),
     homeTeamName: document.getElementById('home-team-name'),
     awayTeamName: document.getElementById('away-team-name'),
     regsetpts: document.getElementById('regsetpts'),
@@ -202,6 +210,8 @@ const elements = {
     maxnumberplayers: document.getElementById('maxnumberplayers'),
     minliberoifthirteen: document.getElementById('minliberoifthirteen'),
     breakBetweenSetsMins: document.getElementById('breakbetweensetsmins'),
+    maxTimeoutsRegularSet: document.getElementById('maxtimeoutsregularset'),
+    maxTimeoutsDeciderSet: document.getElementById('maxtimeoutsdeciderset'),
     allowPlayerStaffRoleCumulation: document.getElementById('allow-player-staff-role-cumulation'),
     deciderCard: document.getElementById('decider-toss-card'),
     deciderLeftTeam: document.getElementById('decider-left-team'),
@@ -276,6 +286,8 @@ function getCurrentRulesValuesFromFixture() {
         maxnumberplayers: mygame.fixture.rules.maxnumberplayers,
         minliberoifthirteen: mygame.fixture.rules.minliberoifthirteen,
         breakBetweenSetsMins: mygame.fixture.rules.breakBetweenSetsMins,
+        maxTimeoutsRegularSet: mygame.fixture.rules.maxTimeoutsRegularSet,
+        maxTimeoutsDeciderSet: mygame.fixture.rules.maxTimeoutsDeciderSet,
         allowPlayerStaffRoleCumulation: Boolean(mygame.fixture.rules.allowPlayerStaffRoleCumulation)
     };
 }
@@ -1786,6 +1798,54 @@ function getSetTimeEntry(setNumber) {
     return mygame.history.placeholders.setTimes.find((entry) => entry.setNumber === setNumber) || null;
 }
 
+function getTimeoutsForSet(setNumber) {
+    return mygame.getTimeoutsForSet(setNumber);
+}
+
+function getMaxTimeoutsForCurrentSet() {
+    return mygame.isDeciderSet()
+        ? mygame.fixture.rules.maxTimeoutsDeciderSet
+        : mygame.fixture.rules.maxTimeoutsRegularSet;
+}
+
+function getUsedTimeoutsForCurrentSet(team) {
+    const currentSetNumber = getCurrentSetNumberForLineup();
+    return getTimeoutsForSet(currentSetNumber).filter((entry) => entry.team === team).length;
+}
+
+function getRemainingTimeoutsForCurrentSet(team) {
+    return Math.max(0, getMaxTimeoutsForCurrentSet() - getUsedTimeoutsForCurrentSet(team));
+}
+
+function getTimeoutUsageLabel(team) {
+    return `${getUsedTimeoutsForCurrentSet(team)} / ${getMaxTimeoutsForCurrentSet()}`;
+}
+
+function getTimeoutScoreNotation(team) {
+    if (team === 'teamA') {
+        return `${mygame.currentSet.teamA}-${mygame.currentSet.teamB}`;
+    }
+    return `${mygame.currentSet.teamB}-${mygame.currentSet.teamA}`;
+}
+
+function recordTimeoutForTeam(team) {
+    if (!setupState.matchStarted || mygame.isGameOver || !currentSetStarted()) {
+        setSetupFeedback('Start the current set before recording a timeout.', 'error');
+        return;
+    }
+
+    if (getRemainingTimeoutsForCurrentSet(team) <= 0) {
+        setSetupFeedback(`${getTeamLabelOrFallback(team)} has no timeouts remaining in this set.`, 'error');
+        return;
+    }
+
+    const currentSetNumber = getCurrentSetNumberForLineup();
+    const score = getTimeoutScoreNotation(team);
+    mygame.recordTimeout(currentSetNumber, team, score);
+    setSetupFeedback(`${getTeamLabelOrFallback(team)} timeout recorded at ${score}.`, 'success');
+    updateSetsElements();
+}
+
 function getOfficialAndActualStartTimesForSet(setNumber) {
     const actualStartTime = getRoundedCurrentTimeString();
     if (setNumber <= 1) {
@@ -1829,6 +1889,8 @@ function normalizeRulesValues(rawValues) {
         maxnumberplayers: asPositiveInteger(rawValues.maxnumberplayers, 'Max players'),
         minliberoifthirteen: asPositiveInteger(rawValues.minliberoifthirteen, 'Min liberos if 13 players', 0),
         breakBetweenSetsMins: asPositiveInteger(rawValues.breakBetweenSetsMins ?? 3, 'Official break between sets', 0),
+        maxTimeoutsRegularSet: asPositiveInteger(rawValues.maxTimeoutsRegularSet ?? 2, 'Max timeouts in regular set', 0),
+        maxTimeoutsDeciderSet: asPositiveInteger(rawValues.maxTimeoutsDeciderSet ?? 2, 'Max timeouts in decider set', 0),
         allowPlayerStaffRoleCumulation: Boolean(rawValues.allowPlayerStaffRoleCumulation)
     };
 
@@ -1942,6 +2004,7 @@ function getPresetSummaryLine(values) {
         `Swap in decider: ${values.swapsidesindecider ? 'Yes' : 'No'}`,
         `Min libero if 13: ${values.minliberoifthirteen}`,
         `Break between sets: ${values.breakBetweenSetsMins} min`,
+        `Timeouts: ${values.maxTimeoutsRegularSet}/${values.maxTimeoutsDeciderSet} reg/decider`,
         `Player/staff cumulation: ${values.allowPlayerStaffRoleCumulation ? 'Allowed' : 'Not allowed'}`
     ].join(' | ');
 }
@@ -1957,6 +2020,8 @@ function setRulesFormValues(ruleValues) {
     elements.maxnumberplayers.value = ruleValues.maxnumberplayers;
     elements.minliberoifthirteen.value = ruleValues.minliberoifthirteen;
     elements.breakBetweenSetsMins.value = ruleValues.breakBetweenSetsMins;
+    elements.maxTimeoutsRegularSet.value = ruleValues.maxTimeoutsRegularSet;
+    elements.maxTimeoutsDeciderSet.value = ruleValues.maxTimeoutsDeciderSet;
     elements.allowPlayerStaffRoleCumulation.checked = Boolean(ruleValues.allowPlayerStaffRoleCumulation);
 }
 
@@ -1972,6 +2037,8 @@ function getRulesFromForm() {
         maxnumberplayers: elements.maxnumberplayers.value,
         minliberoifthirteen: elements.minliberoifthirteen.value,
         breakBetweenSetsMins: elements.breakBetweenSetsMins.value,
+        maxTimeoutsRegularSet: elements.maxTimeoutsRegularSet.value,
+        maxTimeoutsDeciderSet: elements.maxTimeoutsDeciderSet.value,
         allowPlayerStaffRoleCumulation: elements.allowPlayerStaffRoleCumulation.checked
     });
 }
@@ -1988,7 +2055,9 @@ function applyRules(ruleValues) {
         ruleValues.maxnumberplayers,
         ruleValues.minliberoifthirteen,
         ruleValues.allowPlayerStaffRoleCumulation,
-        ruleValues.breakBetweenSetsMins
+        ruleValues.breakBetweenSetsMins,
+        ruleValues.maxTimeoutsRegularSet,
+        ruleValues.maxTimeoutsDeciderSet
     );
 }
 
@@ -2018,6 +2087,8 @@ function updateRulesPanelView() {
         elements.maxnumberplayers,
         elements.minliberoifthirteen,
         elements.breakBetweenSetsMins,
+        elements.maxTimeoutsRegularSet,
+        elements.maxTimeoutsDeciderSet,
         elements.allowPlayerStaffRoleCumulation
     ]) {
         input.disabled = ruleFieldsReadOnly;
@@ -2198,6 +2269,8 @@ function lockPrematchSetup() {
         elements.maxnumberplayers,
         elements.minliberoifthirteen,
         elements.breakBetweenSetsMins,
+        elements.maxTimeoutsRegularSet,
+        elements.maxTimeoutsDeciderSet,
         elements.allowPlayerStaffRoleCumulation
     ];
 
@@ -2333,6 +2406,8 @@ function updateScoringServingValues() {
     elements.setsTeamB.textContent = mygame.setWins.teamB;
     elements.pointsTeamA.textContent = mygame.totalPoints.teamA;
     elements.pointsTeamB.textContent = mygame.totalPoints.teamB;
+    elements.timeoutsLeftTeamA.textContent = getTimeoutUsageLabel('teamA');
+    elements.timeoutsLeftTeamB.textContent = getTimeoutUsageLabel('teamB');
 
     elements.servingStateTeamA.textContent = mygame.servingstate.teamA;
     elements.servingStateTeamB.textContent = mygame.servingstate.teamB;
@@ -2445,9 +2520,13 @@ function updateActionAvailability() {
     const canScore = canManageSet && mygame.team_serving_currently !== 'Unknown';
     const canUndo = canManageSet && mygame.pointHistory.length > 0;
     const canRedo = canManageSet && mygame.redoHistory.length > 0;
+    const canTimeoutTeamA = canManageSet && getRemainingTimeoutsForCurrentSet('teamA') > 0;
+    const canTimeoutTeamB = canManageSet && getRemainingTimeoutsForCurrentSet('teamB') > 0;
 
     elements.incTeamA.disabled = !canScore;
     elements.incTeamB.disabled = !canScore;
+    elements.timeoutTeamA.disabled = !canTimeoutTeamA;
+    elements.timeoutTeamB.disabled = !canTimeoutTeamB;
     elements.undoLastPoint.disabled = !canUndo;
     elements.redoLastPoint.disabled = !canRedo;
     elements.completeSet.disabled = !canManageSet;
@@ -2893,6 +2972,14 @@ function hookEventListeners() {
         updateSetsElements();
     });
 
+    elements.timeoutTeamA.addEventListener('click', () => {
+        recordTimeoutForTeam('teamA');
+    });
+
+    elements.timeoutTeamB.addEventListener('click', () => {
+        recordTimeoutForTeam('teamB');
+    });
+
     elements.undoLastPoint.addEventListener('click', () => {
         mygame.undoLastPoint();
         updateSetsElements();
@@ -2914,6 +3001,8 @@ function hookEventListeners() {
         elements.maxnumberplayers,
         elements.minliberoifthirteen,
         elements.breakBetweenSetsMins,
+        elements.maxTimeoutsRegularSet,
+        elements.maxTimeoutsDeciderSet,
         elements.allowPlayerStaffRoleCumulation
     ]) {
         input.addEventListener('change', markRulesDirty);

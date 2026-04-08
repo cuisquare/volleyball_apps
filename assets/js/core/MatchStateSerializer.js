@@ -39,7 +39,8 @@ function ensureHistory(rawHistory) {
     const placeholders = ensureObject(history.placeholders, {
         substitutions: [],
         penalties: [],
-        setTimes: []
+        setTimes: [],
+        timeouts: []
     });
     return {
         version: typeof history.version === 'number' ? history.version : 1,
@@ -48,7 +49,8 @@ function ensureHistory(rawHistory) {
         placeholders: {
             substitutions: Array.isArray(placeholders.substitutions) ? deepClone(placeholders.substitutions) : [],
             penalties: Array.isArray(placeholders.penalties) ? deepClone(placeholders.penalties) : [],
-            setTimes: Array.isArray(placeholders.setTimes) ? deepClone(placeholders.setTimes) : []
+            setTimes: Array.isArray(placeholders.setTimes) ? deepClone(placeholders.setTimes) : [],
+            timeouts: Array.isArray(placeholders.timeouts) ? deepClone(placeholders.timeouts) : []
         }
     };
 }
@@ -84,7 +86,9 @@ export function buildSnapshot({ mygame, setupState, savedRuleProfiles }) {
                 maxnumberplayers: mygame.fixture.rules.maxnumberplayers,
                 minliberoifthirteen: mygame.fixture.rules.minliberoifthirteen,
                 allowPlayerStaffRoleCumulation: mygame.fixture.rules.allowPlayerStaffRoleCumulation,
-                breakBetweenSetsMins: mygame.fixture.rules.breakBetweenSetsMins
+                breakBetweenSetsMins: mygame.fixture.rules.breakBetweenSetsMins,
+                maxTimeoutsRegularSet: mygame.fixture.rules.maxTimeoutsRegularSet,
+                maxTimeoutsDeciderSet: mygame.fixture.rules.maxTimeoutsDeciderSet
             },
             home_roster: deepClone(mygame.fixture.home_roster || []),
             away_roster: deepClone(mygame.fixture.away_roster || [])
@@ -163,7 +167,9 @@ export function applySnapshot({ snapshot, mygame, setupState, setSavedRuleProfil
         Number(fixtureRules.maxnumberplayers),
         Number(fixtureRules.minliberoifthirteen),
         Boolean(fixtureRules.allowPlayerStaffRoleCumulation),
-        Number.isFinite(Number(fixtureRules.breakBetweenSetsMins)) ? Number(fixtureRules.breakBetweenSetsMins) : 3
+        Number.isFinite(Number(fixtureRules.breakBetweenSetsMins)) ? Number(fixtureRules.breakBetweenSetsMins) : 3,
+        Number.isFinite(Number(fixtureRules.maxTimeoutsRegularSet)) ? Number(fixtureRules.maxTimeoutsRegularSet) : 2,
+        Number.isFinite(Number(fixtureRules.maxTimeoutsDeciderSet)) ? Number(fixtureRules.maxTimeoutsDeciderSet) : 2
     );
     mygame.fixture.home_roster = deepClone(Array.isArray(fixture.home_roster) ? fixture.home_roster : []);
     mygame.fixture.away_roster = deepClone(Array.isArray(fixture.away_roster) ? fixture.away_roster : []);
