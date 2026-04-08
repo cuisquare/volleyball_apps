@@ -15,7 +15,8 @@ const RULE_PRESETS = {
             swapsidesindecider: false,
             nbptsforswap: 8,
             maxnumberplayers: 14,
-            minliberoifthirteen: 1
+            minliberoifthirteen: 1,
+            allowPlayerStaffRoleCumulation: true
         }
     },
     fivb: {
@@ -29,7 +30,8 @@ const RULE_PRESETS = {
             swapsidesindecider: true,
             nbptsforswap: 8,
             maxnumberplayers: 14,
-            minliberoifthirteen: 2
+            minliberoifthirteen: 2,
+            allowPlayerStaffRoleCumulation: true
         }
     }
 };
@@ -38,9 +40,10 @@ const DEFAULT_PROFILE_ID = 'preset:london_league';
 const RULE_PROFILE_STORAGE_KEY = 'volleyball_rules_profiles_v1';
 const MATCH_SNAPSHOT_STORAGE_KEY = 'volleyball_match_snapshot_v1';
 const RULES_JSON_TYPE = 'volleyball_rules';
-const RULES_JSON_VERSION = 1;
+const RULES_JSON_VERSION = 2;
 const TEAM_ROSTER_JSON_TYPE = 'volleyball_team_roster';
-const TEAM_ROSTER_JSON_VERSION = 1;
+const TEAM_ROSTER_JSON_VERSION = 2;
+const BENCH_ROLES = ['Coach', 'Assistant Coach 1', 'Assistant Coach 2', 'Therapist', 'Medical'];
 let savedRuleProfiles = [];
 
 const myfixture = new Fixture(
@@ -125,21 +128,27 @@ const elements = {
     importAwayRosterJsonInput: document.getElementById('import-away-roster-json-input'),
     rosterRulesHint: document.getElementById('roster-rules-hint'),
     homePlayerName: document.getElementById('home-player-name'),
+    homePlayerIsPlayer: document.getElementById('home-player-is-player'),
     homePlayerNumber: document.getElementById('home-player-number'),
     homePlayerRegNumber: document.getElementById('home-player-reg-number'),
+    homePlayerBenchRole: document.getElementById('home-player-bench-role'),
     homePlayerLibero: document.getElementById('home-player-libero'),
     homePlayerCaptain: document.getElementById('home-player-captain'),
     addHomePlayer: document.getElementById('add-home-player'),
     homeRosterCount: document.getElementById('home-roster-count'),
+    homeBenchRosterBody: document.getElementById('home-bench-roster-body'),
     homeRegularRosterBody: document.getElementById('home-regular-roster-body'),
     homeLiberoRosterBody: document.getElementById('home-libero-roster-body'),
     awayPlayerName: document.getElementById('away-player-name'),
+    awayPlayerIsPlayer: document.getElementById('away-player-is-player'),
     awayPlayerNumber: document.getElementById('away-player-number'),
     awayPlayerRegNumber: document.getElementById('away-player-reg-number'),
+    awayPlayerBenchRole: document.getElementById('away-player-bench-role'),
     awayPlayerLibero: document.getElementById('away-player-libero'),
     awayPlayerCaptain: document.getElementById('away-player-captain'),
     addAwayPlayer: document.getElementById('add-away-player'),
     awayRosterCount: document.getElementById('away-roster-count'),
+    awayBenchRosterBody: document.getElementById('away-bench-roster-body'),
     awayRegularRosterBody: document.getElementById('away-regular-roster-body'),
     awayLiberoRosterBody: document.getElementById('away-libero-roster-body'),
     applyPrematchToss: document.getElementById('apply-prematch-toss'),
@@ -190,6 +199,7 @@ const elements = {
     nbptsforswap: document.getElementById('nbptsforswap'),
     maxnumberplayers: document.getElementById('maxnumberplayers'),
     minliberoifthirteen: document.getElementById('minliberoifthirteen'),
+    allowPlayerStaffRoleCumulation: document.getElementById('allow-player-staff-role-cumulation'),
     deciderCard: document.getElementById('decider-toss-card'),
     deciderLeftTeam: document.getElementById('decider-left-team'),
     deciderServingTeam: document.getElementById('decider-serving-team'),
@@ -261,7 +271,8 @@ function getCurrentRulesValuesFromFixture() {
         swapsidesindecider: mygame.fixture.rules.swapsidesindecider,
         nbptsforswap: mygame.fixture.rules.nbptsforswap,
         maxnumberplayers: mygame.fixture.rules.maxnumberplayers,
-        minliberoifthirteen: mygame.fixture.rules.minliberoifthirteen
+        minliberoifthirteen: mygame.fixture.rules.minliberoifthirteen,
+        allowPlayerStaffRoleCumulation: Boolean(mygame.fixture.rules.allowPlayerStaffRoleCumulation)
     };
 }
 
@@ -302,6 +313,14 @@ function setSavedRuleProfilesFromSnapshot(profiles) {
 function syncUiFromLoadedState() {
     elements.homeTeamName.value = mygame.fixture.hometeam_name || '';
     elements.awayTeamName.value = mygame.fixture.awayteam_name || '';
+    setupState.rosters.home = Array.isArray(setupState.rosters.home)
+        ? setupState.rosters.home.map(normalizeExistingRosterEntry).filter(Boolean)
+        : [];
+    setupState.rosters.away = Array.isArray(setupState.rosters.away)
+        ? setupState.rosters.away.map(normalizeExistingRosterEntry).filter(Boolean)
+        : [];
+    mygame.fixture.home_roster = setupState.rosters.home.map((player) => ({ ...player }));
+    mygame.fixture.away_roster = setupState.rosters.away.map((player) => ({ ...player }));
 
     if (mygame.teamA === 'home' || mygame.teamA === 'away') {
         setRadioCheckedValue('setup-left-starter', mygame.teamA);
@@ -328,6 +347,8 @@ function syncUiFromLoadedState() {
     setRulesFormValues(getCurrentRulesValuesFromFixture());
     updateRulesPanelView();
     renderRosters();
+    syncRosterEntryFormState('home');
+    syncRosterEntryFormState('away');
 }
 
 function exportSnapshotToJsonFile(snapshot) {
@@ -542,7 +563,8 @@ function parseImportedRulesPayload(parsed) {
     if (typeof parsed.type === 'string' && parsed.type !== RULES_JSON_TYPE) {
         throw new Error(`Unsupported rules JSON type: ${parsed.type}.`);
     }
-    if (parsed.type === RULES_JSON_TYPE && Number(parsed.version) !== RULES_JSON_VERSION) {
+    const rulesVersion = Number(parsed.version);
+    if (parsed.type === RULES_JSON_TYPE && rulesVersion !== 1 && rulesVersion !== RULES_JSON_VERSION) {
         throw new Error(`Unsupported rules JSON version: ${parsed.version}.`);
     }
 
@@ -610,22 +632,26 @@ function normalizeImportedRosterPlayer(rawPlayer, teamLabel, index) {
         throw new Error(`${teamLabel} roster entry ${index + 1} is missing a player name.`);
     }
 
+    const isPlayer = rawPlayer.isPlayer !== undefined ? Boolean(rawPlayer.isPlayer) : true;
     const shirtNumber = Number.parseInt(rawPlayer.shirtNumber, 10);
-    if (!Number.isInteger(shirtNumber) || shirtNumber <= 0) {
+    const regNumber = rawPlayer.regNumber == null ? '' : String(rawPlayer.regNumber).trim();
+    const benchRole = normalizeBenchRole(rawPlayer.benchRole);
+    const isLibero = isPlayer && Boolean(rawPlayer.isLibero);
+    const isCaptain = isPlayer && Boolean(rawPlayer.isCaptain);
+
+    if (isPlayer && (!Number.isInteger(shirtNumber) || shirtNumber <= 0)) {
         throw new Error(`${teamLabel} roster entry ${index + 1} has invalid shirt number.`);
     }
-
-    const regNumber = rawPlayer.regNumber == null ? '' : String(rawPlayer.regNumber).trim();
-    const isLibero = Boolean(rawPlayer.isLibero);
-    const isCaptain = Boolean(rawPlayer.isCaptain);
 
     return {
         id: '',
         name,
-        shirtNumber,
+        shirtNumber: isPlayer ? shirtNumber : null,
         regNumber,
+        isPlayer,
         isLibero,
-        isCaptain
+        isCaptain,
+        benchRole
     };
 }
 
@@ -674,7 +700,8 @@ function parseImportedSingleRosterPayload(parsed, expectedTeamSide) {
     if (typeof parsed.type === 'string' && parsed.type !== TEAM_ROSTER_JSON_TYPE) {
         throw new Error(`Unsupported team roster JSON type: ${parsed.type}.`);
     }
-    if (parsed.type === TEAM_ROSTER_JSON_TYPE && Number(parsed.version) !== TEAM_ROSTER_JSON_VERSION) {
+    const rosterVersion = Number(parsed.version);
+    if (parsed.type === TEAM_ROSTER_JSON_TYPE && rosterVersion !== 1 && rosterVersion !== TEAM_ROSTER_JSON_VERSION) {
         throw new Error(`Unsupported team roster JSON version: ${parsed.version}.`);
     }
 
@@ -791,7 +818,10 @@ function updateRosterRuleHint() {
     const maxPlayers = getMaxRosterPlayers();
     const minLiberos = getMinLiberosIfThirteen();
     const maxLiberos = getMaxLiberosPerRoster();
-    elements.rosterRulesHint.textContent = `Roster limits: up to ${maxPlayers} players per team, max ${maxLiberos} liberos, and at least 6 non-libero players. If roster has exactly 13 players, at least ${minLiberos} libero(s) are required.`;
+    const cumulationHint = mygame.fixture.rules.allowPlayerStaffRoleCumulation
+        ? 'Player/staff role cumulation is allowed.'
+        : 'Player/staff role cumulation is not allowed.';
+    elements.rosterRulesHint.textContent = `Roster limits: up to ${maxPlayers} players per team, max ${maxLiberos} liberos, and at least 6 non-libero players. If roster has exactly 13 players, at least ${minLiberos} libero(s) are required. ${cumulationHint}`;
 }
 
 function escapeHtml(value) {
@@ -803,16 +833,44 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
+function normalizeBenchRole(rawBenchRole) {
+    const benchRole = rawBenchRole == null ? '' : String(rawBenchRole).trim();
+    return BENCH_ROLES.includes(benchRole) ? benchRole : '';
+}
+
+function normalizeExistingRosterEntry(rawPlayer) {
+    if (!rawPlayer || typeof rawPlayer !== 'object') {
+        return null;
+    }
+
+    const isPlayer = rawPlayer.isPlayer !== undefined ? Boolean(rawPlayer.isPlayer) : true;
+    const shirtNumber = Number.parseInt(rawPlayer.shirtNumber, 10);
+
+    return {
+        id: typeof rawPlayer.id === 'string' ? rawPlayer.id : '',
+        name: typeof rawPlayer.name === 'string' ? rawPlayer.name.trim() : '',
+        shirtNumber: isPlayer && Number.isInteger(shirtNumber) && shirtNumber > 0 ? shirtNumber : null,
+        regNumber: rawPlayer.regNumber == null ? '' : String(rawPlayer.regNumber).trim(),
+        isPlayer,
+        isLibero: isPlayer && Boolean(rawPlayer.isLibero),
+        isCaptain: isPlayer && Boolean(rawPlayer.isCaptain),
+        benchRole: normalizeBenchRole(rawPlayer.benchRole)
+    };
+}
+
 function getRosterInputs(teamSide) {
     if (teamSide === 'home') {
         return {
             nameInput: elements.homePlayerName,
+            isPlayerInput: elements.homePlayerIsPlayer,
             numberInput: elements.homePlayerNumber,
             regInput: elements.homePlayerRegNumber,
+            benchRoleInput: elements.homePlayerBenchRole,
             liberoInput: elements.homePlayerLibero,
             captainInput: elements.homePlayerCaptain,
             addButton: elements.addHomePlayer,
             regularBody: elements.homeRegularRosterBody,
+            benchBody: elements.homeBenchRosterBody,
             liberoBody: elements.homeLiberoRosterBody,
             count: elements.homeRosterCount
         };
@@ -820,37 +878,56 @@ function getRosterInputs(teamSide) {
 
     return {
         nameInput: elements.awayPlayerName,
+        isPlayerInput: elements.awayPlayerIsPlayer,
         numberInput: elements.awayPlayerNumber,
         regInput: elements.awayPlayerRegNumber,
+        benchRoleInput: elements.awayPlayerBenchRole,
         liberoInput: elements.awayPlayerLibero,
         captainInput: elements.awayPlayerCaptain,
         addButton: elements.addAwayPlayer,
         regularBody: elements.awayRegularRosterBody,
+        benchBody: elements.awayBenchRosterBody,
         liberoBody: elements.awayLiberoRosterBody,
         count: elements.awayRosterCount
     };
 }
 
+function syncRosterEntryFormState(teamSide) {
+    const controls = getRosterInputs(teamSide);
+    const isPlayer = controls.isPlayerInput.checked;
+    controls.numberInput.disabled = !isPlayer || setupState.matchStarted;
+    controls.liberoInput.disabled = !isPlayer || setupState.matchStarted;
+    controls.captainInput.disabled = !isPlayer || setupState.matchStarted;
+
+    if (!isPlayer) {
+        controls.liberoInput.checked = false;
+        controls.captainInput.checked = false;
+    }
+}
+
 function renderRoster(teamSide) {
     const roster = setupState.rosters[teamSide];
     const controls = getRosterInputs(teamSide);
+    controls.benchBody.innerHTML = '';
     controls.regularBody.innerHTML = '';
     controls.liberoBody.innerHTML = '';
 
     const maxPlayers = getMaxRosterPlayers();
-    const nonLiberos = roster.filter((player) => !player.isLibero).length;
-    const liberos = roster.length - nonLiberos;
-    const captains = roster.filter((player) => player.isCaptain).length;
-    const missingPlayers = Math.max(0, 6 - roster.length);
+    const players = roster.filter((player) => player.isPlayer);
+    const benchPersonnel = roster.filter((player) => player.benchRole);
+    const nonLiberos = players.filter((player) => !player.isLibero).length;
+    const liberos = players.filter((player) => player.isLibero).length;
+    const captains = players.filter((player) => player.isCaptain).length;
+    const missingPlayers = Math.max(0, 6 - players.length);
     const missingNonLiberos = Math.max(0, 6 - nonLiberos);
     let readinessHint = 'Ready';
     const minLiberosIfThirteen = getMinLiberosIfThirteen();
-    const missingLiberosAtThirteen = roster.length >= 13 ? Math.max(0, minLiberosIfThirteen - liberos) : 0;
+    const missingLiberosAtThirteen = players.length >= 13 ? Math.max(0, minLiberosIfThirteen - liberos) : 0;
     const missingCaptain = captains === 0 ? 1 : 0;
     if (missingPlayers > 0 || missingNonLiberos > 0 || missingLiberosAtThirteen > 0 || missingCaptain > 0) {
         const parts = [];
         if (missingPlayers > 0) {
-            parts.push(`${missingPlayers} total`);
+            parts.push(`${missingPlayers} player(s)`);
         }
         if (missingNonLiberos > 0) {
             parts.push(`${missingNonLiberos} non-libero`);
@@ -863,17 +940,25 @@ function renderRoster(teamSide) {
         }
         readinessHint = `Not ready: need ${parts.join(', ')}`;
     }
-    controls.count.textContent = `${roster.length} / ${maxPlayers} players (Regular ${nonLiberos}, Libero ${liberos}/${getMaxLiberosPerRoster()}, Captain ${captains}) - ${readinessHint}`;
+    controls.count.textContent = `${roster.length} entries (${players.length} / ${maxPlayers} players, Bench ${benchPersonnel.length}, Libero ${liberos}/${getMaxLiberosPerRoster()}, Captain ${captains}) - ${readinessHint}`;
 
     const byShirtNumber = (playerA, playerB) => {
-        if (playerA.shirtNumber !== playerB.shirtNumber) {
-            return playerA.shirtNumber - playerB.shirtNumber;
+        const shirtNumberA = playerA.shirtNumber || 0;
+        const shirtNumberB = playerB.shirtNumber || 0;
+        if (shirtNumberA !== shirtNumberB) {
+            return shirtNumberA - shirtNumberB;
         }
         return playerA.name.localeCompare(playerB.name);
     };
 
-    const regularPlayers = roster.filter((player) => !player.isLibero).sort(byShirtNumber);
-    const liberoPlayers = roster.filter((player) => player.isLibero).sort(byShirtNumber);
+    const regularPlayers = players.filter((player) => !player.isLibero).sort(byShirtNumber);
+    const liberoPlayers = players.filter((player) => player.isLibero).sort(byShirtNumber);
+    const benchPlayers = benchPersonnel.sort((playerA, playerB) => {
+        if (playerA.benchRole !== playerB.benchRole) {
+            return playerA.benchRole.localeCompare(playerB.benchRole);
+        }
+        return playerA.name.localeCompare(playerB.name);
+    });
 
     const renderRows = (targetBody, players, emptyText) => {
         if (players.length === 0) {
@@ -900,13 +985,40 @@ function renderRoster(teamSide) {
         }
     };
 
+    const renderBenchRows = (targetBody, players, emptyText) => {
+        if (players.length === 0) {
+            const emptyRow = document.createElement('tr');
+            emptyRow.innerHTML = `<td class="roster-empty" colspan="6">${emptyText}</td>`;
+            targetBody.appendChild(emptyRow);
+            return;
+        }
+
+        for (const player of players) {
+            const canRemove = !setupState.matchStarted;
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${escapeHtml(player.name)}</td>
+                <td>${escapeHtml(player.benchRole)}</td>
+                <td>${player.isPlayer ? 'Yes' : '-'}</td>
+                <td>${player.isPlayer && player.shirtNumber ? player.shirtNumber : '-'}</td>
+                <td>${player.regNumber ? escapeHtml(player.regNumber) : '-'}</td>
+                <td>
+                    <button class="table-action-btn edit-player-btn" data-team="${teamSide}" data-player-id="${player.id}" type="button" ${canRemove ? '' : 'disabled'}>Edit</button>
+                    <button class="table-action-btn remove-player-btn" data-team="${teamSide}" data-player-id="${player.id}" type="button" ${canRemove ? '' : 'disabled'}>Remove</button>
+                </td>
+            `;
+            targetBody.appendChild(row);
+        }
+    };
+
+    renderBenchRows(controls.benchBody, benchPlayers, 'No bench personnel yet.');
     renderRows(controls.regularBody, regularPlayers, 'No regular players yet.');
     renderRows(controls.liberoBody, liberoPlayers, 'No libero players yet.');
 
     const isEditing = Boolean(setupState.editingRosterPlayerId[teamSide]);
     controls.addButton.textContent = isEditing
-        ? (teamSide === 'home' ? 'Save Home Player' : 'Save Away Player')
-        : (teamSide === 'home' ? 'Add Home Player' : 'Add Away Player');
+        ? (teamSide === 'home' ? 'Save Home Entry' : 'Save Away Entry')
+        : (teamSide === 'home' ? 'Add Home Entry' : 'Add Away Entry');
 }
 
 function renderRosters() {
@@ -922,38 +1034,41 @@ function createDefaultRoster() {
             name: `Player ${i}`,
             shirtNumber: i,
             regNumber: '',
+            isPlayer: true,
             isLibero: false,
-            isCaptain: i === 1
+            isCaptain: i === 1,
+            benchRole: ''
         });
     }
     return roster;
 }
 
 function validateRosterForTeam(teamSide, roster) {
-    if (roster.length < 6) {
+    const players = roster.filter((player) => player.isPlayer);
+    if (players.length < 6) {
         return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster needs at least 6 players.`);
     }
 
     const maxPlayers = getMaxRosterPlayers();
-    if (roster.length > maxPlayers) {
+    if (players.length > maxPlayers) {
         return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster cannot exceed ${maxPlayers} players.`);
     }
 
     const numbers = new Set();
-    for (const player of roster) {
+    for (const player of players) {
         if (numbers.has(player.shirtNumber)) {
             return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster has duplicate shirt number ${player.shirtNumber}.`);
         }
         numbers.add(player.shirtNumber);
     }
 
-    const liberos = roster.filter((player) => player.isLibero).length;
+    const liberos = players.filter((player) => player.isLibero).length;
     const maxLiberos = getMaxLiberosPerRoster();
     if (liberos > maxLiberos) {
         return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster cannot have more than ${maxLiberos} liberos.`);
     }
 
-    const captains = roster.filter((player) => player.isCaptain).length;
+    const captains = players.filter((player) => player.isCaptain).length;
     if (captains < 1) {
         return `${teamSide === 'home' ? 'Home' : 'Away'} roster must include exactly 1 captain.`;
     }
@@ -961,12 +1076,12 @@ function validateRosterForTeam(teamSide, roster) {
         return `${teamSide === 'home' ? 'Home' : 'Away'} roster must include exactly 1 captain.`;
     }
 
-    const nonLiberos = roster.length - liberos;
+    const nonLiberos = players.length - liberos;
     if (nonLiberos < 6) {
         return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster needs at least 6 non-libero players.`);
     }
 
-    if (roster.length >= 13) {
+    if (players.length >= 13) {
         const minLiberos = getMinLiberosIfThirteen();
         if (liberos < minLiberos) {
             return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster needs at least ${minLiberos} libero(s) when 13 players are listed.`);
@@ -978,29 +1093,58 @@ function validateRosterForTeam(teamSide, roster) {
 
 function validateRosterEntryForTeam(teamSide, roster) {
     const teamLabel = teamSide === 'home' ? 'Home' : 'Away';
+    const players = roster.filter((player) => player.isPlayer);
 
     const maxPlayers = getMaxRosterPlayers();
-    if (roster.length > maxPlayers) {
+    if (players.length > maxPlayers) {
         return withRulesContext(`${teamLabel} roster cannot exceed ${maxPlayers} players.`);
     }
 
     const numbers = new Set();
-    for (const player of roster) {
+    for (const player of players) {
         if (numbers.has(player.shirtNumber)) {
             return withRulesContext(`${teamLabel} roster has duplicate shirt number ${player.shirtNumber}.`);
         }
         numbers.add(player.shirtNumber);
     }
 
-    const liberos = roster.filter((player) => player.isLibero).length;
+    const liberos = players.filter((player) => player.isLibero).length;
     const maxLiberos = getMaxLiberosPerRoster();
     if (liberos > maxLiberos) {
         return withRulesContext(`${teamLabel} roster cannot have more than ${maxLiberos} liberos.`);
     }
 
-    const captains = roster.filter((player) => player.isCaptain).length;
+    const captains = players.filter((player) => player.isCaptain).length;
     if (captains > 1) {
         return `${teamLabel} roster cannot have more than 1 captain.`;
+    }
+
+    const usedBenchRoles = new Set();
+    for (const player of roster) {
+        if (!player.name) {
+            return `${teamLabel} roster entry name is required.`;
+        }
+        if (!player.isPlayer && !player.benchRole) {
+            return `${teamLabel} non-player entries must have a bench role.`;
+        }
+        if (player.isPlayer && (!Number.isInteger(player.shirtNumber) || player.shirtNumber <= 0)) {
+            return `${teamLabel} player entries must have a positive shirt number.`;
+        }
+        if (!player.isPlayer && player.isLibero) {
+            return `${teamLabel} libero entries must be players.`;
+        }
+        if (!player.isPlayer && player.isCaptain) {
+            return `${teamLabel} captain entries must be players.`;
+        }
+        if (!mygame.fixture.rules.allowPlayerStaffRoleCumulation && player.isPlayer && player.benchRole) {
+            return withRulesContext(`${teamLabel} entries cannot be both player and bench staff under the current rules.`);
+        }
+        if (player.benchRole) {
+            if (usedBenchRoles.has(player.benchRole)) {
+                return `${teamLabel} roster cannot have more than one ${player.benchRole}.`;
+            }
+            usedBenchRoles.add(player.benchRole);
+        }
     }
 
     return '';
@@ -1009,11 +1153,14 @@ function validateRosterEntryForTeam(teamSide, roster) {
 function clearRosterInputs(teamSide) {
     const controls = getRosterInputs(teamSide);
     controls.nameInput.value = '';
+    controls.isPlayerInput.checked = true;
     controls.numberInput.value = '';
     controls.regInput.value = '';
+    controls.benchRoleInput.value = '';
     controls.liberoInput.checked = false;
     controls.captainInput.checked = false;
     setupState.editingRosterPlayerId[teamSide] = '';
+    syncRosterEntryFormState(teamSide);
     renderRoster(teamSide);
 }
 
@@ -1029,27 +1176,30 @@ function addRosterPlayer(teamSide) {
     const controls = getRosterInputs(teamSide);
     const roster = setupState.rosters[teamSide];
     const editingId = setupState.editingRosterPlayerId[teamSide];
+    const playerCount = roster.filter((player) => player.isPlayer).length;
 
-    if (!editingId && roster.length >= getMaxRosterPlayers()) {
+    if (!editingId && controls.isPlayerInput.checked && playerCount >= getMaxRosterPlayers()) {
         setTeamDetailsFeedback(withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster is at max size for current rules.`), 'error');
         return;
     }
 
     const name = controls.nameInput.value.trim();
+    const isPlayer = controls.isPlayerInput.checked;
     const shirtNumber = Number.parseInt(controls.numberInput.value, 10);
     const regNumber = controls.regInput.value.trim();
-    const isLibero = controls.liberoInput.checked;
-    const isCaptain = controls.captainInput.checked;
+    const benchRole = normalizeBenchRole(controls.benchRoleInput.value);
+    const isLibero = isPlayer && controls.liberoInput.checked;
+    const isCaptain = isPlayer && controls.captainInput.checked;
 
     if (!name) {
-        setTeamDetailsFeedback('Player name is required.', 'error');
+        setTeamDetailsFeedback('Name is required.', 'error');
         return;
     }
-    if (!Number.isInteger(shirtNumber) || shirtNumber <= 0) {
+    if (isPlayer && (!Number.isInteger(shirtNumber) || shirtNumber <= 0)) {
         setTeamDetailsFeedback('Shirt number must be a positive integer.', 'error');
         return;
     }
-    const duplicateNumber = roster.some((player) => player.shirtNumber === shirtNumber && player.id !== editingId);
+    const duplicateNumber = isPlayer && roster.some((player) => player.isPlayer && player.shirtNumber === shirtNumber && player.id !== editingId);
     if (duplicateNumber) {
         setTeamDetailsFeedback(`Shirt number ${shirtNumber} is already used in ${teamSide} roster.`, 'error');
         return;
@@ -1060,19 +1210,23 @@ function addRosterPlayer(teamSide) {
             ? {
                 ...player,
                 name,
-                shirtNumber,
+                shirtNumber: isPlayer ? shirtNumber : null,
                 regNumber,
+                isPlayer,
                 isLibero,
-                isCaptain
+                isCaptain,
+                benchRole
             }
             : player))
         : [...roster, {
             id: `p_${setupState.nextRosterPlayerId}`,
             name,
-            shirtNumber,
+            shirtNumber: isPlayer ? shirtNumber : null,
             regNumber,
+            isPlayer,
             isLibero,
-            isCaptain
+            isCaptain,
+            benchRole
         }];
 
     if (isCaptain) {
@@ -1096,10 +1250,12 @@ function addRosterPlayer(teamSide) {
         roster.push({
             id: `p_${setupState.nextRosterPlayerId++}`,
             name,
-            shirtNumber,
+            shirtNumber: isPlayer ? shirtNumber : null,
             regNumber,
+            isPlayer,
             isLibero,
-            isCaptain
+            isCaptain,
+            benchRole
         });
     }
 
@@ -1107,9 +1263,10 @@ function addRosterPlayer(teamSide) {
     renderRosters();
     clearRosterInputs(teamSide);
     const updatedRoster = setupState.rosters[teamSide];
-    const liberos = updatedRoster.filter((player) => player.isLibero).length;
+    const players = updatedRoster.filter((player) => player.isPlayer);
+    const liberos = players.filter((player) => player.isLibero).length;
     const minLiberosAtThirteen = getMinLiberosIfThirteen();
-    const unmetThirteenRule = updatedRoster.length >= 13 && liberos < minLiberosAtThirteen;
+    const unmetThirteenRule = players.length >= 13 && liberos < minLiberosAtThirteen;
     if (unmetThirteenRule) {
         setTeamDetailsFeedback(
             withRulesContext(
@@ -1119,7 +1276,7 @@ function addRosterPlayer(teamSide) {
         );
     } else {
         setTeamDetailsFeedback(
-            `${teamSide === 'home' ? 'Home' : 'Away'} player ${editingId ? 'updated' : 'added'}. Click Apply Team Details when ready.`,
+            `${teamSide === 'home' ? 'Home' : 'Away'} entry ${editingId ? 'updated' : 'added'}. Click Apply Team Details when ready.`,
             ''
         );
     }
@@ -1140,14 +1297,17 @@ function editRosterPlayer(teamSide, playerId) {
 
     const controls = getRosterInputs(teamSide);
     controls.nameInput.value = player.name;
-    controls.numberInput.value = player.shirtNumber;
+    controls.isPlayerInput.checked = Boolean(player.isPlayer);
+    controls.numberInput.value = player.shirtNumber || '';
     controls.regInput.value = player.regNumber || '';
+    controls.benchRoleInput.value = player.benchRole || '';
     controls.liberoInput.checked = Boolean(player.isLibero);
     controls.captainInput.checked = Boolean(player.isCaptain);
 
     setupState.editingRosterPlayerId[teamSide] = playerId;
+    syncRosterEntryFormState(teamSide);
     renderRoster(teamSide);
-    setTeamDetailsFeedback(`${teamSide === 'home' ? 'Home' : 'Away'} player loaded for edit. Update fields and click Save.`, '');
+    setTeamDetailsFeedback(`${teamSide === 'home' ? 'Home' : 'Away'} entry loaded for edit. Update fields and click Save.`, '');
     updateActionAvailability();
 }
 
@@ -1216,7 +1376,7 @@ function getRosterForTeamId(teamId) {
 }
 
 function getNonLiberoRosterForTeamId(teamId) {
-    return getRosterForTeamId(teamId).filter((player) => !player.isLibero);
+    return getRosterForTeamId(teamId).filter((player) => player.isPlayer && !player.isLibero);
 }
 
 function isCurrentSetInProgress() {
@@ -1552,7 +1712,8 @@ function normalizeRulesValues(rawValues) {
         swapsidesindecider: Boolean(rawValues.swapsidesindecider),
         nbptsforswap: asPositiveInteger(rawValues.nbptsforswap, 'Points for side swap'),
         maxnumberplayers: asPositiveInteger(rawValues.maxnumberplayers, 'Max players'),
-        minliberoifthirteen: asPositiveInteger(rawValues.minliberoifthirteen, 'Min liberos if 13 players', 0)
+        minliberoifthirteen: asPositiveInteger(rawValues.minliberoifthirteen, 'Min liberos if 13 players', 0),
+        allowPlayerStaffRoleCumulation: Boolean(rawValues.allowPlayerStaffRoleCumulation)
     };
 
     if (normalized.nbptsforswap > normalized.decidersetpts) {
@@ -1663,7 +1824,8 @@ function getPresetSummaryLine(values) {
         `Sets to win: ${values.nbsetswin}`,
         `Decider: ${values.decidersetpts} pts`,
         `Swap in decider: ${values.swapsidesindecider ? 'Yes' : 'No'}`,
-        `Min libero if 13: ${values.minliberoifthirteen}`
+        `Min libero if 13: ${values.minliberoifthirteen}`,
+        `Player/staff cumulation: ${values.allowPlayerStaffRoleCumulation ? 'Allowed' : 'Not allowed'}`
     ].join(' | ');
 }
 
@@ -1677,6 +1839,7 @@ function setRulesFormValues(ruleValues) {
     elements.nbptsforswap.value = ruleValues.nbptsforswap;
     elements.maxnumberplayers.value = ruleValues.maxnumberplayers;
     elements.minliberoifthirteen.value = ruleValues.minliberoifthirteen;
+    elements.allowPlayerStaffRoleCumulation.checked = Boolean(ruleValues.allowPlayerStaffRoleCumulation);
 }
 
 function getRulesFromForm() {
@@ -1689,7 +1852,8 @@ function getRulesFromForm() {
         swapsidesindecider: elements.swapsidesindecider.checked,
         nbptsforswap: elements.nbptsforswap.value,
         maxnumberplayers: elements.maxnumberplayers.value,
-        minliberoifthirteen: elements.minliberoifthirteen.value
+        minliberoifthirteen: elements.minliberoifthirteen.value,
+        allowPlayerStaffRoleCumulation: elements.allowPlayerStaffRoleCumulation.checked
     });
 }
 
@@ -1703,7 +1867,8 @@ function applyRules(ruleValues) {
         ruleValues.swapsidesindecider,
         ruleValues.nbptsforswap,
         ruleValues.maxnumberplayers,
-        ruleValues.minliberoifthirteen
+        ruleValues.minliberoifthirteen,
+        ruleValues.allowPlayerStaffRoleCumulation
     );
 }
 
@@ -1731,7 +1896,8 @@ function updateRulesPanelView() {
         elements.swapsidesindecider,
         elements.nbptsforswap,
         elements.maxnumberplayers,
-        elements.minliberoifthirteen
+        elements.minliberoifthirteen,
+        elements.allowPlayerStaffRoleCumulation
     ]) {
         input.disabled = ruleFieldsReadOnly;
     }
@@ -1901,7 +2067,8 @@ function lockPrematchSetup() {
         elements.swapsidesindecider,
         elements.nbptsforswap,
         elements.maxnumberplayers,
-        elements.minliberoifthirteen
+        elements.minliberoifthirteen,
+        elements.allowPlayerStaffRoleCumulation
     ];
 
     for (const input of prematchInputs) {
@@ -1910,13 +2077,17 @@ function lockPrematchSetup() {
 
     for (const input of [
         elements.homePlayerName,
+        elements.homePlayerIsPlayer,
         elements.homePlayerNumber,
         elements.homePlayerRegNumber,
+        elements.homePlayerBenchRole,
         elements.homePlayerLibero,
         elements.homePlayerCaptain,
         elements.awayPlayerName,
+        elements.awayPlayerIsPlayer,
         elements.awayPlayerNumber,
         elements.awayPlayerRegNumber,
+        elements.awayPlayerBenchRole,
         elements.awayPlayerLibero,
         elements.awayPlayerCaptain
     ]) {
@@ -2105,13 +2276,17 @@ function updateActionAvailability() {
     elements.startMatch.disabled = setupState.matchStarted || !hasReadySelections();
     elements.applyTeamDetails.disabled = setupState.matchStarted || !setupState.rulesConfirmed;
     elements.applyPrematchToss.disabled = setupState.matchStarted || !setupState.rulesConfirmed || !setupState.teamDetailsConfirmed;
-    const homeAtMax = setupState.rosters.home.length >= getMaxRosterPlayers();
-    const awayAtMax = setupState.rosters.away.length >= getMaxRosterPlayers();
+    const homeAtMax = setupState.rosters.home.filter((player) => player.isPlayer).length >= getMaxRosterPlayers();
+    const awayAtMax = setupState.rosters.away.filter((player) => player.isPlayer).length >= getMaxRosterPlayers();
     const editingHome = Boolean(setupState.editingRosterPlayerId.home);
     const editingAway = Boolean(setupState.editingRosterPlayerId.away);
 
-    elements.addHomePlayer.disabled = setupState.matchStarted || !setupState.rulesConfirmed || (homeAtMax && !editingHome);
-    elements.addAwayPlayer.disabled = setupState.matchStarted || !setupState.rulesConfirmed || (awayAtMax && !editingAway);
+    elements.addHomePlayer.disabled = setupState.matchStarted
+        || !setupState.rulesConfirmed
+        || (homeAtMax && !editingHome && elements.homePlayerIsPlayer.checked);
+    elements.addAwayPlayer.disabled = setupState.matchStarted
+        || !setupState.rulesConfirmed
+        || (awayAtMax && !editingAway && elements.awayPlayerIsPlayer.checked);
 
     const canManageSet = setupState.matchStarted && !mygame.isGameOver;
     const lineupReady = currentSetLineupConfirmed();
@@ -2494,8 +2669,10 @@ function hookEventListeners() {
         removeRosterPlayer(button.dataset.team, button.dataset.playerId);
     };
     for (const body of [
+        elements.homeBenchRosterBody,
         elements.homeRegularRosterBody,
         elements.homeLiberoRosterBody,
+        elements.awayBenchRosterBody,
         elements.awayRegularRosterBody,
         elements.awayLiberoRosterBody
     ]) {
@@ -2560,9 +2737,18 @@ function hookEventListeners() {
         elements.swapsidesindecider,
         elements.nbptsforswap,
         elements.maxnumberplayers,
-        elements.minliberoifthirteen
+        elements.minliberoifthirteen,
+        elements.allowPlayerStaffRoleCumulation
     ]) {
         input.addEventListener('change', markRulesDirty);
+    }
+
+    for (const teamSide of ['home', 'away']) {
+        const controls = getRosterInputs(teamSide);
+        controls.isPlayerInput.addEventListener('change', () => {
+            syncRosterEntryFormState(teamSide);
+            updateActionAvailability();
+        });
     }
 
     for (const input of [elements.homeTeamName, elements.awayTeamName]) {
@@ -2608,8 +2794,12 @@ function initSetupDefaults() {
     elements.homeTeamName.value = mygame.fixture.hometeam_name;
     elements.awayTeamName.value = mygame.fixture.awayteam_name;
     setupState.teamDetailsConfirmed = false;
-    setupState.rosters.home = Array.isArray(mygame.fixture.home_roster) ? mygame.fixture.home_roster.map((player) => ({ ...player })) : [];
-    setupState.rosters.away = Array.isArray(mygame.fixture.away_roster) ? mygame.fixture.away_roster.map((player) => ({ ...player })) : [];
+    setupState.rosters.home = Array.isArray(mygame.fixture.home_roster)
+        ? mygame.fixture.home_roster.map(normalizeExistingRosterEntry).filter(Boolean)
+        : [];
+    setupState.rosters.away = Array.isArray(mygame.fixture.away_roster)
+        ? mygame.fixture.away_roster.map(normalizeExistingRosterEntry).filter(Boolean)
+        : [];
     setupState.editingRosterPlayerId.home = '';
     setupState.editingRosterPlayerId.away = '';
     setupState.nextRosterPlayerId = 1;
@@ -2646,6 +2836,8 @@ function initSetupDefaults() {
     updateRulesPanelView();
     updateRosterRuleHint();
     renderRosters();
+    syncRosterEntryFormState('home');
+    syncRosterEntryFormState('away');
 
     setSetupFeedback('After rules are confirmed, complete Team Details and rosters, then toss choices to start match.', '');
     setTeamDetailsFeedback('Enter both team names, build both rosters, then click Apply Team Details.', '');

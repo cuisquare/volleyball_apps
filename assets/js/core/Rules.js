@@ -8,12 +8,14 @@ class Rules {
         swapsidesindecider = true, 
         nbptsforswap = 8,
         maxnumberplayers=14,
-        minliberoifthirteen=2
+        minliberoifthirteen=2,
+        allowPlayerStaffRoleCumulation = true
     ) {
         this.regsetpts = regsetpts;
         this.nbsetswin = nbsetswin;
         this.maxnumberplayers = maxnumberplayers;
         this.minliberoifthirteen = minliberoifthirteen;
+        this.allowPlayerStaffRoleCumulation = allowPlayerStaffRoleCumulation;
 
         this.decidersetpts = decidersetpts;
 

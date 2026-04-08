@@ -77,7 +77,8 @@ export function buildSnapshot({ mygame, setupState, savedRuleProfiles }) {
                 swapsidesindecider: mygame.fixture.rules.swapsidesindecider,
                 nbptsforswap: mygame.fixture.rules.nbptsforswap,
                 maxnumberplayers: mygame.fixture.rules.maxnumberplayers,
-                minliberoifthirteen: mygame.fixture.rules.minliberoifthirteen
+                minliberoifthirteen: mygame.fixture.rules.minliberoifthirteen,
+                allowPlayerStaffRoleCumulation: mygame.fixture.rules.allowPlayerStaffRoleCumulation
             },
             home_roster: deepClone(mygame.fixture.home_roster || []),
             away_roster: deepClone(mygame.fixture.away_roster || [])
@@ -154,7 +155,8 @@ export function applySnapshot({ snapshot, mygame, setupState, setSavedRuleProfil
         Boolean(fixtureRules.swapsidesindecider),
         Number(fixtureRules.nbptsforswap),
         Number(fixtureRules.maxnumberplayers),
-        Number(fixtureRules.minliberoifthirteen)
+        Number(fixtureRules.minliberoifthirteen),
+        Boolean(fixtureRules.allowPlayerStaffRoleCumulation)
     );
     mygame.fixture.home_roster = deepClone(Array.isArray(fixture.home_roster) ? fixture.home_roster : []);
     mygame.fixture.away_roster = deepClone(Array.isArray(fixture.away_roster) ? fixture.away_roster : []);
