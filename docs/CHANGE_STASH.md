@@ -5,6 +5,8 @@ Track planned work across devices and sessions.
 Update this file whenever an item is added, completed, or reprioritized.
 
 ## Active Items
+
+### Scoring App
 - [ ] Player substitutions during sets.
 - [ ] End-of-set / mid-game / end-game output reporting.
 - [ ] In-game display of player positions on court at all times.
@@ -19,7 +21,18 @@ Update this file whenever an item is added, completed, or reprioritized.
   - FIVB: 2 all sets
   - London League: 2 regular sets, 0 decider set
 
+### Positions App
+- [ ] Saved named formations/patterns for persisted court layouts, linked to role symbols across rotations.
+- [ ] CSS organization review to mirror `current` / `dev` / `core` app structure more clearly.
+- [ ] UI/UX review for persistence controls and saved-layout management.
+
+### Shared / Repo-Wide
+- [ ] Decide whether `docs/SESSION_HANDOFF.md` should stay as a rolling single-session file or become app-scoped.
+- [ ] Review whether CSS files should follow the same `current` / `dev` / `core` structure as JS where applicable.
+
 ## Completed Items
+
+### Scoring App
 - [x] Rules JSON import/export from Rules panel.
 - [x] Team roster JSON import/export per team (Home/Away separate buttons).
 - [x] Removed combined two-team roster import/export.
@@ -31,6 +44,13 @@ Update this file whenever an item is added, completed, or reprioritized.
 - [x] Team Details layout updated to 2 team panels with team-name input at top of each panel.
 - [x] Save/load game state and history (quick save/load + JSON import/export) with pre-toss restore fix.
 
+### Positions App
+- [x] Split positions app JS into `current`, `dev`, and `core` structure.
+- [x] Added responsive court resizing for the dev positions app.
+- [x] Added persistent per-rotation court layout memory in dev mode.
+- [x] Added broader dev session persistence for lineup, roster, appearance, court side, and court orientation.
+
 ## Notes
+- Use app-specific sections so this file can track multiple workstreams in the same repo.
 - If scope changes, add a short rationale under the item.
 - Keep completed items here until merged/released, then optionally archive.

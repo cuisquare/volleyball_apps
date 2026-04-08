@@ -3,6 +3,10 @@
 ## Purpose
 Use this file before switching devices so the next session can resume fast.
 
+## Scope
+- This file is session-specific and may refer to only one app/workstream at a time.
+- Use `docs/CHANGE_STASH.md` for the longer-lived cross-app backlog.
+
 ## Current Snapshot
 - Date: 2026-04-08
 - Branch: `scoring_app_history_load_work`
