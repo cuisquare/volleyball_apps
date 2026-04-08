@@ -16,6 +16,7 @@ Update this file whenever an item is added, completed, or reprioritized.
 - [ ] Game penalties: in-app recording at event time (type + recipient: team/player/coach/bench).
 - [ ] Add an optional non-libero player `subrole` field selected from fully spelled role values `Setter`, `Outside Hitter`, `Opposite`, and `Middle Blocker`, and display the corresponding symbols `S`, `OH`, `OP`, and `MB` in the roster tables.
 - [ ] Introduce a pending set-start workflow where applying a lineup only stages the next set, and a `Start Set` action finalizes the lineup and begins play; consider using `Start Set` as the universal replacement for `Start Match`, or at least from set 2 onward.
+- [ ] Introduce match-wide action undo/redo that restores full prior states rather than only current-set points, and move the undo/redo controls from the scoreboard into a globally visible app-level controls section alongside save/load and JSON import/export.
 - [ ] Set start/end time input and tracking.
 - [ ] Timeout input during sets with rule validation.
 - [ ] Rules support for timeouts-per-set with decider differences:
