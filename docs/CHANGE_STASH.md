@@ -14,7 +14,7 @@ Update this file whenever an item is added, completed, or reprioritized.
 - [ ] Codebase refactor review: split responsibilities from `main_game_scoring.js` into classes/modules.
 - [ ] Game penalties: data model/history support.
 - [ ] Game penalties: in-app recording at event time (type + recipient: team/player/coach/bench).
-- [ ] Team details extension with bench personnel input (coach, assistant coach, technical, medical), below liberos.
+- [ ] Add an optional non-libero player `subrole` field selected from fully spelled role values `Setter`, `Outside Hitter`, `Opposite`, and `Middle Blocker`, and display the corresponding symbols `S`, `OH`, `OP`, and `MB` in the roster tables.
 - [ ] Set start/end time input and tracking.
 - [ ] Timeout input during sets with rule validation.
 - [ ] Rules support for timeouts-per-set with decider differences:
@@ -42,6 +42,7 @@ Update this file whenever an item is added, completed, or reprioritized.
   - rules exports include rules/profile label
   - full snapshot exports include team names + match stage + timestamp
 - [x] Team Details layout updated to 2 team panels with team-name input at top of each panel.
+- [x] Team details extension with bench personnel input and display, including rules-controlled player/staff role cumulation.
 - [x] Save/load game state and history (quick save/load + JSON import/export) with pre-toss restore fix.
 
 ### Positions App

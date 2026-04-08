@@ -10,57 +10,73 @@ Use this file before switching devices so the next session can resume fast.
 ## Current Snapshot
 - Date: 2026-04-08
 - Branch: `scoring_app_history_load_work`
-- Last commit: `6ad7925 Refine setup JSON workflows and team-details layout for clearer roster management`
-- Working tree status: untracked docs folder (`?? docs/`) pending commit.
+- Last commit: `0725b63 Extend scoring team details so roster entries can represent players, bench staff, or both, with new bench-role input and a dedicated Bench Personnel section above regular players and liberos.`
+- Working tree status: `docs/CHANGE_STASH.md` modified after the last commit to record delivered work and add the new scoring-app subrole backlog item.
 
 ## In Progress
-- Task being worked on: JSON import/export UX and Team Details panel layout cleanup.
+- Task being worked on: Scoring-app team-details expansion and follow-up planning.
 - What was done this session:
-  - Added Rules panel JSON import/export.
-  - Added per-team roster JSON import/export (Home/Away separate).
-  - Removed combined two-team roster import/export flow.
-  - Added pre-match-only guard for setup imports (rules + roster); exports remain always available.
-  - Updated export filenames:
-    - rules file names include rules/profile label
-    - roster file names include team name
-    - full match snapshot file names include both team names + stage + timestamp
-  - Updated Team Details layout to two team cards only, with team-name input at top of each team card.
-  - Removed roster side metadata from single-team roster JSON (import destination determines side).
-  - Added cross-device tracking docs:
-    - `docs/CHANGE_STASH.md`
-    - `docs/SESSION_HANDOFF.md`
+  - Added bench personnel support to the scoring app Team Details flow.
+  - Reworked roster entry input into a unified person-entry form:
+    - `Name`
+    - `Is Player`
+    - `Shirt Number`
+    - `Reg Number`
+    - `Libero`
+    - `Captain`
+    - `Bench Role`
+  - Added bench-role values:
+    - `Coach`
+    - `Assistant Coach 1`
+    - `Assistant Coach 2`
+    - `Therapist`
+    - `Medical`
+  - Added a new `Bench Personnel` section above `Regular Players` and `Liberos`.
+  - Added rule parameter `allowPlayerStaffRoleCumulation` and wired it through:
+    - presets
+    - rules form
+    - rules JSON import/export
+    - match snapshots
+  - Kept roster JSON backward-compatible with older exports.
+  - Updated `docs/CHANGE_STASH.md` so the delivered bench-personnel item is marked complete.
 - What is left to do:
-  - Manual verification pass in browser for all new JSON paths after the latest refinements.
-  - Commit docs files (and any remaining uncommitted changes) when satisfied.
+  - Commit the current docs-only change to `docs/CHANGE_STASH.md` and this refreshed handoff file.
+  - Decide whether the next scoring step should be:
+    - optional non-libero `subrole` support in roster tables
+    - or another stash item
 
 ## Next Recommended Step
-1. Run a focused UI test matrix:
-   - export/import rules JSON pre-match
-   - export/import home roster JSON pre-match
-   - export/import away roster JSON pre-match
-   - verify imports are blocked after `Start Match`
-   - verify full snapshot export filename stage tags (`pre_match`, `set_n`, `game_over`)
-2. If all pass, commit current state including `docs/`.
+1. Commit the current docs updates.
+2. If continuing scoring work, pick up the new stash item:
+   - Add optional non-libero player `subrole` selected from `Setter`, `Outside Hitter`, `Opposite`, `Middle Blocker`
+   - Display corresponding roster symbols `S`, `OH`, `OP`, `MB`
+3. When implementing that feature, reuse the current roster-entry expansion pattern rather than introducing a separate model just for subroles.
 
 ## Validation / Testing
 - What was tested:
-  - Per user feedback: recent JSON flows and layout changes were reported as working.
+  - User manually verified the new scoring Team Details behavior in-browser.
+  - Bench personnel display and roster editing worked as expected.
+  - Rules-controlled player/staff role cumulation worked.
+  - Quick save/load and roster/rules persistence behavior appeared correct after the schema extension.
 - What still needs testing:
-  - Team roster import when team name is empty in JSON.
-  - Rules import interaction with unsaved custom values currently shown in the form.
-  - Filename token sanitization for special characters/accented team names.
+  - Additional manual check of older roster JSON imports into the new roster-entry model.
+  - Saved custom rules/profile interactions after the new cumulation field was added.
 - Known edge cases:
-  - Importing team roster JSON intentionally does not carry home/away identity; destination button controls side.
-  - Roster imports mark team details/toss/lineups as needing reconfirmation by design.
+  - Bench-role uniqueness is enforced per team.
+  - Non-player entries must have a bench role.
+  - If cumulation is disabled in rules, a single entry cannot be both player and bench staff.
 
 ## Key Files Touched
 - `assets/js/current/main_game_scoring.js`
+- `assets/js/core/Rules.js`
+- `assets/js/core/MatchStateSerializer.js`
 - `game_scoring/index.html`
-- `assets/css/styles_scoring.css`
+- `docs/CHANGE_STASH.md`
 
 ## Risks / Watchouts
-- `assets/js/current/main_game_scoring.js` remains large; feature work is increasing complexity.
-- Keep JSON schema changes backward-aware if older exported files are expected to be loaded.
+- `assets/js/current/main_game_scoring.js` is still large and handling multiple concerns.
+- Any future roster schema additions should stay backward-aware for older roster JSON and snapshots.
+- The scoring roster model now represents both players and non-player staff, so any later code that assumes every roster entry is a player should be reviewed carefully.
 
 ## Resume Prompt (Copy/Paste)
-Read `docs/CHANGE_STASH.md` and `docs/SESSION_HANDOFF.md`, summarize current state, then continue with: <task>.
+Read `docs/CHANGE_STASH.md` and `docs/SESSION_HANDOFF.md`, summarize current scoring-app state, then continue with: <task>.
