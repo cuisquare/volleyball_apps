@@ -36,15 +36,20 @@ function ensureObject(rawValue, fallback = {}) {
 
 function ensureHistory(rawHistory) {
     const history = ensureObject(rawHistory, {});
+    const placeholders = ensureObject(history.placeholders, {
+        substitutions: [],
+        penalties: [],
+        setTimes: []
+    });
     return {
         version: typeof history.version === 'number' ? history.version : 1,
         events: Array.isArray(history.events) ? deepClone(history.events) : [],
         sets: Array.isArray(history.sets) ? deepClone(history.sets) : [],
-        placeholders: ensureObject(history.placeholders, {
-            substitutions: [],
-            penalties: [],
-            setTimes: []
-        })
+        placeholders: {
+            substitutions: Array.isArray(placeholders.substitutions) ? deepClone(placeholders.substitutions) : [],
+            penalties: Array.isArray(placeholders.penalties) ? deepClone(placeholders.penalties) : [],
+            setTimes: Array.isArray(placeholders.setTimes) ? deepClone(placeholders.setTimes) : []
+        }
     };
 }
 
@@ -78,7 +83,8 @@ export function buildSnapshot({ mygame, setupState, savedRuleProfiles }) {
                 nbptsforswap: mygame.fixture.rules.nbptsforswap,
                 maxnumberplayers: mygame.fixture.rules.maxnumberplayers,
                 minliberoifthirteen: mygame.fixture.rules.minliberoifthirteen,
-                allowPlayerStaffRoleCumulation: mygame.fixture.rules.allowPlayerStaffRoleCumulation
+                allowPlayerStaffRoleCumulation: mygame.fixture.rules.allowPlayerStaffRoleCumulation,
+                breakBetweenSetsMins: mygame.fixture.rules.breakBetweenSetsMins
             },
             home_roster: deepClone(mygame.fixture.home_roster || []),
             away_roster: deepClone(mygame.fixture.away_roster || [])
@@ -156,7 +162,8 @@ export function applySnapshot({ snapshot, mygame, setupState, setSavedRuleProfil
         Number(fixtureRules.nbptsforswap),
         Number(fixtureRules.maxnumberplayers),
         Number(fixtureRules.minliberoifthirteen),
-        Boolean(fixtureRules.allowPlayerStaffRoleCumulation)
+        Boolean(fixtureRules.allowPlayerStaffRoleCumulation),
+        Number.isFinite(Number(fixtureRules.breakBetweenSetsMins)) ? Number(fixtureRules.breakBetweenSetsMins) : 3
     );
     mygame.fixture.home_roster = deepClone(Array.isArray(fixture.home_roster) ? fixture.home_roster : []);
     mygame.fixture.away_roster = deepClone(Array.isArray(fixture.away_roster) ? fixture.away_roster : []);

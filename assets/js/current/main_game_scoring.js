@@ -16,7 +16,8 @@ const RULE_PRESETS = {
             nbptsforswap: 8,
             maxnumberplayers: 14,
             minliberoifthirteen: 1,
-            allowPlayerStaffRoleCumulation: true
+            allowPlayerStaffRoleCumulation: true,
+            breakBetweenSetsMins: 3
         }
     },
     fivb: {
@@ -31,7 +32,8 @@ const RULE_PRESETS = {
             nbptsforswap: 8,
             maxnumberplayers: 14,
             minliberoifthirteen: 2,
-            allowPlayerStaffRoleCumulation: true
+            allowPlayerStaffRoleCumulation: true,
+            breakBetweenSetsMins: 3
         }
     }
 };
@@ -199,6 +201,7 @@ const elements = {
     nbptsforswap: document.getElementById('nbptsforswap'),
     maxnumberplayers: document.getElementById('maxnumberplayers'),
     minliberoifthirteen: document.getElementById('minliberoifthirteen'),
+    breakBetweenSetsMins: document.getElementById('breakbetweensetsmins'),
     allowPlayerStaffRoleCumulation: document.getElementById('allow-player-staff-role-cumulation'),
     deciderCard: document.getElementById('decider-toss-card'),
     deciderLeftTeam: document.getElementById('decider-left-team'),
@@ -272,6 +275,7 @@ function getCurrentRulesValuesFromFixture() {
         nbptsforswap: mygame.fixture.rules.nbptsforswap,
         maxnumberplayers: mygame.fixture.rules.maxnumberplayers,
         minliberoifthirteen: mygame.fixture.rules.minliberoifthirteen,
+        breakBetweenSetsMins: mygame.fixture.rules.breakBetweenSetsMins,
         allowPlayerStaffRoleCumulation: Boolean(mygame.fixture.rules.allowPlayerStaffRoleCumulation)
     };
 }
@@ -1719,6 +1723,92 @@ function markLineupDirtyFromFormChange(changedSelect = null) {
     }
 }
 
+function padTimePart(value) {
+    return String(value).padStart(2, '0');
+}
+
+function formatTimeFromDate(date) {
+    return `${padTimePart(date.getHours())}:${padTimePart(date.getMinutes())}`;
+}
+
+function parseTimeToDate(timeValue) {
+    if (typeof timeValue !== 'string') {
+        return null;
+    }
+    const match = timeValue.match(/^(\d{2}):(\d{2})$/);
+    if (!match) {
+        return null;
+    }
+    const date = new Date();
+    date.setSeconds(0, 0);
+    date.setHours(Number.parseInt(match[1], 10), Number.parseInt(match[2], 10), 0, 0);
+    return date;
+}
+
+function getRoundedCurrentTimeString() {
+    const date = new Date();
+    const shouldRoundUp = date.getSeconds() >= 30;
+    date.setSeconds(0, 0);
+    if (shouldRoundUp) {
+        date.setMinutes(date.getMinutes() + 1);
+    }
+    return formatTimeFromDate(date);
+}
+
+function addMinutesToTimeString(timeValue, minutesToAdd) {
+    const date = parseTimeToDate(timeValue);
+    if (!date) {
+        return '';
+    }
+    date.setMinutes(date.getMinutes() + minutesToAdd);
+    return formatTimeFromDate(date);
+}
+
+function getLaterTimeString(timeValueA, timeValueB) {
+    const dateA = parseTimeToDate(timeValueA);
+    const dateB = parseTimeToDate(timeValueB);
+    if (!dateA && !dateB) {
+        return '';
+    }
+    if (!dateA) {
+        return timeValueB || '';
+    }
+    if (!dateB) {
+        return timeValueA || '';
+    }
+    return dateA >= dateB ? timeValueA : timeValueB;
+}
+
+function getSetTimeEntry(setNumber) {
+    if (!mygame.history?.placeholders?.setTimes) {
+        return null;
+    }
+    return mygame.history.placeholders.setTimes.find((entry) => entry.setNumber === setNumber) || null;
+}
+
+function getOfficialAndActualStartTimesForSet(setNumber) {
+    const actualStartTime = getRoundedCurrentTimeString();
+    if (setNumber <= 1) {
+        return {
+            startTime: actualStartTime,
+            actualStartTime
+        };
+    }
+
+    const previousEntry = getSetTimeEntry(setNumber - 1);
+    if (!previousEntry || !previousEntry.endTime) {
+        return {
+            startTime: actualStartTime,
+            actualStartTime
+        };
+    }
+
+    return {
+        startTime: addMinutesToTimeString(previousEntry.endTime, mygame.fixture.rules.breakBetweenSetsMins) || actualStartTime,
+        actualStartTime
+    };
+}
+
 function asPositiveInteger(value, fieldName, minValue = 1) {
     const parsed = Number.parseInt(value, 10);
     if (!Number.isInteger(parsed) || parsed < minValue) {
@@ -1738,6 +1828,7 @@ function normalizeRulesValues(rawValues) {
         nbptsforswap: asPositiveInteger(rawValues.nbptsforswap, 'Points for side swap'),
         maxnumberplayers: asPositiveInteger(rawValues.maxnumberplayers, 'Max players'),
         minliberoifthirteen: asPositiveInteger(rawValues.minliberoifthirteen, 'Min liberos if 13 players', 0),
+        breakBetweenSetsMins: asPositiveInteger(rawValues.breakBetweenSetsMins ?? 3, 'Official break between sets', 0),
         allowPlayerStaffRoleCumulation: Boolean(rawValues.allowPlayerStaffRoleCumulation)
     };
 
@@ -1850,6 +1941,7 @@ function getPresetSummaryLine(values) {
         `Decider: ${values.decidersetpts} pts`,
         `Swap in decider: ${values.swapsidesindecider ? 'Yes' : 'No'}`,
         `Min libero if 13: ${values.minliberoifthirteen}`,
+        `Break between sets: ${values.breakBetweenSetsMins} min`,
         `Player/staff cumulation: ${values.allowPlayerStaffRoleCumulation ? 'Allowed' : 'Not allowed'}`
     ].join(' | ');
 }
@@ -1864,6 +1956,7 @@ function setRulesFormValues(ruleValues) {
     elements.nbptsforswap.value = ruleValues.nbptsforswap;
     elements.maxnumberplayers.value = ruleValues.maxnumberplayers;
     elements.minliberoifthirteen.value = ruleValues.minliberoifthirteen;
+    elements.breakBetweenSetsMins.value = ruleValues.breakBetweenSetsMins;
     elements.allowPlayerStaffRoleCumulation.checked = Boolean(ruleValues.allowPlayerStaffRoleCumulation);
 }
 
@@ -1878,6 +1971,7 @@ function getRulesFromForm() {
         nbptsforswap: elements.nbptsforswap.value,
         maxnumberplayers: elements.maxnumberplayers.value,
         minliberoifthirteen: elements.minliberoifthirteen.value,
+        breakBetweenSetsMins: elements.breakBetweenSetsMins.value,
         allowPlayerStaffRoleCumulation: elements.allowPlayerStaffRoleCumulation.checked
     });
 }
@@ -1893,7 +1987,8 @@ function applyRules(ruleValues) {
         ruleValues.nbptsforswap,
         ruleValues.maxnumberplayers,
         ruleValues.minliberoifthirteen,
-        ruleValues.allowPlayerStaffRoleCumulation
+        ruleValues.allowPlayerStaffRoleCumulation,
+        ruleValues.breakBetweenSetsMins
     );
 }
 
@@ -1922,6 +2017,7 @@ function updateRulesPanelView() {
         elements.nbptsforswap,
         elements.maxnumberplayers,
         elements.minliberoifthirteen,
+        elements.breakBetweenSetsMins,
         elements.allowPlayerStaffRoleCumulation
     ]) {
         input.disabled = ruleFieldsReadOnly;
@@ -2101,6 +2197,7 @@ function lockPrematchSetup() {
         elements.nbptsforswap,
         elements.maxnumberplayers,
         elements.minliberoifthirteen,
+        elements.breakBetweenSetsMins,
         elements.allowPlayerStaffRoleCumulation
     ];
 
@@ -2561,9 +2658,11 @@ function startCurrentSet() {
 
     const startingSetNumber = mygame.getCurrentSet();
     const firstSetStart = !setupState.matchStarted;
+    const startTimes = getOfficialAndActualStartTimesForSet(startingSetNumber);
     setupState.matchStarted = true;
     ensureLineupStateForCurrentSet();
     markCurrentSetStarted();
+    mygame.recordSetStartTime(startingSetNumber, startTimes.startTime, startTimes.actualStartTime);
     setLineupsFeedback('', '');
     if (firstSetStart) {
         lockPrematchSetup();
@@ -2578,12 +2677,17 @@ function startCurrentSet() {
     mygame.addExternalEvent('set_started', {
         setNumber: startingSetNumber,
         firstSetStart,
+        startTime: startTimes.startTime,
+        actualStartTime: startTimes.actualStartTime,
         teamA: mygame.teamA,
         teamB: mygame.teamB
     });
 
-    setSetupFeedback(`Set ${startingSetNumber} started. Lineups are now locked for this set.`, 'success');
-    setLineupsFeedback(`Set ${startingSetNumber} started. Lineups are now locked for this set.`, 'success');
+    const delayNote = startTimes.startTime === startTimes.actualStartTime
+        ? ''
+        : ` Actual start recorded as ${startTimes.actualStartTime}.`;
+    setSetupFeedback(`Set ${startingSetNumber} started at ${startTimes.startTime}. Lineups are now locked for this set.${delayNote}`, 'success');
+    setLineupsFeedback(`Set ${startingSetNumber} started at ${startTimes.startTime}. Lineups are now locked for this set.${delayNote}`, 'success');
     updateSetsElements();
 }
 
@@ -2677,9 +2781,21 @@ function applyTeamDetails() {
 }
 
 function completeCurrentSet() {
+    const completedSetNumber = mygame.getCurrentSet();
+    const actualEndTime = getRoundedCurrentTimeString();
+    const setTimeEntry = getSetTimeEntry(completedSetNumber);
+    const minimumOfficialEndTime = setTimeEntry?.startTime
+        ? addMinutesToTimeString(setTimeEntry.startTime, 1)
+        : '';
+    const endTime = getLaterTimeString(actualEndTime, minimumOfficialEndTime);
+    mygame.recordSetEndTime(completedSetNumber, endTime, actualEndTime);
     mygame.completeSet();
     ensureLineupStateForCurrentSet();
-    setLineupsFeedback('', '');
+    const endDelayNote = actualEndTime && endTime !== actualEndTime
+        ? ` Actual end recorded as ${actualEndTime}.`
+        : '';
+    setLineupsFeedback(`Set ${completedSetNumber} completed at ${endTime}.${endDelayNote}`, 'success');
+    setSetupFeedback(`Set ${completedSetNumber} completed at ${endTime}. Stage lineups for Set ${getCurrentSetNumberForLineup()} when ready.${endDelayNote}`, 'success');
     updateSetsElements();
 }
 
@@ -2797,6 +2913,7 @@ function hookEventListeners() {
         elements.nbptsforswap,
         elements.maxnumberplayers,
         elements.minliberoifthirteen,
+        elements.breakBetweenSetsMins,
         elements.allowPlayerStaffRoleCumulation
     ]) {
         input.addEventListener('change', markRulesDirty);

@@ -9,13 +9,15 @@ class Rules {
         nbptsforswap = 8,
         maxnumberplayers=14,
         minliberoifthirteen=2,
-        allowPlayerStaffRoleCumulation = true
+        allowPlayerStaffRoleCumulation = true,
+        breakBetweenSetsMins = 3
     ) {
         this.regsetpts = regsetpts;
         this.nbsetswin = nbsetswin;
         this.maxnumberplayers = maxnumberplayers;
         this.minliberoifthirteen = minliberoifthirteen;
         this.allowPlayerStaffRoleCumulation = allowPlayerStaffRoleCumulation;
+        this.breakBetweenSetsMins = breakBetweenSetsMins;
 
         this.decidersetpts = decidersetpts;
 

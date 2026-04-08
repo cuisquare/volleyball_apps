@@ -596,6 +596,44 @@ class Game {
         this.logEvent(type, payload);
     }
 
+    ensureSetTimeEntry(setNumber) {
+        if (!Number.isInteger(setNumber) || setNumber < 1) {
+            return null;
+        }
+
+        let entry = this.history.placeholders.setTimes.find((item) => item.setNumber === setNumber);
+        if (!entry) {
+            entry = {
+                setNumber,
+                startTime: '',
+                actualStartTime: '',
+                endTime: '',
+                actualEndTime: ''
+            };
+            this.history.placeholders.setTimes.push(entry);
+            this.history.placeholders.setTimes.sort((a, b) => a.setNumber - b.setNumber);
+        }
+        return entry;
+    }
+
+    recordSetStartTime(setNumber, startTime, actualStartTime) {
+        const entry = this.ensureSetTimeEntry(setNumber);
+        if (!entry) {
+            return;
+        }
+        entry.startTime = startTime || '';
+        entry.actualStartTime = actualStartTime || '';
+    }
+
+    recordSetEndTime(setNumber, endTime, actualEndTime = '') {
+        const entry = this.ensureSetTimeEntry(setNumber);
+        if (!entry) {
+            return;
+        }
+        entry.endTime = endTime || '';
+        entry.actualEndTime = actualEndTime || '';
+    }
+
 
 }
 
