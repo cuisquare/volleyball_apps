@@ -39,10 +39,24 @@
           <label for="home-player-name">Name</label>
           <input id="home-player-name" type="text" maxlength="60" placeholder="Full name">
         </div>
-        <label class="radio-row">
-          <input id="home-player-is-player" type="checkbox" checked>
-          Is Player
-        </label>
+        <div class="checkbox-group">
+          <label class="radio-row">
+            <input id="home-player-is-player" type="checkbox" checked>
+            Is Player
+          </label>
+          <label class="radio-row">
+            <input id="home-player-rostered" type="checkbox" checked>
+            Rostered For This Game
+          </label>
+          <label class="radio-row">
+            <input id="home-player-libero" type="checkbox">
+            Libero
+          </label>
+          <label class="radio-row">
+            <input id="home-player-captain" type="checkbox">
+            Captain
+          </label>
+        </div>
         <div class="form-row">
           <label for="home-player-number">Shirt Number</label>
           <input id="home-player-number" type="number" min="1" step="1" placeholder="e.g. 8">
@@ -62,16 +76,10 @@
             <option value="Medical">Medical</option>
           </select>
         </div>
-        <label class="radio-row">
-          <input id="home-player-libero" type="checkbox">
-          Libero
-        </label>
-        <label class="radio-row">
-          <input id="home-player-captain" type="checkbox">
-          Captain
-        </label>
         <div class="setup-actions">
           <button id="add-home-player" type="button">Add Home Entry</button>
+          <button id="cancel-home-player-edit" type="button" class="hidden">Cancel</button>
+          <button id="remove-home-player-edit" type="button" class="hidden danger-btn">Remove Entry</button>
         </div>
         <div class="setup-actions">
           <button id="export-home-roster-json" type="button">Export Home Roster JSON</button>
@@ -125,6 +133,22 @@
             <tbody id="home-libero-roster-body"></tbody>
           </table>
         </div>
+        <h4 class="roster-section-title roster-section-title-muted">Eligible Players / Unrostered Players</h4>
+        <div class="roster-table-wrap roster-table-wrap-muted">
+          <table class="roster-table roster-table-muted">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Role</th>
+                <th>#</th>
+                <th>Reg</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="home-unrostered-roster-body"></tbody>
+          </table>
+        </div>
       </div>
       <div class="setup-card">
         <h3>Away Roster</h3>
@@ -136,10 +160,24 @@
           <label for="away-player-name">Name</label>
           <input id="away-player-name" type="text" maxlength="60" placeholder="Full name">
         </div>
-        <label class="radio-row">
-          <input id="away-player-is-player" type="checkbox" checked>
-          Is Player
-        </label>
+        <div class="checkbox-group">
+          <label class="radio-row">
+            <input id="away-player-is-player" type="checkbox" checked>
+            Is Player
+          </label>
+          <label class="radio-row">
+            <input id="away-player-rostered" type="checkbox" checked>
+            Rostered For This Game
+          </label>
+          <label class="radio-row">
+            <input id="away-player-libero" type="checkbox">
+            Libero
+          </label>
+          <label class="radio-row">
+            <input id="away-player-captain" type="checkbox">
+            Captain
+          </label>
+        </div>
         <div class="form-row">
           <label for="away-player-number">Shirt Number</label>
           <input id="away-player-number" type="number" min="1" step="1" placeholder="e.g. 12">
@@ -159,16 +197,10 @@
             <option value="Medical">Medical</option>
           </select>
         </div>
-        <label class="radio-row">
-          <input id="away-player-libero" type="checkbox">
-          Libero
-        </label>
-        <label class="radio-row">
-          <input id="away-player-captain" type="checkbox">
-          Captain
-        </label>
         <div class="setup-actions">
           <button id="add-away-player" type="button">Add Away Entry</button>
+          <button id="cancel-away-player-edit" type="button" class="hidden">Cancel</button>
+          <button id="remove-away-player-edit" type="button" class="hidden danger-btn">Remove Entry</button>
         </div>
         <div class="setup-actions">
           <button id="export-away-roster-json" type="button">Export Away Roster JSON</button>
@@ -220,6 +252,22 @@
               </tr>
             </thead>
             <tbody id="away-libero-roster-body"></tbody>
+          </table>
+        </div>
+        <h4 class="roster-section-title roster-section-title-muted">Eligible Players / Unrostered Players</h4>
+        <div class="roster-table-wrap roster-table-wrap-muted">
+          <table class="roster-table roster-table-muted">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Role</th>
+                <th>#</th>
+                <th>Reg</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="away-unrostered-roster-body"></tbody>
           </table>
         </div>
       </div>

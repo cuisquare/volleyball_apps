@@ -172,10 +172,22 @@ select {
   font-weight: 600;
 }
 
+.checkbox-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+  margin: 2px 0 6px;
+}
+
 .setup-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.danger-btn {
+  border-color: #9f2f2f;
+  color: #9f2f2f;
 }
 
 .setup-feedback {
@@ -347,9 +359,24 @@ input[type="radio"]:disabled {
 }
 
 .roster-section-title {
-  margin: 4px 0 0;
-  font-size: 0.88rem;
-  color: var(--muted);
+    margin: 4px 0 0;
+    font-size: 0.88rem;
+    color: var(--muted);
+}
+
+.roster-section-title-muted {
+    color: #7a5a2b;
+}
+
+.roster-table-wrap-muted {
+    border: 1px dashed var(--line);
+    border-radius: 6px;
+    padding: 4px;
+    background: rgba(160, 120, 48, 0.08);
+}
+
+.roster-table-muted {
+    opacity: 0.92;
 }
 
 #lineups-panel select {

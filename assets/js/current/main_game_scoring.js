@@ -135,28 +135,36 @@ const elements = {
     rosterRulesHint: document.getElementById('roster-rules-hint'),
     homePlayerName: document.getElementById('home-player-name'),
     homePlayerIsPlayer: document.getElementById('home-player-is-player'),
+    homePlayerRostered: document.getElementById('home-player-rostered'),
     homePlayerNumber: document.getElementById('home-player-number'),
     homePlayerRegNumber: document.getElementById('home-player-reg-number'),
     homePlayerBenchRole: document.getElementById('home-player-bench-role'),
     homePlayerLibero: document.getElementById('home-player-libero'),
     homePlayerCaptain: document.getElementById('home-player-captain'),
     addHomePlayer: document.getElementById('add-home-player'),
+    cancelHomePlayerEdit: document.getElementById('cancel-home-player-edit'),
+    removeHomePlayerEdit: document.getElementById('remove-home-player-edit'),
     homeRosterCount: document.getElementById('home-roster-count'),
     homeBenchRosterBody: document.getElementById('home-bench-roster-body'),
     homeRegularRosterBody: document.getElementById('home-regular-roster-body'),
     homeLiberoRosterBody: document.getElementById('home-libero-roster-body'),
+    homeUnrosteredRosterBody: document.getElementById('home-unrostered-roster-body'),
     awayPlayerName: document.getElementById('away-player-name'),
     awayPlayerIsPlayer: document.getElementById('away-player-is-player'),
+    awayPlayerRostered: document.getElementById('away-player-rostered'),
     awayPlayerNumber: document.getElementById('away-player-number'),
     awayPlayerRegNumber: document.getElementById('away-player-reg-number'),
     awayPlayerBenchRole: document.getElementById('away-player-bench-role'),
     awayPlayerLibero: document.getElementById('away-player-libero'),
     awayPlayerCaptain: document.getElementById('away-player-captain'),
     addAwayPlayer: document.getElementById('add-away-player'),
+    cancelAwayPlayerEdit: document.getElementById('cancel-away-player-edit'),
+    removeAwayPlayerEdit: document.getElementById('remove-away-player-edit'),
     awayRosterCount: document.getElementById('away-roster-count'),
     awayBenchRosterBody: document.getElementById('away-bench-roster-body'),
     awayRegularRosterBody: document.getElementById('away-regular-roster-body'),
     awayLiberoRosterBody: document.getElementById('away-libero-roster-body'),
+    awayUnrosteredRosterBody: document.getElementById('away-unrostered-roster-body'),
     applyPrematchToss: document.getElementById('apply-prematch-toss'),
     startMatch: document.getElementById('start-match'),
     quickSaveMatch: document.getElementById('quick-save-match'),
@@ -431,11 +439,13 @@ function refreshPrematchLockState() {
         elements.awayTeamName,
         elements.rulesProfile,
         elements.homePlayerName,
+        elements.homePlayerRostered,
         elements.homePlayerNumber,
         elements.homePlayerRegNumber,
         elements.homePlayerLibero,
         elements.homePlayerCaptain,
         elements.awayPlayerName,
+        elements.awayPlayerRostered,
         elements.awayPlayerNumber,
         elements.awayPlayerRegNumber,
         elements.awayPlayerLibero,
@@ -652,6 +662,7 @@ function normalizeImportedRosterPlayer(rawPlayer, teamLabel, index) {
     const shirtNumber = Number.parseInt(rawPlayer.shirtNumber, 10);
     const regNumber = rawPlayer.regNumber == null ? '' : String(rawPlayer.regNumber).trim();
     const benchRole = normalizeBenchRole(rawPlayer.benchRole);
+    const rostered = rawPlayer.rostered !== undefined ? Boolean(rawPlayer.rostered) : true;
     const isLibero = isPlayer && Boolean(rawPlayer.isLibero);
     const isCaptain = isPlayer && Boolean(rawPlayer.isCaptain);
 
@@ -665,6 +676,7 @@ function normalizeImportedRosterPlayer(rawPlayer, teamLabel, index) {
         shirtNumber: isPlayer ? shirtNumber : null,
         regNumber,
         isPlayer,
+        rostered,
         isLibero,
         isCaptain,
         benchRole
@@ -820,6 +832,16 @@ function getMaxLiberosPerRoster() {
     return 2;
 }
 
+function getMinLiberosForActiveRoster(playerCount) {
+    if (playerCount >= 14) {
+        return 2;
+    }
+    if (playerCount === 13) {
+        return getMinLiberosIfThirteen();
+    }
+    return 0;
+}
+
 function markTeamDetailsDirty() {
     if (setupState.matchStarted) {
         return;
@@ -837,7 +859,7 @@ function updateRosterRuleHint() {
     const cumulationHint = mygame.fixture.rules.allowPlayerStaffRoleCumulation
         ? 'Player/staff role cumulation is allowed.'
         : 'Player/staff role cumulation is not allowed.';
-    elements.rosterRulesHint.textContent = `Roster limits: up to ${maxPlayers} players per team, max ${maxLiberos} liberos, and at least 6 non-libero players. If roster has exactly 13 players, at least ${minLiberos} libero(s) are required. ${cumulationHint}`;
+    elements.rosterRulesHint.textContent = `Active match roster limits: up to ${maxPlayers} rostered players per team, max 12 rostered non-libero players, and max ${maxLiberos} rostered liberos. If the active roster has exactly 13 players, at least ${minLiberos} libero(s) are required; at 14 players, 2 liberos are required. Additional eligible but non-rostered entries are allowed. ${cumulationHint}`;
 }
 
 function escapeHtml(value) {
@@ -868,6 +890,7 @@ function normalizeExistingRosterEntry(rawPlayer) {
         shirtNumber: isPlayer && Number.isInteger(shirtNumber) && shirtNumber > 0 ? shirtNumber : null,
         regNumber: rawPlayer.regNumber == null ? '' : String(rawPlayer.regNumber).trim(),
         isPlayer,
+        rostered: rawPlayer.rostered !== undefined ? Boolean(rawPlayer.rostered) : true,
         isLibero: isPlayer && Boolean(rawPlayer.isLibero),
         isCaptain: isPlayer && Boolean(rawPlayer.isCaptain),
         benchRole: normalizeBenchRole(rawPlayer.benchRole)
@@ -879,15 +902,19 @@ function getRosterInputs(teamSide) {
         return {
             nameInput: elements.homePlayerName,
             isPlayerInput: elements.homePlayerIsPlayer,
+            rosteredInput: elements.homePlayerRostered,
             numberInput: elements.homePlayerNumber,
             regInput: elements.homePlayerRegNumber,
             benchRoleInput: elements.homePlayerBenchRole,
             liberoInput: elements.homePlayerLibero,
             captainInput: elements.homePlayerCaptain,
             addButton: elements.addHomePlayer,
+            cancelButton: elements.cancelHomePlayerEdit,
+            removeEditButton: elements.removeHomePlayerEdit,
             regularBody: elements.homeRegularRosterBody,
             benchBody: elements.homeBenchRosterBody,
             liberoBody: elements.homeLiberoRosterBody,
+            unrosteredBody: elements.homeUnrosteredRosterBody,
             count: elements.homeRosterCount
         };
     }
@@ -895,15 +922,19 @@ function getRosterInputs(teamSide) {
     return {
         nameInput: elements.awayPlayerName,
         isPlayerInput: elements.awayPlayerIsPlayer,
+        rosteredInput: elements.awayPlayerRostered,
         numberInput: elements.awayPlayerNumber,
         regInput: elements.awayPlayerRegNumber,
         benchRoleInput: elements.awayPlayerBenchRole,
         liberoInput: elements.awayPlayerLibero,
         captainInput: elements.awayPlayerCaptain,
         addButton: elements.addAwayPlayer,
+        cancelButton: elements.cancelAwayPlayerEdit,
+        removeEditButton: elements.removeAwayPlayerEdit,
         regularBody: elements.awayRegularRosterBody,
         benchBody: elements.awayBenchRosterBody,
         liberoBody: elements.awayLiberoRosterBody,
+        unrosteredBody: elements.awayUnrosteredRosterBody,
         count: elements.awayRosterCount
     };
 }
@@ -911,14 +942,23 @@ function getRosterInputs(teamSide) {
 function syncRosterEntryFormState(teamSide) {
     const controls = getRosterInputs(teamSide);
     const isPlayer = controls.isPlayerInput.checked;
+    const isRostered = controls.rosteredInput.checked;
+    controls.rosteredInput.disabled = setupState.matchStarted;
     controls.numberInput.disabled = !isPlayer || setupState.matchStarted;
     controls.liberoInput.disabled = !isPlayer || setupState.matchStarted;
-    controls.captainInput.disabled = !isPlayer || setupState.matchStarted;
+    controls.captainInput.disabled = !isPlayer || !isRostered || setupState.matchStarted;
 
     if (!isPlayer) {
         controls.liberoInput.checked = false;
         controls.captainInput.checked = false;
     }
+    if (!isRostered) {
+        controls.captainInput.checked = false;
+    }
+}
+
+function getRosteredPlayers(roster) {
+    return roster.filter((player) => player.isPlayer && player.rostered);
 }
 
 function renderRoster(teamSide) {
@@ -927,36 +967,47 @@ function renderRoster(teamSide) {
     controls.benchBody.innerHTML = '';
     controls.regularBody.innerHTML = '';
     controls.liberoBody.innerHTML = '';
+    controls.unrosteredBody.innerHTML = '';
 
     const maxPlayers = getMaxRosterPlayers();
-    const players = roster.filter((player) => player.isPlayer);
-    const benchPersonnel = roster.filter((player) => player.benchRole);
-    const nonLiberos = players.filter((player) => !player.isLibero).length;
-    const liberos = players.filter((player) => player.isLibero).length;
-    const captains = players.filter((player) => player.isCaptain).length;
-    const missingPlayers = Math.max(0, 6 - players.length);
+    const rosteredEntries = roster.filter((player) => player.rostered);
+    const rosteredPlayers = getRosteredPlayers(roster);
+    const rosteredBenchPersonnel = rosteredEntries.filter((player) => player.benchRole);
+    const unrosteredEntries = roster.filter((player) => !player.rostered);
+    const nonLiberos = rosteredPlayers.filter((player) => !player.isLibero).length;
+    const liberos = rosteredPlayers.filter((player) => player.isLibero).length;
+    const captains = rosteredPlayers.filter((player) => player.isCaptain).length;
+    const missingPlayers = Math.max(0, 6 - rosteredPlayers.length);
     const missingNonLiberos = Math.max(0, 6 - nonLiberos);
+    const overflowPlayers = Math.max(0, rosteredPlayers.length - maxPlayers);
+    const overflowNonLiberos = Math.max(0, nonLiberos - 12);
     let readinessHint = 'Ready';
-    const minLiberosIfThirteen = getMinLiberosIfThirteen();
-    const missingLiberosAtThirteen = players.length >= 13 ? Math.max(0, minLiberosIfThirteen - liberos) : 0;
+    const requiredLiberos = getMinLiberosForActiveRoster(rosteredPlayers.length);
+    const missingLiberos = Math.max(0, requiredLiberos - liberos);
     const missingCaptain = captains === 0 ? 1 : 0;
-    if (missingPlayers > 0 || missingNonLiberos > 0 || missingLiberosAtThirteen > 0 || missingCaptain > 0) {
+    if (missingPlayers > 0 || missingNonLiberos > 0 || overflowPlayers > 0 || overflowNonLiberos > 0 || missingLiberos > 0 || missingCaptain > 0) {
         const parts = [];
         if (missingPlayers > 0) {
-            parts.push(`${missingPlayers} player(s)`);
+            parts.push(`${missingPlayers} more player(s)`);
         }
         if (missingNonLiberos > 0) {
-            parts.push(`${missingNonLiberos} non-libero`);
+            parts.push(`${missingNonLiberos} more non-libero player(s)`);
         }
-        if (missingLiberosAtThirteen > 0) {
-            parts.push(`${missingLiberosAtThirteen} libero(s) for 13-player rule`);
+        if (overflowPlayers > 0) {
+            parts.push(`${overflowPlayers} fewer rostered player(s)`);
+        }
+        if (overflowNonLiberos > 0) {
+            parts.push(`${overflowNonLiberos} fewer non-libero player(s)`);
+        }
+        if (missingLiberos > 0) {
+            parts.push(`${missingLiberos} more libero(s)`);
         }
         if (missingCaptain > 0) {
-            parts.push('1 captain');
+            parts.push('1 more captain');
         }
         readinessHint = `Not ready: need ${parts.join(', ')}`;
     }
-    controls.count.textContent = `${roster.length} entries (${players.length} / ${maxPlayers} players, Bench ${benchPersonnel.length}, Libero ${liberos}/${getMaxLiberosPerRoster()}, Captain ${captains}) - ${readinessHint}`;
+    controls.count.textContent = `${roster.length} entries (${rosteredPlayers.length} / ${maxPlayers} rostered players, Active bench ${rosteredBenchPersonnel.length}, Unrostered ${unrosteredEntries.length}, Libero ${liberos}/${getMaxLiberosPerRoster()}, Captain ${captains}) - ${readinessHint}`;
 
     const byShirtNumber = (playerA, playerB) => {
         const shirtNumberA = playerA.shirtNumber || 0;
@@ -967,11 +1018,25 @@ function renderRoster(teamSide) {
         return playerA.name.localeCompare(playerB.name);
     };
 
-    const regularPlayers = players.filter((player) => !player.isLibero).sort(byShirtNumber);
-    const liberoPlayers = players.filter((player) => player.isLibero).sort(byShirtNumber);
-    const benchPlayers = benchPersonnel.sort((playerA, playerB) => {
+    const regularPlayers = rosteredPlayers.filter((player) => !player.isLibero).sort(byShirtNumber);
+    const liberoPlayers = rosteredPlayers.filter((player) => player.isLibero).sort(byShirtNumber);
+    const benchPlayers = rosteredBenchPersonnel.sort((playerA, playerB) => {
         if (playerA.benchRole !== playerB.benchRole) {
             return playerA.benchRole.localeCompare(playerB.benchRole);
+        }
+        return playerA.name.localeCompare(playerB.name);
+    });
+    const unrosteredPlayers = unrosteredEntries.sort((playerA, playerB) => {
+        if (playerA.isPlayer !== playerB.isPlayer) {
+            return playerA.isPlayer ? -1 : 1;
+        }
+        if ((playerA.benchRole || '') !== (playerB.benchRole || '')) {
+            return (playerA.benchRole || '').localeCompare(playerB.benchRole || '');
+        }
+        const shirtNumberA = playerA.shirtNumber || 0;
+        const shirtNumberB = playerB.shirtNumber || 0;
+        if (shirtNumberA !== shirtNumberB) {
+            return shirtNumberA - shirtNumberB;
         }
         return playerA.name.localeCompare(playerB.name);
     });
@@ -994,7 +1059,7 @@ function renderRoster(teamSide) {
                 <td>${player.isCaptain ? 'Yes' : '-'}</td>
                 <td>
                     <button class="table-action-btn edit-player-btn" data-team="${teamSide}" data-player-id="${player.id}" type="button" ${canRemove ? '' : 'disabled'}>Edit</button>
-                    <button class="table-action-btn remove-player-btn" data-team="${teamSide}" data-player-id="${player.id}" type="button" ${canRemove ? '' : 'disabled'}>Remove</button>
+                    <button class="table-action-btn unroster-player-btn" data-team="${teamSide}" data-player-id="${player.id}" type="button" ${canRemove ? '' : 'disabled'}>Unroster</button>
                 </td>
             `;
             targetBody.appendChild(row);
@@ -1020,7 +1085,35 @@ function renderRoster(teamSide) {
                 <td>${player.regNumber ? escapeHtml(player.regNumber) : '-'}</td>
                 <td>
                     <button class="table-action-btn edit-player-btn" data-team="${teamSide}" data-player-id="${player.id}" type="button" ${canRemove ? '' : 'disabled'}>Edit</button>
-                    <button class="table-action-btn remove-player-btn" data-team="${teamSide}" data-player-id="${player.id}" type="button" ${canRemove ? '' : 'disabled'}>Remove</button>
+                    <button class="table-action-btn unroster-player-btn" data-team="${teamSide}" data-player-id="${player.id}" type="button" ${canRemove ? '' : 'disabled'}>Unroster</button>
+                </td>
+            `;
+            targetBody.appendChild(row);
+        }
+    };
+
+    const renderUnrosteredRows = (targetBody, players, emptyText) => {
+        if (players.length === 0) {
+            const emptyRow = document.createElement('tr');
+            emptyRow.innerHTML = `<td class="roster-empty" colspan="6">${emptyText}</td>`;
+            targetBody.appendChild(emptyRow);
+            return;
+        }
+
+        for (const player of players) {
+            const canRemove = !setupState.matchStarted;
+            const row = document.createElement('tr');
+            const typeLabel = player.isPlayer ? (player.isLibero ? 'Libero' : 'Player') : 'Bench';
+            const roleLabel = player.benchRole || (player.isCaptain ? 'Captain' : '-');
+            row.innerHTML = `
+                <td>${escapeHtml(player.name)}</td>
+                <td>${typeLabel}</td>
+                <td>${escapeHtml(roleLabel)}</td>
+                <td>${player.shirtNumber || '-'}</td>
+                <td>${player.regNumber ? escapeHtml(player.regNumber) : '-'}</td>
+                <td>
+                    <button class="table-action-btn edit-player-btn" data-team="${teamSide}" data-player-id="${player.id}" type="button" ${canRemove ? '' : 'disabled'}>Edit</button>
+                    <button class="table-action-btn roster-player-btn" data-team="${teamSide}" data-player-id="${player.id}" type="button" ${canRemove ? '' : 'disabled'}>Roster</button>
                 </td>
             `;
             targetBody.appendChild(row);
@@ -1030,11 +1123,15 @@ function renderRoster(teamSide) {
     renderBenchRows(controls.benchBody, benchPlayers, 'No bench personnel yet.');
     renderRows(controls.regularBody, regularPlayers, 'No regular players yet.');
     renderRows(controls.liberoBody, liberoPlayers, 'No libero players yet.');
+    renderUnrosteredRows(controls.unrosteredBody, unrosteredPlayers, 'No eligible/unrostered entries yet.');
 
     const isEditing = Boolean(setupState.editingRosterPlayerId[teamSide]);
     controls.addButton.textContent = isEditing
         ? (teamSide === 'home' ? 'Save Home Entry' : 'Save Away Entry')
         : (teamSide === 'home' ? 'Add Home Entry' : 'Add Away Entry');
+    controls.cancelButton.classList.toggle('hidden', !isEditing);
+    controls.removeEditButton.classList.toggle('hidden', !isEditing);
+    controls.removeEditButton.disabled = !isEditing || setupState.matchStarted;
 }
 
 function renderRosters() {
@@ -1051,6 +1148,7 @@ function createDefaultRoster() {
             shirtNumber: i,
             regNumber: '',
             isPlayer: true,
+            rostered: true,
             isLibero: false,
             isCaptain: i === 1,
             benchRole: ''
@@ -1060,7 +1158,7 @@ function createDefaultRoster() {
 }
 
 function validateRosterForTeam(teamSide, roster) {
-    const players = roster.filter((player) => player.isPlayer);
+    const players = getRosteredPlayers(roster);
     if (players.length < 6) {
         return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster needs at least 6 players.`);
     }
@@ -1083,6 +1181,10 @@ function validateRosterForTeam(teamSide, roster) {
     if (liberos > maxLiberos) {
         return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster cannot have more than ${maxLiberos} liberos.`);
     }
+    const nonLiberos = players.length - liberos;
+    if (nonLiberos > 12) {
+        return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster cannot have more than 12 non-libero players.`);
+    }
 
     const captains = players.filter((player) => player.isCaptain).length;
     if (captains < 1) {
@@ -1092,16 +1194,13 @@ function validateRosterForTeam(teamSide, roster) {
         return `${teamSide === 'home' ? 'Home' : 'Away'} roster must include exactly 1 captain.`;
     }
 
-    const nonLiberos = players.length - liberos;
     if (nonLiberos < 6) {
         return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster needs at least 6 non-libero players.`);
     }
 
-    if (players.length >= 13) {
-        const minLiberos = getMinLiberosIfThirteen();
-        if (liberos < minLiberos) {
-            return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster needs at least ${minLiberos} libero(s) when 13 players are listed.`);
-        }
+    const minLiberos = getMinLiberosForActiveRoster(players.length);
+    if (liberos < minLiberos) {
+        return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster needs at least ${minLiberos} libero(s) when ${players.length} players are rostered.`);
     }
 
     return '';
@@ -1109,12 +1208,7 @@ function validateRosterForTeam(teamSide, roster) {
 
 function validateRosterEntryForTeam(teamSide, roster) {
     const teamLabel = teamSide === 'home' ? 'Home' : 'Away';
-    const players = roster.filter((player) => player.isPlayer);
-
-    const maxPlayers = getMaxRosterPlayers();
-    if (players.length > maxPlayers) {
-        return withRulesContext(`${teamLabel} roster cannot exceed ${maxPlayers} players.`);
-    }
+    const players = getRosteredPlayers(roster);
 
     const numbers = new Set();
     for (const player of players) {
@@ -1152,6 +1246,9 @@ function validateRosterEntryForTeam(teamSide, roster) {
         if (!player.isPlayer && player.isCaptain) {
             return `${teamLabel} captain entries must be players.`;
         }
+        if (!player.rostered && player.isCaptain) {
+            return `${teamLabel} captain must be part of the active game roster.`;
+        }
         if (!mygame.fixture.rules.allowPlayerStaffRoleCumulation && player.isPlayer && player.benchRole) {
             return withRulesContext(`${teamLabel} entries cannot be both player and bench staff under the current rules.`);
         }
@@ -1170,6 +1267,7 @@ function clearRosterInputs(teamSide) {
     const controls = getRosterInputs(teamSide);
     controls.nameInput.value = '';
     controls.isPlayerInput.checked = true;
+    controls.rosteredInput.checked = true;
     controls.numberInput.value = '';
     controls.regInput.value = '';
     controls.benchRoleInput.value = '';
@@ -1178,6 +1276,55 @@ function clearRosterInputs(teamSide) {
     setupState.editingRosterPlayerId[teamSide] = '';
     syncRosterEntryFormState(teamSide);
     renderRoster(teamSide);
+}
+
+function toggleRosteredStatus(teamSide, playerId, nextRostered) {
+    if (setupState.matchStarted) {
+        return;
+    }
+
+    const roster = setupState.rosters[teamSide];
+    const target = roster.find((player) => player.id === playerId);
+    if (!target) {
+        return;
+    }
+
+    const currentRosteredPlayers = getRosteredPlayers(roster).length;
+    if (nextRostered && target.isPlayer && !target.rostered && currentRosteredPlayers >= getMaxRosterPlayers()) {
+        setTeamDetailsFeedback(withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster is at max size for current rules. Unroster or remove an existing rostered player before rostering another player.`), 'error');
+        return;
+    }
+
+    const nextRoster = roster.map((player) => {
+        if (player.id !== playerId) {
+            return player;
+        }
+        return {
+            ...player,
+            rostered: nextRostered,
+            isCaptain: nextRostered ? player.isCaptain : false
+        };
+    });
+
+    const entryValidationError = validateRosterEntryForTeam(teamSide, nextRoster);
+    if (entryValidationError) {
+        setTeamDetailsFeedback(entryValidationError, 'error');
+        return;
+    }
+
+    setupState.rosters[teamSide] = nextRoster;
+    if (setupState.editingRosterPlayerId[teamSide] === playerId) {
+        const updated = nextRoster.find((player) => player.id === playerId);
+        const controls = getRosterInputs(teamSide);
+        controls.rosteredInput.checked = updated ? Boolean(updated.rostered) : false;
+        controls.captainInput.checked = updated ? Boolean(updated.isCaptain) : false;
+        syncRosterEntryFormState(teamSide);
+    }
+    markTeamDetailsDirty();
+    renderRosters();
+    setTeamDetailsFeedback(`${teamSide === 'home' ? 'Home' : 'Away'} entry ${nextRostered ? 'rostered' : 'unrostered'}. Click Apply Team Details when ready.`, '');
+    updateSetupBadge();
+    updateActionAvailability();
 }
 
 function addRosterPlayer(teamSide) {
@@ -1192,15 +1339,17 @@ function addRosterPlayer(teamSide) {
     const controls = getRosterInputs(teamSide);
     const roster = setupState.rosters[teamSide];
     const editingId = setupState.editingRosterPlayerId[teamSide];
-    const playerCount = roster.filter((player) => player.isPlayer).length;
+    const playerCount = getRosteredPlayers(roster).length;
+    const maxPlayers = getMaxRosterPlayers();
 
-    if (!editingId && controls.isPlayerInput.checked && playerCount >= getMaxRosterPlayers()) {
-        setTeamDetailsFeedback(withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster is at max size for current rules.`), 'error');
+    if (!editingId && controls.isPlayerInput.checked && controls.rosteredInput.checked && playerCount >= getMaxRosterPlayers()) {
+        setTeamDetailsFeedback(withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster is at max size for current rules. Unroster or remove an existing rostered player before adding another rostered player.`), 'error');
         return;
     }
 
     const name = controls.nameInput.value.trim();
     const isPlayer = controls.isPlayerInput.checked;
+    const rostered = controls.rosteredInput.checked;
     const shirtNumber = Number.parseInt(controls.numberInput.value, 10);
     const regNumber = controls.regInput.value.trim();
     const benchRole = normalizeBenchRole(controls.benchRoleInput.value);
@@ -1229,6 +1378,7 @@ function addRosterPlayer(teamSide) {
                 shirtNumber: isPlayer ? shirtNumber : null,
                 regNumber,
                 isPlayer,
+                rostered,
                 isLibero,
                 isCaptain,
                 benchRole
@@ -1240,10 +1390,18 @@ function addRosterPlayer(teamSide) {
             shirtNumber: isPlayer ? shirtNumber : null,
             regNumber,
             isPlayer,
+            rostered,
             isLibero,
             isCaptain,
             benchRole
         }];
+
+    const nextRosteredPlayerCount = getRosteredPlayers(rosterForValidation).length;
+    const isIncreasingRosteredPlayers = nextRosteredPlayerCount > playerCount;
+    if (isIncreasingRosteredPlayers && nextRosteredPlayerCount > maxPlayers) {
+        setTeamDetailsFeedback(withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster is already above the active roster limit. Unroster or remove rostered players before increasing the rostered player count.`), 'error');
+        return;
+    }
 
     if (isCaptain) {
         for (const player of rosterForValidation) {
@@ -1269,6 +1427,7 @@ function addRosterPlayer(teamSide) {
             shirtNumber: isPlayer ? shirtNumber : null,
             regNumber,
             isPlayer,
+            rostered,
             isLibero,
             isCaptain,
             benchRole
@@ -1279,7 +1438,7 @@ function addRosterPlayer(teamSide) {
     renderRosters();
     clearRosterInputs(teamSide);
     const updatedRoster = setupState.rosters[teamSide];
-    const players = updatedRoster.filter((player) => player.isPlayer);
+    const players = getRosteredPlayers(updatedRoster);
     const liberos = players.filter((player) => player.isLibero).length;
     const minLiberosAtThirteen = getMinLiberosIfThirteen();
     const unmetThirteenRule = players.length >= 13 && liberos < minLiberosAtThirteen;
@@ -1314,6 +1473,7 @@ function editRosterPlayer(teamSide, playerId) {
     const controls = getRosterInputs(teamSide);
     controls.nameInput.value = player.name;
     controls.isPlayerInput.checked = Boolean(player.isPlayer);
+    controls.rosteredInput.checked = player.rostered !== undefined ? Boolean(player.rostered) : true;
     controls.numberInput.value = player.shirtNumber || '';
     controls.regInput.value = player.regNumber || '';
     controls.benchRoleInput.value = player.benchRole || '';
@@ -1339,11 +1499,15 @@ function removeRosterPlayer(teamSide, playerId) {
     }
 
     setupState.rosters[teamSide] = nextRoster;
+    const wasEditingRemovedPlayer = setupState.editingRosterPlayerId[teamSide] === playerId;
     if (setupState.editingRosterPlayerId[teamSide] === playerId) {
         setupState.editingRosterPlayerId[teamSide] = '';
     }
     markTeamDetailsDirty();
     renderRosters();
+    if (wasEditingRemovedPlayer) {
+        clearRosterInputs(teamSide);
+    }
     setTeamDetailsFeedback('Roster updated. Click Apply Team Details to confirm.', '');
     updateSetupBadge();
     updateActionAvailability();
@@ -1392,7 +1556,7 @@ function getRosterForTeamId(teamId) {
 }
 
 function getNonLiberoRosterForTeamId(teamId) {
-    return getRosterForTeamId(teamId).filter((player) => player.isPlayer && !player.isLibero);
+    return getRosterForTeamId(teamId).filter((player) => player.isPlayer && player.rostered && !player.isLibero);
 }
 
 function isCurrentSetInProgress() {
@@ -2281,6 +2445,7 @@ function lockPrematchSetup() {
     for (const input of [
         elements.homePlayerName,
         elements.homePlayerIsPlayer,
+        elements.homePlayerRostered,
         elements.homePlayerNumber,
         elements.homePlayerRegNumber,
         elements.homePlayerBenchRole,
@@ -2288,6 +2453,7 @@ function lockPrematchSetup() {
         elements.homePlayerCaptain,
         elements.awayPlayerName,
         elements.awayPlayerIsPlayer,
+        elements.awayPlayerRostered,
         elements.awayPlayerNumber,
         elements.awayPlayerRegNumber,
         elements.awayPlayerBenchRole,
@@ -2504,17 +2670,17 @@ function updateActionAvailability() {
     elements.startMatch.disabled = !canStartSet;
     elements.applyTeamDetails.disabled = setupState.matchStarted || !setupState.rulesConfirmed;
     elements.applyPrematchToss.disabled = setupState.matchStarted || !setupState.rulesConfirmed || !setupState.teamDetailsConfirmed;
-    const homeAtMax = setupState.rosters.home.filter((player) => player.isPlayer).length >= getMaxRosterPlayers();
-    const awayAtMax = setupState.rosters.away.filter((player) => player.isPlayer).length >= getMaxRosterPlayers();
+    const homeAtMax = getRosteredPlayers(setupState.rosters.home).length >= getMaxRosterPlayers();
+    const awayAtMax = getRosteredPlayers(setupState.rosters.away).length >= getMaxRosterPlayers();
     const editingHome = Boolean(setupState.editingRosterPlayerId.home);
     const editingAway = Boolean(setupState.editingRosterPlayerId.away);
 
     elements.addHomePlayer.disabled = setupState.matchStarted
         || !setupState.rulesConfirmed
-        || (homeAtMax && !editingHome && elements.homePlayerIsPlayer.checked);
+        || (homeAtMax && !editingHome && elements.homePlayerIsPlayer.checked && elements.homePlayerRostered.checked);
     elements.addAwayPlayer.disabled = setupState.matchStarted
         || !setupState.rulesConfirmed
-        || (awayAtMax && !editingAway && elements.awayPlayerIsPlayer.checked);
+        || (awayAtMax && !editingAway && elements.awayPlayerIsPlayer.checked && elements.awayPlayerRostered.checked);
 
     const canManageSet = setupState.matchStarted && !mygame.isGameOver && currentSetStarted();
     const canScore = canManageSet && mygame.team_serving_currently !== 'Unknown';
@@ -2907,6 +3073,20 @@ function hookEventListeners() {
 
     elements.addHomePlayer.addEventListener('click', () => addRosterPlayer('home'));
     elements.addAwayPlayer.addEventListener('click', () => addRosterPlayer('away'));
+    elements.cancelHomePlayerEdit.addEventListener('click', () => clearRosterInputs('home'));
+    elements.cancelAwayPlayerEdit.addEventListener('click', () => clearRosterInputs('away'));
+    elements.removeHomePlayerEdit.addEventListener('click', () => {
+        const playerId = setupState.editingRosterPlayerId.home;
+        if (playerId) {
+            removeRosterPlayer('home', playerId);
+        }
+    });
+    elements.removeAwayPlayerEdit.addEventListener('click', () => {
+        const playerId = setupState.editingRosterPlayerId.away;
+        if (playerId) {
+            removeRosterPlayer('away', playerId);
+        }
+    });
     elements.exportHomeRosterJson.addEventListener('click', () => exportSingleTeamRosterAsJson('home'));
     elements.importHomeRosterJson.addEventListener('click', () => importSingleTeamRosterFromJson('home'));
     elements.importHomeRosterJsonInput.addEventListener('change', (event) => {
@@ -2918,7 +3098,7 @@ function hookEventListeners() {
         handleImportSingleTeamRosterJsonFile(event, 'away');
     });
     const onRosterBodyClick = (event) => {
-        const button = event.target.closest('.remove-player-btn, .edit-player-btn');
+        const button = event.target.closest('.edit-player-btn, .roster-player-btn, .unroster-player-btn');
         if (!button) {
             return;
         }
@@ -2926,15 +3106,21 @@ function hookEventListeners() {
             editRosterPlayer(button.dataset.team, button.dataset.playerId);
             return;
         }
-        removeRosterPlayer(button.dataset.team, button.dataset.playerId);
+        if (button.classList.contains('roster-player-btn')) {
+            toggleRosteredStatus(button.dataset.team, button.dataset.playerId, true);
+            return;
+        }
+        toggleRosteredStatus(button.dataset.team, button.dataset.playerId, false);
     };
     for (const body of [
         elements.homeBenchRosterBody,
         elements.homeRegularRosterBody,
         elements.homeLiberoRosterBody,
+        elements.homeUnrosteredRosterBody,
         elements.awayBenchRosterBody,
         elements.awayRegularRosterBody,
-        elements.awayLiberoRosterBody
+        elements.awayLiberoRosterBody,
+        elements.awayUnrosteredRosterBody
     ]) {
         body.addEventListener('click', onRosterBodyClick);
     }
@@ -3012,6 +3198,9 @@ function hookEventListeners() {
         const controls = getRosterInputs(teamSide);
         controls.isPlayerInput.addEventListener('change', () => {
             syncRosterEntryFormState(teamSide);
+            updateActionAvailability();
+        });
+        controls.rosteredInput.addEventListener('change', () => {
             updateActionAvailability();
         });
     }

@@ -15,6 +15,7 @@ Update this file whenever an item is added, completed, or reprioritized.
 - [ ] Game penalties: data model/history support.
 - [ ] Game penalties: in-app recording at event time (type + recipient: team/player/coach/bench).
 - [ ] Add an optional non-libero player `subrole` field selected from fully spelled role values `Setter`, `Outside Hitter`, `Opposite`, and `Middle Blocker`, and display the corresponding symbols `S`, `OH`, `OP`, and `MB` in the roster tables.
+- [ ] Sort bench personnel display by the defined bench-role order from the input dropdown, rather than by insertion or alphabetical order, with `Coach` first, then `Assistant Coach 1`, `Assistant Coach 2`, `Therapist`, and `Medical`.
 - [ ] Introduce match-wide action undo/redo that restores full prior states rather than only current-set points, and move the undo/redo controls from the scoreboard into a globally visible app-level controls section alongside save/load and JSON import/export.
 - [ ] Display points-scored history and recorded set start/end times in the scoring app.
 
@@ -40,6 +41,7 @@ Update this file whenever an item is added, completed, or reprioritized.
   - full snapshot exports include team names + match stage + timestamp
 - [x] Team Details layout updated to 2 team panels with team-name input at top of each panel.
 - [x] Team details extension with bench personnel input and display, including rules-controlled player/staff role cumulation.
+- [x] Team Details extended to support rostered vs non-rostered entries, a wider eligible-player pool, and a combined `Eligible Players` / `Unrostered Players` section with roster/unroster controls.
 - [x] Introduced a pending set-start workflow where applying a lineup stages the next set and `Start Set` finalizes the lineup and begins play.
 - [x] Set start/end time tracking with official and actual set times, including rules-controlled break duration between sets.
 - [x] Timeout recording during sets with rules-controlled limits, scoreboard request buttons, and used/max timeout tracking per team.
