@@ -6,6 +6,8 @@
   "scripts": {
     "seasons": "node src/cli.js seasons",
     "current-divisions": "node src/cli.js current-divisions",
-    "season-info": "node src/cli.js season-info"
+    "season-info": "node src/cli.js season-info",
+    "generate-current-season": "node src/cli.js generate-current-season",
+    "generate-division": "node src/cli.js generate-division"
   }
 }

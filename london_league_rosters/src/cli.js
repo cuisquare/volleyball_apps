@@ -6,6 +6,8 @@ const {
 const {
   parseSeasonCompetitionsResponse,
 } = require("./fetchSeasonCompetitions");
+const { generateCurrentSeason } = require("./generateSeason");
+const { generateDivision } = require("./generateDivision");
 
 function getArgValue(flag) {
   const index = process.argv.indexOf(flag);
@@ -68,6 +70,30 @@ async function cmdSeasonInfo() {
   });
 }
 
+async function cmdGenerateCurrentSeason() {
+  const refresh = hasFlag("--refresh");
+  const result = await generateCurrentSeason({ refresh });
+  printJson(result);
+}
+
+async function cmdGenerateDivision() {
+  const seasonId = getArgValue("--season-id");
+  const competitionId = getArgValue("--competition-id");
+  const divisionName = getArgValue("--division-name");
+  if (!seasonId || !competitionId) {
+    throw new Error("Missing required --season-id or --competition-id");
+  }
+  const refresh = hasFlag("--refresh");
+  const result = await generateDivision({
+    seasonId: Number(seasonId),
+    seasonLabel: getArgValue("--season-label") || String(seasonId),
+    competitionId: Number(competitionId),
+    divisionName,
+    refresh,
+  });
+  printJson(result);
+}
+
 async function main() {
   const command = process.argv[2];
   switch (command) {
@@ -80,9 +106,15 @@ async function main() {
     case "season-info":
       await cmdSeasonInfo();
       return;
+    case "generate-current-season":
+      await cmdGenerateCurrentSeason();
+      return;
+    case "generate-division":
+      await cmdGenerateDivision();
+      return;
     default:
       process.stderr.write(
-        "Usage: node src/cli.js <seasons|current-divisions|season-info> [--season-id N] [--refresh]\n"
+        "Usage: node src/cli.js <seasons|current-divisions|season-info|generate-current-season|generate-division> [--season-id N] [--competition-id N] [--division-name NAME] [--refresh]\n"
       );
       process.exitCode = 1;
   }
