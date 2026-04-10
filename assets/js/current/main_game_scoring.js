@@ -1781,7 +1781,7 @@ function markCurrentSetStarted() {
 }
 
 function buildLineupOptionLabel(player) {
-    return `#${player.shirtNumber} (${getRosterHoverName(player)})`;
+    return `#${player.shirtNumber} (${formatRosterListName(player)})`;
 }
 
 function getLineupOptionSuffix(teamSelections, currentPosition, playerId) {
@@ -1842,9 +1842,15 @@ function renderLineupSelect(teamId, position, selectedPlayerId, disabled) {
         const selectedPosB = getSelectedLineupPosition(teamSelections, playerB.id);
         const isFreeA = selectedPosA === 0;
         const isFreeB = selectedPosB === 0;
+        const isCurrentSelectionA = playerA.id === selectedPlayerId;
+        const isCurrentSelectionB = playerB.id === selectedPlayerId;
 
         if (isFreeA !== isFreeB) {
             return isFreeA ? -1 : 1;
+        }
+
+        if (!isFreeA && !isFreeB && isCurrentSelectionA !== isCurrentSelectionB) {
+            return isCurrentSelectionA ? -1 : 1;
         }
 
         if (!isFreeA && selectedPosA !== selectedPosB) {
@@ -1867,7 +1873,9 @@ function renderLineupSelect(teamId, position, selectedPlayerId, disabled) {
     for (const player of sortedRoster) {
         const option = document.createElement('option');
         option.value = player.id;
-        option.textContent = `${buildLineupOptionLabel(player)}  ${getLineupOptionSuffix(teamSelections, position, player.id)}`;
+        const baseLabel = buildLineupOptionLabel(player);
+        const suffix = player.id === selectedPlayerId ? '' : getLineupOptionSuffix(teamSelections, position, player.id);
+        option.textContent = suffix ? `${baseLabel}  ${suffix}` : baseLabel;
         select.appendChild(option);
     }
 
