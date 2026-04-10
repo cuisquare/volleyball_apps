@@ -17,6 +17,14 @@ Update this file whenever an item is added, completed, or reprioritized.
 - [ ] Add an optional non-libero player `subrole` field selected from fully spelled role values `Setter`, `Outside Hitter`, `Opposite`, and `Middle Blocker`, and display the corresponding symbols `S`, `OH`, `OP`, and `MB` in the roster tables.
 - [ ] Introduce match-wide action undo/redo that restores full prior states rather than only current-set points, and move the undo/redo controls from the scoreboard into a globally visible app-level controls section alongside save/load and JSON import/export.
 - [ ] Display points-scored history and recorded set start/end times in the scoring app.
+- [ ] Add a match notes interface so scorers can record in-game remarks such as missing equipment, referee absence, or reasons for delayed start, and persist those notes in match state/output.
+- [ ] Add an interface to select one MVP for each team from the active playing roster.
+- [ ] Generate a PDF output that fills an FIVB scoresheet from the information recorded through the app, mirroring a completed paper scoresheet as closely as possible.
+- [ ] Add player-level match statistics capture, including scorer identity and action categories such as attack, block, assist, and reception quality.
+- [ ] Add match-metadata capture for official warm-up time, official first-serve time, venue, competition, division, competition name, competition gender, senior/junior category, country code, team three-letter codes, referees with names and registration numbers, scorer and assistant scorer where applicable, and line-judge names for 2- or 4-line-judge configurations.
+- [ ] Add a game-summary panel, toggled from the top menu like the other main panels, that shows full per-set accumulated match information in a symmetrical tabular layout mirroring the FIVB scoresheet Results section, including points scored, timeouts, substitutions, and set duration in minutes.
+- [ ] Rework the top-menu navigation and controls, which are becoming cluttered and unfocused as more scoring-app panels and actions are added.
+- [ ] Add fixture-based London League import in the scoring app, using `london_league_rosters` facilities to load current-season teamsheets/rosters from the website after selecting a division, home team, and away team, with either live-populated or cached/static fixture values.
 
 ### Positions App
 - [ ] Saved named formations/patterns for persisted court layouts, linked to role symbols across rotations.
