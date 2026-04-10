@@ -35,51 +35,8 @@
           <label for="home-team-name">Home Team Name</label>
           <input id="home-team-name" type="text" maxlength="60" placeholder="Home team">
         </div>
-        <div class="form-row">
-          <label for="home-player-name">Name</label>
-          <input id="home-player-name" type="text" maxlength="60" placeholder="Full name">
-        </div>
-        <div class="checkbox-group">
-          <label class="radio-row">
-            <input id="home-player-is-player" type="checkbox" checked>
-            Is Player
-          </label>
-          <label class="radio-row">
-            <input id="home-player-rostered" type="checkbox" checked>
-            Rostered For This Game
-          </label>
-          <label class="radio-row">
-            <input id="home-player-libero" type="checkbox">
-            Libero
-          </label>
-          <label class="radio-row">
-            <input id="home-player-captain" type="checkbox">
-            Captain
-          </label>
-        </div>
-        <div class="form-row">
-          <label for="home-player-number">Shirt Number</label>
-          <input id="home-player-number" type="number" min="1" step="1" placeholder="e.g. 8">
-        </div>
-        <div class="form-row">
-          <label for="home-player-reg-number">Reg Number (Optional)</label>
-          <input id="home-player-reg-number" type="text" maxlength="40" placeholder="Optional">
-        </div>
-        <div class="form-row">
-          <label for="home-player-bench-role">Bench Role</label>
-          <select id="home-player-bench-role">
-            <option value="">None</option>
-            <option value="Coach">Coach</option>
-            <option value="Assistant Coach 1">Assistant Coach 1</option>
-            <option value="Assistant Coach 2">Assistant Coach 2</option>
-            <option value="Therapist">Therapist</option>
-            <option value="Medical">Medical</option>
-          </select>
-        </div>
         <div class="setup-actions">
           <button id="add-home-player" type="button">Add Home Entry</button>
-          <button id="cancel-home-player-edit" type="button" class="hidden">Cancel</button>
-          <button id="remove-home-player-edit" type="button" class="hidden danger-btn">Remove Entry</button>
         </div>
         <div class="setup-actions">
           <button id="export-home-roster-json" type="button">Export Home Roster JSON</button>
@@ -156,51 +113,8 @@
           <label for="away-team-name">Away Team Name</label>
           <input id="away-team-name" type="text" maxlength="60" placeholder="Away team">
         </div>
-        <div class="form-row">
-          <label for="away-player-name">Name</label>
-          <input id="away-player-name" type="text" maxlength="60" placeholder="Full name">
-        </div>
-        <div class="checkbox-group">
-          <label class="radio-row">
-            <input id="away-player-is-player" type="checkbox" checked>
-            Is Player
-          </label>
-          <label class="radio-row">
-            <input id="away-player-rostered" type="checkbox" checked>
-            Rostered For This Game
-          </label>
-          <label class="radio-row">
-            <input id="away-player-libero" type="checkbox">
-            Libero
-          </label>
-          <label class="radio-row">
-            <input id="away-player-captain" type="checkbox">
-            Captain
-          </label>
-        </div>
-        <div class="form-row">
-          <label for="away-player-number">Shirt Number</label>
-          <input id="away-player-number" type="number" min="1" step="1" placeholder="e.g. 12">
-        </div>
-        <div class="form-row">
-          <label for="away-player-reg-number">Reg Number (Optional)</label>
-          <input id="away-player-reg-number" type="text" maxlength="40" placeholder="Optional">
-        </div>
-        <div class="form-row">
-          <label for="away-player-bench-role">Bench Role</label>
-          <select id="away-player-bench-role">
-            <option value="">None</option>
-            <option value="Coach">Coach</option>
-            <option value="Assistant Coach 1">Assistant Coach 1</option>
-            <option value="Assistant Coach 2">Assistant Coach 2</option>
-            <option value="Therapist">Therapist</option>
-            <option value="Medical">Medical</option>
-          </select>
-        </div>
         <div class="setup-actions">
           <button id="add-away-player" type="button">Add Away Entry</button>
-          <button id="cancel-away-player-edit" type="button" class="hidden">Cancel</button>
-          <button id="remove-away-player-edit" type="button" class="hidden danger-btn">Remove Entry</button>
         </div>
         <div class="setup-actions">
           <button id="export-away-roster-json" type="button">Export Away Roster JSON</button>
@@ -278,6 +192,69 @@
     <p id="roster-rules-hint" class="hint"></p>
     <p id="team-details-feedback" class="setup-feedback"></p>
   </section>
+
+  <div id="roster-entry-modal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal-card roster-entry-modal-card" role="dialog" aria-modal="true" aria-labelledby="roster-entry-modal-title">
+      <div class="modal-header">
+        <div>
+          <h3 id="roster-entry-modal-title">Add Team Entry</h3>
+          <p id="roster-entry-modal-subtitle" class="hint">Create or update one team member at a time.</p>
+        </div>
+        <button id="close-roster-entry-modal" type="button" class="modal-close-btn" aria-label="Close team member editor">Close</button>
+      </div>
+      <div class="form-row">
+        <label for="roster-entry-first-name">First Name</label>
+        <input id="roster-entry-first-name" type="text" maxlength="60" placeholder="Given name(s)">
+      </div>
+      <div class="form-row">
+        <label for="roster-entry-last-name">Last Name</label>
+        <input id="roster-entry-last-name" type="text" maxlength="80" placeholder="Family name(s)">
+      </div>
+      <div class="checkbox-group modal-checkbox-group">
+        <label class="radio-row">
+          <input id="roster-entry-is-player" type="checkbox" checked>
+          Is Player
+        </label>
+        <label class="radio-row">
+          <input id="roster-entry-rostered" type="checkbox" checked>
+          Rostered For This Game
+        </label>
+        <label class="radio-row">
+          <input id="roster-entry-libero" type="checkbox">
+          Libero
+        </label>
+        <label class="radio-row">
+          <input id="roster-entry-captain" type="checkbox">
+          Captain
+        </label>
+      </div>
+      <div class="form-row">
+        <label for="roster-entry-number">Shirt Number</label>
+        <input id="roster-entry-number" type="number" min="1" step="1" placeholder="e.g. 8">
+      </div>
+      <div class="form-row">
+        <label for="roster-entry-reg-number">Reg Number (Optional)</label>
+        <input id="roster-entry-reg-number" type="text" maxlength="40" placeholder="Optional">
+      </div>
+      <div class="form-row">
+        <label for="roster-entry-bench-role">Bench Role</label>
+        <select id="roster-entry-bench-role">
+          <option value="">None</option>
+          <option value="Coach">Coach</option>
+          <option value="Assistant Coach 1">Assistant Coach 1</option>
+          <option value="Assistant Coach 2">Assistant Coach 2</option>
+          <option value="Therapist">Therapist</option>
+          <option value="Medical">Medical</option>
+        </select>
+      </div>
+      <div class="setup-actions modal-actions">
+        <button id="save-roster-entry" type="button">Save Entry</button>
+        <button id="cancel-roster-entry" type="button">Cancel</button>
+        <button id="remove-roster-entry" type="button" class="danger-btn hidden">Remove Entry</button>
+      </div>
+      <p id="roster-entry-feedback" class="setup-feedback hidden"></p>
+    </div>
+  </div>
 
   <section id="setup-panel" class="setup-panel">
     <div class="setup-grid">

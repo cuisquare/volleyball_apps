@@ -50,6 +50,12 @@ const RULES_JSON_VERSION = 2;
 const TEAM_ROSTER_JSON_TYPE = 'volleyball_team_roster';
 const TEAM_ROSTER_JSON_VERSION = 2;
 const BENCH_ROLES = ['Coach', 'Assistant Coach 1', 'Assistant Coach 2', 'Therapist', 'Medical'];
+
+function getBenchRoleSortRank(benchRole) {
+    const index = BENCH_ROLES.indexOf(benchRole);
+    return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+}
+
 let savedRuleProfiles = [];
 
 const myfixture = new Fixture(
@@ -78,6 +84,10 @@ const setupState = {
     editingRosterPlayerId: {
         home: '',
         away: ''
+    },
+    rosterEditor: {
+        open: false,
+        teamSide: 'home'
     },
     nextRosterPlayerId: 1,
     matchStarted: false,
@@ -133,38 +143,35 @@ const elements = {
     importAwayRosterJson: document.getElementById('import-away-roster-json'),
     importAwayRosterJsonInput: document.getElementById('import-away-roster-json-input'),
     rosterRulesHint: document.getElementById('roster-rules-hint'),
-    homePlayerName: document.getElementById('home-player-name'),
-    homePlayerIsPlayer: document.getElementById('home-player-is-player'),
-    homePlayerRostered: document.getElementById('home-player-rostered'),
-    homePlayerNumber: document.getElementById('home-player-number'),
-    homePlayerRegNumber: document.getElementById('home-player-reg-number'),
-    homePlayerBenchRole: document.getElementById('home-player-bench-role'),
-    homePlayerLibero: document.getElementById('home-player-libero'),
-    homePlayerCaptain: document.getElementById('home-player-captain'),
     addHomePlayer: document.getElementById('add-home-player'),
-    cancelHomePlayerEdit: document.getElementById('cancel-home-player-edit'),
-    removeHomePlayerEdit: document.getElementById('remove-home-player-edit'),
     homeRosterCount: document.getElementById('home-roster-count'),
     homeBenchRosterBody: document.getElementById('home-bench-roster-body'),
     homeRegularRosterBody: document.getElementById('home-regular-roster-body'),
     homeLiberoRosterBody: document.getElementById('home-libero-roster-body'),
     homeUnrosteredRosterBody: document.getElementById('home-unrostered-roster-body'),
-    awayPlayerName: document.getElementById('away-player-name'),
-    awayPlayerIsPlayer: document.getElementById('away-player-is-player'),
-    awayPlayerRostered: document.getElementById('away-player-rostered'),
-    awayPlayerNumber: document.getElementById('away-player-number'),
-    awayPlayerRegNumber: document.getElementById('away-player-reg-number'),
-    awayPlayerBenchRole: document.getElementById('away-player-bench-role'),
-    awayPlayerLibero: document.getElementById('away-player-libero'),
-    awayPlayerCaptain: document.getElementById('away-player-captain'),
     addAwayPlayer: document.getElementById('add-away-player'),
-    cancelAwayPlayerEdit: document.getElementById('cancel-away-player-edit'),
-    removeAwayPlayerEdit: document.getElementById('remove-away-player-edit'),
     awayRosterCount: document.getElementById('away-roster-count'),
     awayBenchRosterBody: document.getElementById('away-bench-roster-body'),
     awayRegularRosterBody: document.getElementById('away-regular-roster-body'),
     awayLiberoRosterBody: document.getElementById('away-libero-roster-body'),
     awayUnrosteredRosterBody: document.getElementById('away-unrostered-roster-body'),
+    rosterEntryModal: document.getElementById('roster-entry-modal'),
+    rosterEntryModalTitle: document.getElementById('roster-entry-modal-title'),
+    rosterEntryModalSubtitle: document.getElementById('roster-entry-modal-subtitle'),
+    closeRosterEntryModal: document.getElementById('close-roster-entry-modal'),
+    rosterEntryFirstName: document.getElementById('roster-entry-first-name'),
+    rosterEntryLastName: document.getElementById('roster-entry-last-name'),
+    rosterEntryIsPlayer: document.getElementById('roster-entry-is-player'),
+    rosterEntryRostered: document.getElementById('roster-entry-rostered'),
+    rosterEntryNumber: document.getElementById('roster-entry-number'),
+    rosterEntryRegNumber: document.getElementById('roster-entry-reg-number'),
+    rosterEntryBenchRole: document.getElementById('roster-entry-bench-role'),
+    rosterEntryLibero: document.getElementById('roster-entry-libero'),
+    rosterEntryCaptain: document.getElementById('roster-entry-captain'),
+    saveRosterEntry: document.getElementById('save-roster-entry'),
+    cancelRosterEntry: document.getElementById('cancel-roster-entry'),
+    removeRosterEntry: document.getElementById('remove-roster-entry'),
+    rosterEntryFeedback: document.getElementById('roster-entry-feedback'),
     applyPrematchToss: document.getElementById('apply-prematch-toss'),
     startMatch: document.getElementById('start-match'),
     quickSaveMatch: document.getElementById('quick-save-match'),
@@ -273,6 +280,17 @@ function setTeamDetailsFeedback(message, variant = '') {
     if (variant) {
         elements.teamDetailsFeedback.classList.add(variant);
     }
+    if (setupState.rosterEditor.open) {
+        elements.rosterEntryFeedback.textContent = message;
+        elements.rosterEntryFeedback.classList.remove('hidden', 'error', 'success');
+        if (variant) {
+            elements.rosterEntryFeedback.classList.add(variant);
+        }
+    } else {
+        elements.rosterEntryFeedback.textContent = '';
+        elements.rosterEntryFeedback.classList.add('hidden');
+        elements.rosterEntryFeedback.classList.remove('error', 'success');
+    }
 }
 
 function setGlobalFeedback(message, variant = '') {
@@ -371,8 +389,7 @@ function syncUiFromLoadedState() {
     setRulesFormValues(getCurrentRulesValuesFromFixture());
     updateRulesPanelView();
     renderRosters();
-    syncRosterEntryFormState('home');
-    syncRosterEntryFormState('away');
+    updateRosterEntryModalUi();
 }
 
 function exportSnapshotToJsonFile(snapshot) {
@@ -438,18 +455,15 @@ function refreshPrematchLockState() {
         elements.homeTeamName,
         elements.awayTeamName,
         elements.rulesProfile,
-        elements.homePlayerName,
-        elements.homePlayerRostered,
-        elements.homePlayerNumber,
-        elements.homePlayerRegNumber,
-        elements.homePlayerLibero,
-        elements.homePlayerCaptain,
-        elements.awayPlayerName,
-        elements.awayPlayerRostered,
-        elements.awayPlayerNumber,
-        elements.awayPlayerRegNumber,
-        elements.awayPlayerLibero,
-        elements.awayPlayerCaptain,
+        elements.rosterEntryFirstName,
+        elements.rosterEntryLastName,
+        elements.rosterEntryIsPlayer,
+        elements.rosterEntryRostered,
+        elements.rosterEntryNumber,
+        elements.rosterEntryRegNumber,
+        elements.rosterEntryBenchRole,
+        elements.rosterEntryLibero,
+        elements.rosterEntryCaptain,
         elements.importRulesJson,
         elements.importHomeRosterJson,
         elements.importAwayRosterJson
@@ -654,7 +668,15 @@ function normalizeImportedRosterPlayer(rawPlayer, teamLabel, index) {
     }
 
     const name = typeof rawPlayer.name === 'string' ? rawPlayer.name.trim() : '';
-    if (!name) {
+    const legacySplit = splitLegacyRosterName(name);
+    const firstName = typeof rawPlayer.firstName === 'string' && rawPlayer.firstName.trim()
+        ? rawPlayer.firstName.trim()
+        : legacySplit.firstName;
+    const lastName = typeof rawPlayer.lastName === 'string' && rawPlayer.lastName.trim()
+        ? rawPlayer.lastName.trim()
+        : legacySplit.lastName;
+    const resolvedName = buildFullRosterName(firstName, lastName) || name;
+    if (!resolvedName) {
         throw new Error(`${teamLabel} roster entry ${index + 1} is missing a player name.`);
     }
 
@@ -672,7 +694,9 @@ function normalizeImportedRosterPlayer(rawPlayer, teamLabel, index) {
 
     return {
         id: '',
-        name,
+        firstName,
+        lastName,
+        name: resolvedName,
         shirtNumber: isPlayer ? shirtNumber : null,
         regNumber,
         isPlayer,
@@ -768,6 +792,7 @@ async function handleImportSingleTeamRosterJsonFile(event, teamSide) {
         const parsed = JSON.parse(text);
         const imported = parseImportedSingleRosterPayload(parsed, teamSide);
         setupState.editingRosterPlayerId[teamSide] = '';
+        closeRosterEntryModal();
         setupState.rosters[teamSide] = withGeneratedRosterIds(imported.roster);
 
         if (imported.teamName) {
@@ -871,6 +896,41 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
+function buildFullRosterName(firstName, lastName) {
+    return [firstName, lastName].filter(Boolean).join(' ').trim();
+}
+
+function splitLegacyRosterName(fullName) {
+    const normalized = typeof fullName === 'string' ? fullName.trim().replace(/\s+/g, ' ') : '';
+    if (!normalized) {
+        return { firstName: '', lastName: '' };
+    }
+    const parts = normalized.split(' ');
+    if (parts.length === 1) {
+        return { firstName: parts[0], lastName: '' };
+    }
+    return {
+        firstName: parts.slice(0, -1).join(' '),
+        lastName: parts[parts.length - 1]
+    };
+}
+
+function formatRosterListName(player) {
+    if (player.firstName && player.lastName) {
+        const initials = player.firstName
+            .split(/\s+/)
+            .filter(Boolean)
+            .map((part) => `${part.charAt(0).toUpperCase()}.`)
+            .join(' ');
+        return `${player.lastName}, ${initials}`.trim();
+    }
+    return player.name || buildFullRosterName(player.firstName, player.lastName) || '';
+}
+
+function getRosterHoverName(player) {
+    return buildFullRosterName(player.firstName, player.lastName) || player.name || '';
+}
+
 function normalizeBenchRole(rawBenchRole) {
     const benchRole = rawBenchRole == null ? '' : String(rawBenchRole).trim();
     return BENCH_ROLES.includes(benchRole) ? benchRole : '';
@@ -883,10 +943,21 @@ function normalizeExistingRosterEntry(rawPlayer) {
 
     const isPlayer = rawPlayer.isPlayer !== undefined ? Boolean(rawPlayer.isPlayer) : true;
     const shirtNumber = Number.parseInt(rawPlayer.shirtNumber, 10);
+    const legacyName = typeof rawPlayer.name === 'string' ? rawPlayer.name.trim() : '';
+    const legacySplit = splitLegacyRosterName(legacyName);
+    const firstName = typeof rawPlayer.firstName === 'string' && rawPlayer.firstName.trim()
+        ? rawPlayer.firstName.trim()
+        : legacySplit.firstName;
+    const lastName = typeof rawPlayer.lastName === 'string' && rawPlayer.lastName.trim()
+        ? rawPlayer.lastName.trim()
+        : legacySplit.lastName;
+    const resolvedName = buildFullRosterName(firstName, lastName) || legacyName;
 
     return {
         id: typeof rawPlayer.id === 'string' ? rawPlayer.id : '',
-        name: typeof rawPlayer.name === 'string' ? rawPlayer.name.trim() : '',
+        firstName,
+        lastName,
+        name: resolvedName,
         shirtNumber: isPlayer && Number.isInteger(shirtNumber) && shirtNumber > 0 ? shirtNumber : null,
         regNumber: rawPlayer.regNumber == null ? '' : String(rawPlayer.regNumber).trim(),
         isPlayer,
@@ -900,17 +971,16 @@ function normalizeExistingRosterEntry(rawPlayer) {
 function getRosterInputs(teamSide) {
     if (teamSide === 'home') {
         return {
-            nameInput: elements.homePlayerName,
-            isPlayerInput: elements.homePlayerIsPlayer,
-            rosteredInput: elements.homePlayerRostered,
-            numberInput: elements.homePlayerNumber,
-            regInput: elements.homePlayerRegNumber,
-            benchRoleInput: elements.homePlayerBenchRole,
-            liberoInput: elements.homePlayerLibero,
-            captainInput: elements.homePlayerCaptain,
+            firstNameInput: elements.rosterEntryFirstName,
+            lastNameInput: elements.rosterEntryLastName,
+            isPlayerInput: elements.rosterEntryIsPlayer,
+            rosteredInput: elements.rosterEntryRostered,
+            numberInput: elements.rosterEntryNumber,
+            regInput: elements.rosterEntryRegNumber,
+            benchRoleInput: elements.rosterEntryBenchRole,
+            liberoInput: elements.rosterEntryLibero,
+            captainInput: elements.rosterEntryCaptain,
             addButton: elements.addHomePlayer,
-            cancelButton: elements.cancelHomePlayerEdit,
-            removeEditButton: elements.removeHomePlayerEdit,
             regularBody: elements.homeRegularRosterBody,
             benchBody: elements.homeBenchRosterBody,
             liberoBody: elements.homeLiberoRosterBody,
@@ -920,17 +990,16 @@ function getRosterInputs(teamSide) {
     }
 
     return {
-        nameInput: elements.awayPlayerName,
-        isPlayerInput: elements.awayPlayerIsPlayer,
-        rosteredInput: elements.awayPlayerRostered,
-        numberInput: elements.awayPlayerNumber,
-        regInput: elements.awayPlayerRegNumber,
-        benchRoleInput: elements.awayPlayerBenchRole,
-        liberoInput: elements.awayPlayerLibero,
-        captainInput: elements.awayPlayerCaptain,
+        firstNameInput: elements.rosterEntryFirstName,
+        lastNameInput: elements.rosterEntryLastName,
+        isPlayerInput: elements.rosterEntryIsPlayer,
+        rosteredInput: elements.rosterEntryRostered,
+        numberInput: elements.rosterEntryNumber,
+        regInput: elements.rosterEntryRegNumber,
+        benchRoleInput: elements.rosterEntryBenchRole,
+        liberoInput: elements.rosterEntryLibero,
+        captainInput: elements.rosterEntryCaptain,
         addButton: elements.addAwayPlayer,
-        cancelButton: elements.cancelAwayPlayerEdit,
-        removeEditButton: elements.removeAwayPlayerEdit,
         regularBody: elements.awayRegularRosterBody,
         benchBody: elements.awayBenchRosterBody,
         liberoBody: elements.awayLiberoRosterBody,
@@ -955,6 +1024,89 @@ function syncRosterEntryFormState(teamSide) {
     if (!isRostered) {
         controls.captainInput.checked = false;
     }
+}
+
+function resetRosterEntryEditorFields() {
+    elements.rosterEntryFirstName.value = '';
+    elements.rosterEntryLastName.value = '';
+    elements.rosterEntryIsPlayer.checked = true;
+    elements.rosterEntryRostered.checked = true;
+    elements.rosterEntryNumber.value = '';
+    elements.rosterEntryRegNumber.value = '';
+    elements.rosterEntryBenchRole.value = '';
+    elements.rosterEntryLibero.checked = false;
+    elements.rosterEntryCaptain.checked = false;
+    elements.rosterEntryFeedback.textContent = '';
+    elements.rosterEntryFeedback.classList.add('hidden');
+    elements.rosterEntryFeedback.classList.remove('error', 'success');
+}
+
+function updateRosterEntryModalUi() {
+    const teamSide = setupState.rosterEditor.teamSide;
+    const isEditing = Boolean(setupState.editingRosterPlayerId[teamSide]);
+    elements.rosterEntryModalTitle.textContent = `${isEditing ? 'Edit' : 'Add'} ${getTeamSideLabel(teamSide)} Entry`;
+    elements.rosterEntryModalSubtitle.textContent = isEditing
+        ? `Update this ${teamSide} roster entry, then save or remove it.`
+        : `Add one ${teamSide} roster entry and save it when ready.`;
+    elements.saveRosterEntry.textContent = isEditing ? 'Save Entry' : 'Add Entry';
+    elements.removeRosterEntry.classList.toggle('hidden', !isEditing);
+    elements.removeRosterEntry.disabled = !isEditing || setupState.matchStarted;
+    elements.saveRosterEntry.disabled = setupState.matchStarted || !setupState.rulesConfirmed;
+    syncRosterEntryFormState(teamSide);
+}
+
+function openRosterEntryModal(teamSide, playerId = '') {
+    if (setupState.matchStarted || !setupState.rulesConfirmed) {
+        return;
+    }
+
+    let player = null;
+    if (playerId) {
+        player = setupState.rosters[teamSide].find((item) => item.id === playerId);
+        if (!player) {
+            return;
+        }
+    }
+
+    setupState.editingRosterPlayerId.home = '';
+    setupState.editingRosterPlayerId.away = '';
+    setupState.rosterEditor.open = true;
+    setupState.rosterEditor.teamSide = teamSide;
+    resetRosterEntryEditorFields();
+
+    if (player) {
+        setupState.editingRosterPlayerId[teamSide] = playerId;
+        elements.rosterEntryFirstName.value = player.firstName || '';
+        elements.rosterEntryLastName.value = player.lastName || '';
+        elements.rosterEntryIsPlayer.checked = Boolean(player.isPlayer);
+        elements.rosterEntryRostered.checked = player.rostered !== undefined ? Boolean(player.rostered) : true;
+        elements.rosterEntryNumber.value = player.shirtNumber || '';
+        elements.rosterEntryRegNumber.value = player.regNumber || '';
+        elements.rosterEntryBenchRole.value = player.benchRole || '';
+        elements.rosterEntryLibero.checked = Boolean(player.isLibero);
+        elements.rosterEntryCaptain.checked = Boolean(player.isCaptain);
+        setTeamDetailsFeedback(`${getTeamSideLabel(teamSide)} entry loaded for edit.`, '');
+    } else {
+        setTeamDetailsFeedback(`Add a new ${getTeamSideLabel(teamSide).toLowerCase()} roster entry and save it when ready.`, '');
+    }
+
+    updateRosterEntryModalUi();
+    elements.rosterEntryModal.classList.remove('hidden');
+    elements.rosterEntryModal.setAttribute('aria-hidden', 'false');
+    elements.rosterEntryFirstName.focus();
+    renderRosters();
+    updateActionAvailability();
+}
+
+function closeRosterEntryModal() {
+    setupState.rosterEditor.open = false;
+    setupState.editingRosterPlayerId.home = '';
+    setupState.editingRosterPlayerId.away = '';
+    resetRosterEntryEditorFields();
+    elements.rosterEntryModal.classList.add('hidden');
+    elements.rosterEntryModal.setAttribute('aria-hidden', 'true');
+    renderRosters();
+    updateActionAvailability();
 }
 
 function getRosteredPlayers(roster) {
@@ -1015,30 +1167,32 @@ function renderRoster(teamSide) {
         if (shirtNumberA !== shirtNumberB) {
             return shirtNumberA - shirtNumberB;
         }
-        return playerA.name.localeCompare(playerB.name);
+        return formatRosterListName(playerA).localeCompare(formatRosterListName(playerB));
     };
 
     const regularPlayers = rosteredPlayers.filter((player) => !player.isLibero).sort(byShirtNumber);
     const liberoPlayers = rosteredPlayers.filter((player) => player.isLibero).sort(byShirtNumber);
     const benchPlayers = rosteredBenchPersonnel.sort((playerA, playerB) => {
-        if (playerA.benchRole !== playerB.benchRole) {
-            return playerA.benchRole.localeCompare(playerB.benchRole);
+        const roleRankDifference = getBenchRoleSortRank(playerA.benchRole) - getBenchRoleSortRank(playerB.benchRole);
+        if (roleRankDifference !== 0) {
+            return roleRankDifference;
         }
-        return playerA.name.localeCompare(playerB.name);
+        return formatRosterListName(playerA).localeCompare(formatRosterListName(playerB));
     });
     const unrosteredPlayers = unrosteredEntries.sort((playerA, playerB) => {
         if (playerA.isPlayer !== playerB.isPlayer) {
             return playerA.isPlayer ? -1 : 1;
         }
-        if ((playerA.benchRole || '') !== (playerB.benchRole || '')) {
-            return (playerA.benchRole || '').localeCompare(playerB.benchRole || '');
+        const roleRankDifference = getBenchRoleSortRank(playerA.benchRole || '') - getBenchRoleSortRank(playerB.benchRole || '');
+        if (roleRankDifference !== 0) {
+            return roleRankDifference;
         }
         const shirtNumberA = playerA.shirtNumber || 0;
         const shirtNumberB = playerB.shirtNumber || 0;
         if (shirtNumberA !== shirtNumberB) {
             return shirtNumberA - shirtNumberB;
         }
-        return playerA.name.localeCompare(playerB.name);
+        return formatRosterListName(playerA).localeCompare(formatRosterListName(playerB));
     });
 
     const renderRows = (targetBody, players, emptyText) => {
@@ -1051,9 +1205,11 @@ function renderRoster(teamSide) {
 
         for (const player of players) {
             const canRemove = !setupState.matchStarted;
+            const displayName = formatRosterListName(player);
+            const fullName = getRosterHoverName(player);
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${escapeHtml(player.name)}</td>
+                <td title="${escapeHtml(fullName)}">${escapeHtml(displayName)}</td>
                 <td>${player.shirtNumber}</td>
                 <td>${player.regNumber ? escapeHtml(player.regNumber) : '-'}</td>
                 <td>${player.isCaptain ? 'Yes' : '-'}</td>
@@ -1076,9 +1232,11 @@ function renderRoster(teamSide) {
 
         for (const player of players) {
             const canRemove = !setupState.matchStarted;
+            const displayName = formatRosterListName(player);
+            const fullName = getRosterHoverName(player);
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${escapeHtml(player.name)}</td>
+                <td title="${escapeHtml(fullName)}">${escapeHtml(displayName)}</td>
                 <td>${escapeHtml(player.benchRole)}</td>
                 <td>${player.isPlayer ? 'Yes' : '-'}</td>
                 <td>${player.isPlayer && player.shirtNumber ? player.shirtNumber : '-'}</td>
@@ -1105,8 +1263,10 @@ function renderRoster(teamSide) {
             const row = document.createElement('tr');
             const typeLabel = player.isPlayer ? (player.isLibero ? 'Libero' : 'Player') : 'Bench';
             const roleLabel = player.benchRole || (player.isCaptain ? 'Captain' : '-');
+            const displayName = formatRosterListName(player);
+            const fullName = getRosterHoverName(player);
             row.innerHTML = `
-                <td>${escapeHtml(player.name)}</td>
+                <td title="${escapeHtml(fullName)}">${escapeHtml(displayName)}</td>
                 <td>${typeLabel}</td>
                 <td>${escapeHtml(roleLabel)}</td>
                 <td>${player.shirtNumber || '-'}</td>
@@ -1125,13 +1285,6 @@ function renderRoster(teamSide) {
     renderRows(controls.liberoBody, liberoPlayers, 'No libero players yet.');
     renderUnrosteredRows(controls.unrosteredBody, unrosteredPlayers, 'No eligible/unrostered entries yet.');
 
-    const isEditing = Boolean(setupState.editingRosterPlayerId[teamSide]);
-    controls.addButton.textContent = isEditing
-        ? (teamSide === 'home' ? 'Save Home Entry' : 'Save Away Entry')
-        : (teamSide === 'home' ? 'Add Home Entry' : 'Add Away Entry');
-    controls.cancelButton.classList.toggle('hidden', !isEditing);
-    controls.removeEditButton.classList.toggle('hidden', !isEditing);
-    controls.removeEditButton.disabled = !isEditing || setupState.matchStarted;
 }
 
 function renderRosters() {
@@ -1144,6 +1297,8 @@ function createDefaultRoster() {
     for (let i = 1; i <= 6; i++) {
         roster.push({
             id: `p_${setupState.nextRosterPlayerId++}`,
+            firstName: `Player`,
+            lastName: `${i}`,
             name: `Player ${i}`,
             shirtNumber: i,
             regNumber: '',
@@ -1231,8 +1386,10 @@ function validateRosterEntryForTeam(teamSide, roster) {
 
     const usedBenchRoles = new Set();
     for (const player of roster) {
-        if (!player.name) {
-            return `${teamLabel} roster entry name is required.`;
+        if (!player.firstName || !player.lastName) {
+            if (!player.name) {
+                return `${teamLabel} roster entry first name and last name are required.`;
+            }
         }
         if (!player.isPlayer && !player.benchRole) {
             return `${teamLabel} non-player entries must have a bench role.`;
@@ -1264,18 +1421,8 @@ function validateRosterEntryForTeam(teamSide, roster) {
 }
 
 function clearRosterInputs(teamSide) {
-    const controls = getRosterInputs(teamSide);
-    controls.nameInput.value = '';
-    controls.isPlayerInput.checked = true;
-    controls.rosteredInput.checked = true;
-    controls.numberInput.value = '';
-    controls.regInput.value = '';
-    controls.benchRoleInput.value = '';
-    controls.liberoInput.checked = false;
-    controls.captainInput.checked = false;
     setupState.editingRosterPlayerId[teamSide] = '';
-    syncRosterEntryFormState(teamSide);
-    renderRoster(teamSide);
+    closeRosterEntryModal();
 }
 
 function toggleRosteredStatus(teamSide, playerId, nextRostered) {
@@ -1313,12 +1460,12 @@ function toggleRosteredStatus(teamSide, playerId, nextRostered) {
     }
 
     setupState.rosters[teamSide] = nextRoster;
-    if (setupState.editingRosterPlayerId[teamSide] === playerId) {
+    if (setupState.rosterEditor.open && setupState.rosterEditor.teamSide === teamSide && setupState.editingRosterPlayerId[teamSide] === playerId) {
         const updated = nextRoster.find((player) => player.id === playerId);
         const controls = getRosterInputs(teamSide);
         controls.rosteredInput.checked = updated ? Boolean(updated.rostered) : false;
         controls.captainInput.checked = updated ? Boolean(updated.isCaptain) : false;
-        syncRosterEntryFormState(teamSide);
+        updateRosterEntryModalUi();
     }
     markTeamDetailsDirty();
     renderRosters();
@@ -1347,7 +1494,9 @@ function addRosterPlayer(teamSide) {
         return;
     }
 
-    const name = controls.nameInput.value.trim();
+    const firstName = controls.firstNameInput.value.trim();
+    const lastName = controls.lastNameInput.value.trim();
+    const name = buildFullRosterName(firstName, lastName);
     const isPlayer = controls.isPlayerInput.checked;
     const rostered = controls.rosteredInput.checked;
     const shirtNumber = Number.parseInt(controls.numberInput.value, 10);
@@ -1356,8 +1505,8 @@ function addRosterPlayer(teamSide) {
     const isLibero = isPlayer && controls.liberoInput.checked;
     const isCaptain = isPlayer && controls.captainInput.checked;
 
-    if (!name) {
-        setTeamDetailsFeedback('Name is required.', 'error');
+    if (!firstName || !lastName) {
+        setTeamDetailsFeedback('First name and last name are required.', 'error');
         return;
     }
     if (isPlayer && (!Number.isInteger(shirtNumber) || shirtNumber <= 0)) {
@@ -1374,6 +1523,8 @@ function addRosterPlayer(teamSide) {
         ? roster.map((player) => (player.id === editingId
             ? {
                 ...player,
+                firstName,
+                lastName,
                 name,
                 shirtNumber: isPlayer ? shirtNumber : null,
                 regNumber,
@@ -1386,6 +1537,8 @@ function addRosterPlayer(teamSide) {
             : player))
         : [...roster, {
             id: `p_${setupState.nextRosterPlayerId}`,
+            firstName,
+            lastName,
             name,
             shirtNumber: isPlayer ? shirtNumber : null,
             regNumber,
@@ -1423,6 +1576,8 @@ function addRosterPlayer(teamSide) {
     } else {
         roster.push({
             id: `p_${setupState.nextRosterPlayerId++}`,
+            firstName,
+            lastName,
             name,
             shirtNumber: isPlayer ? shirtNumber : null,
             regNumber,
@@ -1435,8 +1590,8 @@ function addRosterPlayer(teamSide) {
     }
 
     markTeamDetailsDirty();
+    closeRosterEntryModal();
     renderRosters();
-    clearRosterInputs(teamSide);
     const updatedRoster = setupState.rosters[teamSide];
     const players = getRosteredPlayers(updatedRoster);
     const liberos = players.filter((player) => player.isLibero).length;
@@ -1463,28 +1618,7 @@ function editRosterPlayer(teamSide, playerId) {
     if (setupState.matchStarted) {
         return;
     }
-
-    const roster = setupState.rosters[teamSide];
-    const player = roster.find((item) => item.id === playerId);
-    if (!player) {
-        return;
-    }
-
-    const controls = getRosterInputs(teamSide);
-    controls.nameInput.value = player.name;
-    controls.isPlayerInput.checked = Boolean(player.isPlayer);
-    controls.rosteredInput.checked = player.rostered !== undefined ? Boolean(player.rostered) : true;
-    controls.numberInput.value = player.shirtNumber || '';
-    controls.regInput.value = player.regNumber || '';
-    controls.benchRoleInput.value = player.benchRole || '';
-    controls.liberoInput.checked = Boolean(player.isLibero);
-    controls.captainInput.checked = Boolean(player.isCaptain);
-
-    setupState.editingRosterPlayerId[teamSide] = playerId;
-    syncRosterEntryFormState(teamSide);
-    renderRoster(teamSide);
-    setTeamDetailsFeedback(`${teamSide === 'home' ? 'Home' : 'Away'} entry loaded for edit. Update fields and click Save.`, '');
-    updateActionAvailability();
+    openRosterEntryModal(teamSide, playerId);
 }
 
 function removeRosterPlayer(teamSide, playerId) {
@@ -1504,10 +1638,10 @@ function removeRosterPlayer(teamSide, playerId) {
         setupState.editingRosterPlayerId[teamSide] = '';
     }
     markTeamDetailsDirty();
-    renderRosters();
     if (wasEditingRemovedPlayer) {
-        clearRosterInputs(teamSide);
+        closeRosterEntryModal();
     }
+    renderRosters();
     setTeamDetailsFeedback('Roster updated. Click Apply Team Details to confirm.', '');
     updateSetupBadge();
     updateActionAvailability();
@@ -1646,7 +1780,7 @@ function markCurrentSetStarted() {
 }
 
 function buildLineupOptionLabel(player) {
-    return `#${player.shirtNumber} (${player.name})`;
+    return `#${player.shirtNumber} (${getRosterHoverName(player)})`;
 }
 
 function getLineupOptionSuffix(teamSelections, currentPosition, playerId) {
@@ -1720,7 +1854,7 @@ function renderLineupSelect(teamId, position, selectedPlayerId, disabled) {
             return playerA.shirtNumber - playerB.shirtNumber;
         }
 
-        return playerA.name.localeCompare(playerB.name);
+        return formatRosterListName(playerA).localeCompare(formatRosterListName(playerB));
     });
     select.innerHTML = '';
 
@@ -2443,22 +2577,15 @@ function lockPrematchSetup() {
     }
 
     for (const input of [
-        elements.homePlayerName,
-        elements.homePlayerIsPlayer,
-        elements.homePlayerRostered,
-        elements.homePlayerNumber,
-        elements.homePlayerRegNumber,
-        elements.homePlayerBenchRole,
-        elements.homePlayerLibero,
-        elements.homePlayerCaptain,
-        elements.awayPlayerName,
-        elements.awayPlayerIsPlayer,
-        elements.awayPlayerRostered,
-        elements.awayPlayerNumber,
-        elements.awayPlayerRegNumber,
-        elements.awayPlayerBenchRole,
-        elements.awayPlayerLibero,
-        elements.awayPlayerCaptain
+        elements.rosterEntryFirstName,
+        elements.rosterEntryLastName,
+        elements.rosterEntryIsPlayer,
+        elements.rosterEntryRostered,
+        elements.rosterEntryNumber,
+        elements.rosterEntryRegNumber,
+        elements.rosterEntryBenchRole,
+        elements.rosterEntryLibero,
+        elements.rosterEntryCaptain
     ]) {
         input.disabled = true;
     }
@@ -2670,17 +2797,8 @@ function updateActionAvailability() {
     elements.startMatch.disabled = !canStartSet;
     elements.applyTeamDetails.disabled = setupState.matchStarted || !setupState.rulesConfirmed;
     elements.applyPrematchToss.disabled = setupState.matchStarted || !setupState.rulesConfirmed || !setupState.teamDetailsConfirmed;
-    const homeAtMax = getRosteredPlayers(setupState.rosters.home).length >= getMaxRosterPlayers();
-    const awayAtMax = getRosteredPlayers(setupState.rosters.away).length >= getMaxRosterPlayers();
-    const editingHome = Boolean(setupState.editingRosterPlayerId.home);
-    const editingAway = Boolean(setupState.editingRosterPlayerId.away);
-
-    elements.addHomePlayer.disabled = setupState.matchStarted
-        || !setupState.rulesConfirmed
-        || (homeAtMax && !editingHome && elements.homePlayerIsPlayer.checked && elements.homePlayerRostered.checked);
-    elements.addAwayPlayer.disabled = setupState.matchStarted
-        || !setupState.rulesConfirmed
-        || (awayAtMax && !editingAway && elements.awayPlayerIsPlayer.checked && elements.awayPlayerRostered.checked);
+    elements.addHomePlayer.disabled = setupState.matchStarted || !setupState.rulesConfirmed;
+    elements.addAwayPlayer.disabled = setupState.matchStarted || !setupState.rulesConfirmed;
 
     const canManageSet = setupState.matchStarted && !mygame.isGameOver && currentSetStarted();
     const canScore = canManageSet && mygame.team_serving_currently !== 'Unknown';
@@ -2706,6 +2824,9 @@ function updateActionAvailability() {
     elements.exportRulesJson.disabled = false;
     elements.exportHomeRosterJson.disabled = false;
     elements.exportAwayRosterJson.disabled = false;
+    if (setupState.rosterEditor.open) {
+        updateRosterEntryModalUi();
+    }
 }
 
 function updateSetsElements() {
@@ -3071,20 +3192,21 @@ function hookEventListeners() {
     elements.importRulesJson.addEventListener('click', importRulesFromJson);
     elements.importRulesJsonInput.addEventListener('change', handleImportRulesJsonFile);
 
-    elements.addHomePlayer.addEventListener('click', () => addRosterPlayer('home'));
-    elements.addAwayPlayer.addEventListener('click', () => addRosterPlayer('away'));
-    elements.cancelHomePlayerEdit.addEventListener('click', () => clearRosterInputs('home'));
-    elements.cancelAwayPlayerEdit.addEventListener('click', () => clearRosterInputs('away'));
-    elements.removeHomePlayerEdit.addEventListener('click', () => {
-        const playerId = setupState.editingRosterPlayerId.home;
+    elements.addHomePlayer.addEventListener('click', () => openRosterEntryModal('home'));
+    elements.addAwayPlayer.addEventListener('click', () => openRosterEntryModal('away'));
+    elements.closeRosterEntryModal.addEventListener('click', closeRosterEntryModal);
+    elements.cancelRosterEntry.addEventListener('click', closeRosterEntryModal);
+    elements.saveRosterEntry.addEventListener('click', () => addRosterPlayer(setupState.rosterEditor.teamSide));
+    elements.removeRosterEntry.addEventListener('click', () => {
+        const teamSide = setupState.rosterEditor.teamSide;
+        const playerId = setupState.editingRosterPlayerId[teamSide];
         if (playerId) {
-            removeRosterPlayer('home', playerId);
+            removeRosterPlayer(teamSide, playerId);
         }
     });
-    elements.removeAwayPlayerEdit.addEventListener('click', () => {
-        const playerId = setupState.editingRosterPlayerId.away;
-        if (playerId) {
-            removeRosterPlayer('away', playerId);
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && setupState.rosterEditor.open) {
+            closeRosterEntryModal();
         }
     });
     elements.exportHomeRosterJson.addEventListener('click', () => exportSingleTeamRosterAsJson('home'));
@@ -3194,16 +3316,14 @@ function hookEventListeners() {
         input.addEventListener('change', markRulesDirty);
     }
 
-    for (const teamSide of ['home', 'away']) {
-        const controls = getRosterInputs(teamSide);
-        controls.isPlayerInput.addEventListener('change', () => {
-            syncRosterEntryFormState(teamSide);
-            updateActionAvailability();
-        });
-        controls.rosteredInput.addEventListener('change', () => {
-            updateActionAvailability();
-        });
-    }
+    elements.rosterEntryIsPlayer.addEventListener('change', () => {
+        updateRosterEntryModalUi();
+        updateActionAvailability();
+    });
+    elements.rosterEntryRostered.addEventListener('change', () => {
+        updateRosterEntryModalUi();
+        updateActionAvailability();
+    });
 
     for (const input of [elements.homeTeamName, elements.awayTeamName]) {
         input.addEventListener('input', () => {
@@ -3256,6 +3376,8 @@ function initSetupDefaults() {
         : [];
     setupState.editingRosterPlayerId.home = '';
     setupState.editingRosterPlayerId.away = '';
+    setupState.rosterEditor.open = false;
+    setupState.rosterEditor.teamSide = 'home';
     setupState.nextRosterPlayerId = 1;
     for (const player of [...setupState.rosters.home, ...setupState.rosters.away]) {
         if (typeof player.id === 'string' && player.id.startsWith('p_')) {
@@ -3290,8 +3412,7 @@ function initSetupDefaults() {
     updateRulesPanelView();
     updateRosterRuleHint();
     renderRosters();
-    syncRosterEntryFormState('home');
-    syncRosterEntryFormState('away');
+    closeRosterEntryModal();
 
     setSetupFeedback('After rules are confirmed, complete Team Details and rosters, then toss choices to prepare Set 1.', '');
     setTeamDetailsFeedback('Enter both team names, build both rosters, then click Apply Team Details.', '');
