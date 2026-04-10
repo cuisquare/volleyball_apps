@@ -760,7 +760,7 @@ function parseImportedSingleRosterPayload(parsed, expectedTeamSide) {
     const teamName = typeof parsed.teamName === 'string' ? parsed.teamName.trim() : '';
     const rawRoster = Array.isArray(parsed.roster) ? parsed.roster : [];
     const roster = rawRoster.map((player, index) => normalizeImportedRosterPlayer(player, getTeamSideLabel(expectedTeamSide), index));
-    const rosterEntryError = validateRosterEntryForTeam(expectedTeamSide, roster);
+    const rosterEntryError = validateRosterEntryForTeam(expectedTeamSide, roster, { allowExtraLiberos: true });
     if (rosterEntryError) {
         throw new Error(rosterEntryError);
     }
@@ -1361,8 +1361,9 @@ function validateRosterForTeam(teamSide, roster) {
     return '';
 }
 
-function validateRosterEntryForTeam(teamSide, roster) {
+function validateRosterEntryForTeam(teamSide, roster, options = {}) {
     const teamLabel = teamSide === 'home' ? 'Home' : 'Away';
+    const allowExtraLiberos = Boolean(options.allowExtraLiberos);
     const players = getRosteredPlayers(roster);
 
     const numbers = new Set();
@@ -1375,7 +1376,7 @@ function validateRosterEntryForTeam(teamSide, roster) {
 
     const liberos = players.filter((player) => player.isLibero).length;
     const maxLiberos = getMaxLiberosPerRoster();
-    if (liberos > maxLiberos) {
+    if (!allowExtraLiberos && liberos > maxLiberos) {
         return withRulesContext(`${teamLabel} roster cannot have more than ${maxLiberos} liberos.`);
     }
 
