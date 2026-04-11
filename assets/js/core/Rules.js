@@ -12,7 +12,8 @@ class Rules {
         allowPlayerStaffRoleCumulation = true,
         breakBetweenSetsMins = 3,
         maxTimeoutsRegularSet = 2,
-        maxTimeoutsDeciderSet = 2
+        maxTimeoutsDeciderSet = 2,
+        maxSubsPerSet = 6
     ) {
         this.regsetpts = regsetpts;
         this.nbsetswin = nbsetswin;
@@ -22,6 +23,7 @@ class Rules {
         this.breakBetweenSetsMins = breakBetweenSetsMins;
         this.maxTimeoutsRegularSet = maxTimeoutsRegularSet;
         this.maxTimeoutsDeciderSet = maxTimeoutsDeciderSet;
+        this.maxSubsPerSet = maxSubsPerSet;
 
         this.decidersetpts = decidersetpts;
 

@@ -393,6 +393,10 @@
           <label for="maxtimeoutsdeciderset">Max Timeouts In Decider Set</label>
           <input id="maxtimeoutsdeciderset" type="number" min="0" step="1">
         </div>
+        <div class="form-row">
+          <label for="maxsubsset">Max Substitutions Per Set</label>
+          <input id="maxsubsset" type="number" min="0" step="1">
+        </div>
         <div class="form-row checkbox-row">
           <label for="allow-player-staff-role-cumulation">Allow Player/Staff Role Cumulation</label>
           <input id="allow-player-staff-role-cumulation" type="checkbox">
@@ -469,7 +473,10 @@
     </div>
     <div class="setup-actions">
       <button id="apply-lineups" type="button">Apply Lineups For Set</button>
+      <button id="done-substitutions" type="button" class="hidden">SUBS DONE</button>
     </div>
+    <p id="lineups-substitution-status" class="hint"></p>
+    <ul id="lineups-substitution-unavailable" class="lineups-substitution-unavailable hidden"></ul>
     <p id="lineups-feedback" class="setup-feedback"></p>
   </section>
 
@@ -485,6 +492,8 @@
           <p id="servingstate-teamA">Unknown</p>
           <button id="timeout-teamA" type="button">TIME OUT</button>
           <p id="timeouts-left-teamA">0 / 0</p>
+          <button id="sub-teamA" type="button">SUB</button>
+          <p id="subs-used-teamA">0 / 0</p>
         </div>
         <div id="accruedSetsPointsTeamA">
           <h2>Sets:</h2>
@@ -504,6 +513,8 @@
           <p id="servingstate-teamB">Unknown</p>
           <button id="timeout-teamB" type="button">TIME OUT</button>
           <p id="timeouts-left-teamB">0 / 0</p>
+          <button id="sub-teamB" type="button">SUB</button>
+          <p id="subs-used-teamB">0 / 0</p>
         </div>
         <div id="accruedSetsPointsTeamB">
           <h2>Sets:</h2>

@@ -426,6 +426,32 @@ input[type="radio"]:disabled {
   margin-top: 16px;
 }
 
+.lineups-substitution-unavailable {
+  margin: 0 0 8px 18px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.lineup-sub-active {
+  border-color: #9fbbe6;
+  background: #edf3fd;
+}
+
+.lineup-sub-locked {
+  border-color: #e7c58b;
+  background: #fbf4e6;
+}
+
+.dark-mode .lineup-sub-active {
+  background: #1a2b46;
+  border-color: #456ea7;
+}
+
+.dark-mode .lineup-sub-locked {
+  background: #3b2b17;
+  border-color: #9b7b43;
+}
+
 #lineups-panel select {
   font-family: "Consolas", "Courier New", monospace;
 }

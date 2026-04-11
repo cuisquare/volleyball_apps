@@ -19,7 +19,8 @@ const RULE_PRESETS = {
             allowPlayerStaffRoleCumulation: true,
             breakBetweenSetsMins: 3,
             maxTimeoutsRegularSet: 2,
-            maxTimeoutsDeciderSet: 1
+            maxTimeoutsDeciderSet: 1,
+            maxSubsPerSet: 6
         }
     },
     fivb: {
@@ -37,7 +38,8 @@ const RULE_PRESETS = {
             allowPlayerStaffRoleCumulation: true,
             breakBetweenSetsMins: 3,
             maxTimeoutsRegularSet: 2,
-            maxTimeoutsDeciderSet: 2
+            maxTimeoutsDeciderSet: 2,
+            maxSubsPerSet: 6
         }
     }
 };
@@ -89,6 +91,20 @@ const setupState = {
         open: false,
         teamSide: 'home'
     },
+    substitutionMode: {
+        active: false,
+        teamId: '',
+        outgoingPosition: 0,
+        requestPairs: []
+    },
+    substitutionInterruptionPairs: {
+        teamA: [],
+        teamB: []
+    },
+    substitutionPanelNotice: {
+        message: '',
+        items: []
+    },
     nextRosterPlayerId: 1,
     matchStarted: false,
     setupLocked: false,
@@ -117,12 +133,15 @@ const elements = {
     rulesFeedback: document.getElementById('rules-feedback'),
     teamDetailsFeedback: document.getElementById('team-details-feedback'),
     lineupsFeedback: document.getElementById('lineups-feedback'),
+    lineupsSubstitutionStatus: document.getElementById('lineups-substitution-status'),
+    lineupsSubstitutionUnavailable: document.getElementById('lineups-substitution-unavailable'),
     lineupsSetLabel: document.getElementById('lineups-set-label'),
     lineupsTeamACard: document.getElementById('lineups-teamA-card'),
     lineupsTeamBCard: document.getElementById('lineups-teamB-card'),
     lineupsTeamATitle: document.getElementById('lineups-teamA-title'),
     lineupsTeamBTitle: document.getElementById('lineups-teamB-title'),
     applyLineups: document.getElementById('apply-lineups'),
+    doneSubstitutions: document.getElementById('done-substitutions'),
     lineupTeamAPos1: document.getElementById('lineup-teamA-pos1'),
     lineupTeamAPos2: document.getElementById('lineup-teamA-pos2'),
     lineupTeamAPos3: document.getElementById('lineup-teamA-pos3'),
@@ -213,6 +232,10 @@ const elements = {
     incTeamB: document.getElementById('increase-score-teamB'),
     timeoutTeamA: document.getElementById('timeout-teamA'),
     timeoutTeamB: document.getElementById('timeout-teamB'),
+    subTeamA: document.getElementById('sub-teamA'),
+    subTeamB: document.getElementById('sub-teamB'),
+    subsUsedTeamA: document.getElementById('subs-used-teamA'),
+    subsUsedTeamB: document.getElementById('subs-used-teamB'),
     homeTeamName: document.getElementById('home-team-name'),
     awayTeamName: document.getElementById('away-team-name'),
     regsetpts: document.getElementById('regsetpts'),
@@ -227,6 +250,7 @@ const elements = {
     breakBetweenSetsMins: document.getElementById('breakbetweensetsmins'),
     maxTimeoutsRegularSet: document.getElementById('maxtimeoutsregularset'),
     maxTimeoutsDeciderSet: document.getElementById('maxtimeoutsdeciderset'),
+    maxSubsPerSet: document.getElementById('maxsubsset'),
     allowPlayerStaffRoleCumulation: document.getElementById('allow-player-staff-role-cumulation'),
     deciderCard: document.getElementById('decider-toss-card'),
     deciderLeftTeam: document.getElementById('decider-left-team'),
@@ -293,6 +317,28 @@ function setTeamDetailsFeedback(message, variant = '') {
     }
 }
 
+function setLineupsSubstitutionHint(message = '', unavailableItems = []) {
+    elements.lineupsSubstitutionStatus.textContent = message;
+    elements.lineupsSubstitutionUnavailable.innerHTML = '';
+    if (!Array.isArray(unavailableItems) || unavailableItems.length === 0) {
+        elements.lineupsSubstitutionUnavailable.classList.add('hidden');
+        return;
+    }
+    for (const item of unavailableItems) {
+        const li = document.createElement('li');
+        li.textContent = item;
+        elements.lineupsSubstitutionUnavailable.appendChild(li);
+    }
+    elements.lineupsSubstitutionUnavailable.classList.remove('hidden');
+}
+
+function setSubstitutionPanelNotice(message = '', items = []) {
+    setupState.substitutionPanelNotice = {
+        message,
+        items: Array.isArray(items) ? [...items] : []
+    };
+}
+
 function setGlobalFeedback(message, variant = '') {
     setSetupFeedback(message, variant);
     setRulesFeedback(message, variant);
@@ -314,6 +360,7 @@ function getCurrentRulesValuesFromFixture() {
         breakBetweenSetsMins: mygame.fixture.rules.breakBetweenSetsMins,
         maxTimeoutsRegularSet: mygame.fixture.rules.maxTimeoutsRegularSet,
         maxTimeoutsDeciderSet: mygame.fixture.rules.maxTimeoutsDeciderSet,
+        maxSubsPerSet: mygame.fixture.rules.maxSubsPerSet,
         allowPlayerStaffRoleCumulation: Boolean(mygame.fixture.rules.allowPlayerStaffRoleCumulation)
     };
 }
@@ -1726,6 +1773,7 @@ function ensureLineupStateForCurrentSet() {
             lineupState.teamB = {};
         }
     }
+    ensureSubstitutionStateForLineupState(setupState.lineupsBySet[setNumber]);
     return setupState.lineupsBySet[setNumber];
 }
 
@@ -1752,7 +1800,19 @@ function sanitizeLineupSelections(teamId, lineupSelections) {
 function resetLineupsState() {
     setupState.lineupsBySet = {};
     setupState.lineupPromptedSet = 0;
+    setupState.substitutionMode = {
+        active: false,
+        teamId: '',
+        outgoingPosition: 0,
+        requestPairs: []
+    };
+    setupState.substitutionInterruptionPairs = {
+        teamA: [],
+        teamB: []
+    };
+    setSubstitutionPanelNotice('', []);
     setLineupsFeedback('', '');
+    setLineupsSubstitutionHint('', []);
 }
 
 function currentSetLineupConfirmed() {
@@ -1775,7 +1835,13 @@ function markCurrentSetStarted() {
     if (mygame.isGameOver) {
         return;
     }
+    clearSubstitutionInterruptionState();
+    setSubstitutionPanelNotice('', []);
     const lineupState = ensureLineupStateForCurrentSet();
+    lineupState.substitutions = {
+        teamA: createEmptySubstitutionState(lineupState.teamA),
+        teamB: createEmptySubstitutionState(lineupState.teamB)
+    };
     lineupState.started = true;
     lineupState.locked = true;
 }
@@ -1837,6 +1903,8 @@ function renderLineupSelect(teamId, position, selectedPlayerId, disabled) {
     const roster = getNonLiberoRosterForTeamId(teamId);
     const lineupState = ensureLineupStateForCurrentSet();
     const teamSelections = lineupState[teamId] || {};
+    const substitutionModeForTeam = setupState.substitutionMode.active && setupState.substitutionMode.teamId === teamId;
+    const marker = getSubstitutionMarker(teamId, position);
     const sortedRoster = [...roster].sort((playerA, playerB) => {
         const selectedPosA = getSelectedLineupPosition(teamSelections, playerA.id);
         const selectedPosB = getSelectedLineupPosition(teamSelections, playerB.id);
@@ -1867,10 +1935,14 @@ function renderLineupSelect(teamId, position, selectedPlayerId, disabled) {
 
     const placeholderOption = document.createElement('option');
     placeholderOption.value = '';
-    placeholderOption.textContent = 'Select player';
+    placeholderOption.textContent = substitutionModeForTeam ? 'Select substitute' : 'Select player';
     select.appendChild(placeholderOption);
 
+    const allowedIncomingIds = substitutionModeForTeam ? new Set(getEligibleIncomingPlayersForPosition(teamId, position).map((player) => player.id)) : null;
     for (const player of sortedRoster) {
+        if (substitutionModeForTeam && player.id !== selectedPlayerId && !allowedIncomingIds.has(player.id)) {
+            continue;
+        }
         const option = document.createElement('option');
         option.value = player.id;
         const baseLabel = buildLineupOptionLabel(player);
@@ -1881,6 +1953,12 @@ function renderLineupSelect(teamId, position, selectedPlayerId, disabled) {
 
     select.value = selectedPlayerId || '';
     select.disabled = disabled;
+    select.parentElement.classList.toggle('lineup-sub-active', marker.className === 'lineup-sub-active');
+    select.parentElement.classList.toggle('lineup-sub-locked', marker.className === 'lineup-sub-locked');
+    const label = select.parentElement.querySelector('label');
+    if (label) {
+        label.textContent = marker.text ? `Position ${position} (${marker.text})` : `Position ${position}`;
+    }
 }
 
 function renderLineupsPanel() {
@@ -1903,11 +1981,30 @@ function renderLineupsPanel() {
         lineupState.teamB = sanitizedB.nextSelections;
     }
 
-    const readOnly = lineupState.locked || mygame.isGameOver || !setupState.prematchTossConfirmed;
+    const baseReadOnly = (lineupState.locked && !setupState.substitutionMode.active) || mygame.isGameOver || !setupState.prematchTossConfirmed;
 
     for (let position = 1; position <= 6; position++) {
-        renderLineupSelect('teamA', position, lineupState.teamA[position] || '', readOnly);
-        renderLineupSelect('teamB', position, lineupState.teamB[position] || '', readOnly);
+        const readOnlyTeamA = baseReadOnly
+            || (setupState.substitutionMode.active && (setupState.substitutionMode.teamId !== 'teamA' || !getEligibleIncomingPlayersForPosition('teamA', position).length));
+        const readOnlyTeamB = baseReadOnly
+            || (setupState.substitutionMode.active && (setupState.substitutionMode.teamId !== 'teamB' || !getEligibleIncomingPlayersForPosition('teamB', position).length));
+        renderLineupSelect('teamA', position, lineupState.teamA[position] || '', readOnlyTeamA);
+        renderLineupSelect('teamB', position, lineupState.teamB[position] || '', readOnlyTeamB);
+    }
+
+    if (setupState.substitutionMode.active) {
+        const teamLabel = getTeamLabelOrFallback(setupState.substitutionMode.teamId);
+        setLineupsSubstitutionHint(
+            `${teamLabel} substitution mode: choose one eligible on-court position and select a legal replacement. ${getRemainingSubsForCurrentSet(setupState.substitutionMode.teamId)} substitution(s) remaining this set.`,
+            getUnavailableBenchReasons(setupState.substitutionMode.teamId)
+        );
+    } else if (setupState.substitutionPanelNotice.message) {
+        setLineupsSubstitutionHint(
+            setupState.substitutionPanelNotice.message,
+            setupState.substitutionPanelNotice.items
+        );
+    } else {
+        setLineupsSubstitutionHint('', []);
     }
 }
 
@@ -1943,7 +2040,172 @@ function validateLineupForTeam(teamId, lineupSelections) {
     return '';
 }
 
+function startSubstitutionMode(teamId) {
+    if (setupState.substitutionMode.active && setupState.substitutionMode.teamId === teamId) {
+        setActivePanel('lineups');
+        return;
+    }
+    if (setupState.substitutionMode.active && setupState.substitutionMode.teamId !== teamId) {
+        setLineupsFeedback(`Finish ${getTeamLabelOrFallback(setupState.substitutionMode.teamId)} substitution request before starting another.`, 'error');
+        setActivePanel('lineups');
+        return;
+    }
+    if (!setupState.matchStarted || mygame.isGameOver || !currentSetStarted()) {
+        setSetupFeedback('Start the current set before recording a substitution.', 'error');
+        return;
+    }
+    if (getRemainingSubsForCurrentSet(teamId) <= 0) {
+        setSetupFeedback(`${getTeamLabelOrFallback(teamId)} has no substitutions remaining in this set.`, 'error');
+        return;
+    }
+    if (!hasAnyEligibleSubstitutionPosition(teamId)) {
+        setSetupFeedback(`${getTeamLabelOrFallback(teamId)} has no legal substitutions available right now.`, 'error');
+        return;
+    }
+    setupState.substitutionMode = {
+        active: true,
+        teamId,
+        outgoingPosition: 0,
+        requestPairs: Array.isArray(setupState.substitutionInterruptionPairs[teamId])
+            ? [...setupState.substitutionInterruptionPairs[teamId]]
+            : []
+    };
+    setSubstitutionPanelNotice('', []);
+    setActivePanel('lineups');
+    setLineupsFeedback(`Substitution mode: choose a legal ${getTeamLabelOrFallback(teamId)} substitution and confirm it.`, '');
+    renderLineupsPanel();
+    updateActionAvailability();
+}
+
+function cancelSubstitutionMode() {
+    if (!setupState.substitutionMode.active) {
+        return;
+    }
+    setupState.substitutionMode = {
+        active: false,
+        teamId: '',
+        outgoingPosition: 0,
+        requestPairs: []
+    };
+    renderLineupsPanel();
+    updateActionAvailability();
+}
+
+function clearSubstitutionInterruptionState() {
+    setupState.substitutionInterruptionPairs = {
+        teamA: [],
+        teamB: []
+    };
+}
+
+function applySubstitutionForCurrentSet() {
+    const teamId = setupState.substitutionMode.teamId;
+    const lineupState = ensureLineupStateForCurrentSet();
+    const originalSelections = { ...(lineupState[teamId] || {}) };
+    const updatedSelections = getLineupSelectionsFromForm(teamId);
+    const changedPositions = [];
+    for (let position = 1; position <= 6; position++) {
+        if ((originalSelections[position] || '') !== (updatedSelections[position] || '')) {
+            changedPositions.push(position);
+        }
+    }
+    if (changedPositions.length !== 1) {
+        setLineupsFeedback('A substitution must change exactly one on-court position.', 'error');
+        return;
+    }
+
+    const position = changedPositions[0];
+    const outgoingPlayerId = originalSelections[position] || '';
+    const incomingPlayerId = updatedSelections[position] || '';
+    const eligibleIncoming = getEligibleIncomingPlayersForPosition(teamId, position).map((player) => player.id);
+    if (!outgoingPlayerId || !incomingPlayerId || !eligibleIncoming.includes(incomingPlayerId)) {
+        setLineupsFeedback('Selected substitution is not legal for that position.', 'error');
+        return;
+    }
+
+    const substitutionState = getSubstitutionStateForCurrentSet(teamId);
+    const positionState = substitutionState.positions[position];
+    const substitutionKind = positionState.substitutePlayerId && positionState.currentPlayerId === positionState.substitutePlayerId
+        ? 'return'
+        : 'regular';
+
+    lineupState[teamId][position] = incomingPlayerId;
+    positionState.currentPlayerId = incomingPlayerId;
+    if (substitutionKind === 'regular') {
+        positionState.substitutePlayerId = incomingPlayerId;
+        const requestPair = {
+            position,
+            originalPlayerId: outgoingPlayerId,
+            substitutePlayerId: incomingPlayerId
+        };
+        if (setupState.substitutionMode.active && setupState.substitutionMode.teamId === teamId) {
+            setupState.substitutionMode.requestPairs.push(requestPair);
+        }
+        if (!Array.isArray(setupState.substitutionInterruptionPairs[teamId])) {
+            setupState.substitutionInterruptionPairs[teamId] = [];
+        }
+        setupState.substitutionInterruptionPairs[teamId].push(requestPair);
+    } else {
+        positionState.closed = true;
+    }
+    substitutionState.used += 1;
+
+    const outgoingPlayer = getRosterForTeamId(teamId).find((player) => player.id === outgoingPlayerId);
+    const incomingPlayer = getRosterForTeamId(teamId).find((player) => player.id === incomingPlayerId);
+    const score = getScoreNotationForTeam(teamId);
+    mygame.recordSubstitution(
+        getCurrentSetNumberForLineup(),
+        teamId,
+        score,
+        outgoingPlayerId,
+        incomingPlayerId,
+        outgoingPlayer ? buildLineupOptionLabel(outgoingPlayer) : outgoingPlayerId,
+        incomingPlayer ? buildLineupOptionLabel(incomingPlayer) : incomingPlayerId,
+        substitutionKind
+    );
+    mygame.addExternalEvent('substitution_applied', {
+        setNumber: getCurrentSetNumberForLineup(),
+        team: teamId,
+        score,
+        position,
+        playerOutId: outgoingPlayerId,
+        playerInId: incomingPlayerId,
+        substitutionKind
+    });
+
+    const keepSubstitutionModeActive = getRemainingSubsForCurrentSet(teamId) > 0 && hasAnyEligibleSubstitutionPosition(teamId);
+    if (keepSubstitutionModeActive) {
+        setupState.substitutionMode = {
+            active: true,
+            teamId,
+            outgoingPosition: 0,
+            requestPairs: setupState.substitutionMode.requestPairs
+        };
+        setLineupsFeedback(`${getTeamLabelOrFallback(teamId)} substitution recorded at ${score}. Select the next legal substitution or press SUBS DONE when finished.`, 'success');
+    } else {
+        const remainingSubs = getRemainingSubsForCurrentSet(teamId);
+        cancelSubstitutionMode();
+        if (remainingSubs <= 0) {
+            setSubstitutionPanelNotice(
+                `${getTeamLabelOrFallback(teamId)} has reached the maximum of ${getMaxSubsPerSet()} substitutions for this set.`,
+                getUnavailableBenchReasons(teamId)
+            );
+        } else {
+            setSubstitutionPanelNotice(
+                `${getTeamLabelOrFallback(teamId)} has no further legal substitutions available right now.`,
+                getUnavailableBenchReasons(teamId)
+            );
+        }
+        setLineupsFeedback(`${getTeamLabelOrFallback(teamId)} substitution recorded at ${score}.`, 'success');
+    }
+    updateSetsElements();
+}
+
 function applyLineupsForCurrentSet() {
+    if (setupState.substitutionMode.active) {
+        applySubstitutionForCurrentSet();
+        return;
+    }
     if (!setupState.prematchTossConfirmed || mygame.isGameOver) {
         setLineupsFeedback('Apply prematch toss choices before setting lineups.', 'error');
         return;
@@ -2003,6 +2265,10 @@ function markLineupDirtyFromFormChange(changedSelect = null) {
     }
     const lineupState = ensureLineupStateForCurrentSet();
     if (lineupState.locked) {
+        return;
+    }
+
+    if (setupState.substitutionMode.active) {
         return;
     }
 
@@ -2115,6 +2381,31 @@ function getMaxTimeoutsForCurrentSet() {
         : mygame.fixture.rules.maxTimeoutsRegularSet;
 }
 
+function getMaxSubsPerSet() {
+    return Number(mygame.fixture.rules.maxSubsPerSet) || 6;
+}
+
+function getSubstitutionsForSet(setNumber) {
+    return mygame.getSubstitutionsForSet(setNumber);
+}
+
+function getSubstitutionsForCurrentSet(team) {
+    const currentSetNumber = getCurrentSetNumberForLineup();
+    return getSubstitutionsForSet(currentSetNumber).filter((entry) => entry.team === team);
+}
+
+function getUsedSubsForCurrentSet(team) {
+    return getSubstitutionsForCurrentSet(team).length;
+}
+
+function getRemainingSubsForCurrentSet(team) {
+    return Math.max(0, getMaxSubsPerSet() - getUsedSubsForCurrentSet(team));
+}
+
+function getSubUsageLabel(team) {
+    return `${getUsedSubsForCurrentSet(team)} / ${getMaxSubsPerSet()}`;
+}
+
 function getUsedTimeoutsForCurrentSet(team) {
     const currentSetNumber = getCurrentSetNumberForLineup();
     return getTimeoutsForSet(currentSetNumber).filter((entry) => entry.team === team).length;
@@ -2133,6 +2424,205 @@ function getTimeoutScoreNotation(team) {
         return `${mygame.currentSet.teamA}-${mygame.currentSet.teamB}`;
     }
     return `${mygame.currentSet.teamB}-${mygame.currentSet.teamA}`;
+}
+
+function getScoreNotationForTeam(team) {
+    if (team === 'teamA') {
+        return `${mygame.currentSet.teamA}-${mygame.currentSet.teamB}`;
+    }
+    return `${mygame.currentSet.teamB}-${mygame.currentSet.teamA}`;
+}
+
+function createEmptySubstitutionState(teamSelections = {}) {
+    const positions = {};
+    for (let position = 1; position <= 6; position++) {
+        const playerId = teamSelections[position] || '';
+        positions[position] = {
+            originalPlayerId: playerId,
+            currentPlayerId: playerId,
+            substitutePlayerId: '',
+            closed: false
+        };
+    }
+    return {
+        used: 0,
+        positions
+    };
+}
+
+function ensureSubstitutionStateForLineupState(lineupState) {
+    if (!lineupState.substitutions || typeof lineupState.substitutions !== 'object') {
+        lineupState.substitutions = {
+            teamA: createEmptySubstitutionState(lineupState.teamA),
+            teamB: createEmptySubstitutionState(lineupState.teamB)
+        };
+    }
+    for (const teamId of ['teamA', 'teamB']) {
+        if (!lineupState.substitutions[teamId] || typeof lineupState.substitutions[teamId] !== 'object') {
+            lineupState.substitutions[teamId] = createEmptySubstitutionState(lineupState[teamId]);
+        }
+        const teamState = lineupState.substitutions[teamId];
+        if (!Number.isInteger(teamState.used) || teamState.used < 0) {
+            teamState.used = 0;
+        }
+        if (!teamState.positions || typeof teamState.positions !== 'object') {
+            teamState.positions = {};
+        }
+        for (let position = 1; position <= 6; position++) {
+            const fallbackPlayerId = lineupState[teamId][position] || '';
+            const current = teamState.positions[position];
+            if (!current || typeof current !== 'object') {
+                teamState.positions[position] = {
+                    originalPlayerId: fallbackPlayerId,
+                    currentPlayerId: fallbackPlayerId,
+                    substitutePlayerId: '',
+                    closed: false
+                };
+                continue;
+            }
+            if (typeof current.originalPlayerId !== 'string') {
+                current.originalPlayerId = fallbackPlayerId;
+            }
+            if (typeof current.currentPlayerId !== 'string') {
+                current.currentPlayerId = fallbackPlayerId;
+            }
+            if (typeof current.substitutePlayerId !== 'string') {
+                current.substitutePlayerId = '';
+            }
+            current.closed = Boolean(current.closed);
+        }
+    }
+}
+
+function getSubstitutionStateForCurrentSet(teamId) {
+    const lineupState = ensureLineupStateForCurrentSet();
+    ensureSubstitutionStateForLineupState(lineupState);
+    return lineupState.substitutions[teamId];
+}
+
+function getCurrentOnCourtPlayerIds(teamId) {
+    const lineupState = ensureLineupStateForCurrentSet();
+    return new Set(Object.values(lineupState[teamId] || {}).filter(Boolean));
+}
+
+function getPositionStateForTeam(teamId, position) {
+    const substitutionState = getSubstitutionStateForCurrentSet(teamId);
+    return substitutionState.positions[position];
+}
+
+function isPlayerFreshBenchCandidate(teamId, playerId) {
+    const substitutionState = getSubstitutionStateForCurrentSet(teamId);
+    for (let position = 1; position <= 6; position++) {
+        const state = substitutionState.positions[position];
+        if (!state) {
+            continue;
+        }
+        if (state.originalPlayerId === playerId || state.substitutePlayerId === playerId) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function getEligibleIncomingPlayersForPosition(teamId, position) {
+    const substitutionState = getSubstitutionStateForCurrentSet(teamId);
+    const positionState = substitutionState.positions[position];
+    if (!positionState || positionState.closed || substitutionState.used >= getMaxSubsPerSet()) {
+        return [];
+    }
+    const onCourtIds = getCurrentOnCourtPlayerIds(teamId);
+    const benchPlayers = getNonLiberoRosterForTeamId(teamId).filter((player) => !onCourtIds.has(player.id));
+
+    if (positionState.substitutePlayerId && positionState.currentPlayerId === positionState.substitutePlayerId) {
+        const isCurrentInterruptionPair = Array.isArray(setupState.substitutionInterruptionPairs[teamId])
+            && setupState.substitutionInterruptionPairs[teamId].some((pair) =>
+                pair.position === position
+                && pair.originalPlayerId === positionState.originalPlayerId
+                && pair.substitutePlayerId === positionState.substitutePlayerId
+            );
+        if (isCurrentInterruptionPair) {
+            return [];
+        }
+        return benchPlayers.filter((player) => player.id === positionState.originalPlayerId);
+    }
+
+    if (!positionState.substitutePlayerId && positionState.currentPlayerId === positionState.originalPlayerId) {
+        return benchPlayers.filter((player) => isPlayerFreshBenchCandidate(teamId, player.id));
+    }
+
+    return [];
+}
+
+function getSubstitutionMarker(teamId, position) {
+    const state = getPositionStateForTeam(teamId, position);
+    if (!state) {
+        return { text: '', className: '' };
+    }
+    const originalPlayer = getRosterForTeamId(teamId).find((player) => player.id === state.originalPlayerId);
+    const substitutePlayer = getRosterForTeamId(teamId).find((player) => player.id === state.substitutePlayerId);
+    const originalLabel = originalPlayer ? `#${originalPlayer.shirtNumber}` : 'original player';
+    const substituteLabel = substitutePlayer ? `#${substitutePlayer.shirtNumber}` : 'substitute';
+    if (state.closed) {
+        if (state.currentPlayerId === state.originalPlayerId) {
+            return { text: `Returned for ${substituteLabel}; no further sub`, className: 'lineup-sub-locked' };
+        }
+        return { text: `SUB IN for ${originalLabel}; no further sub`, className: 'lineup-sub-locked' };
+    }
+    if (state.substitutePlayerId && state.currentPlayerId === state.substitutePlayerId) {
+        return { text: `SUB IN for ${originalLabel}`, className: 'lineup-sub-active' };
+    }
+    return { text: '', className: '' };
+}
+
+function getUnavailableBenchReasons(teamId) {
+    const reasons = [];
+    const onCourtIds = getCurrentOnCourtPlayerIds(teamId);
+    const substitutionState = getSubstitutionStateForCurrentSet(teamId);
+    for (const player of getNonLiberoRosterForTeamId(teamId)) {
+        if (onCourtIds.has(player.id)) {
+            continue;
+        }
+        let reason = '';
+        for (let position = 1; position <= 6; position++) {
+            const state = substitutionState.positions[position];
+            if (!state) {
+                continue;
+            }
+            if (state.closed && (state.originalPlayerId === player.id || state.substitutePlayerId === player.id)) {
+                reason = 'pair already completed';
+                break;
+            }
+            if (state.substitutePlayerId === player.id) {
+                reason = 'substitute already used in this set';
+                break;
+            }
+            if (state.originalPlayerId === player.id && state.substitutePlayerId && state.currentPlayerId !== player.id) {
+                const blockedByCurrentInterruption = Array.isArray(setupState.substitutionInterruptionPairs[teamId])
+                    && setupState.substitutionInterruptionPairs[teamId].some((pair) =>
+                        pair.position === position
+                        && pair.originalPlayerId === state.originalPlayerId
+                        && pair.substitutePlayerId === state.substitutePlayerId
+                    );
+                reason = blockedByCurrentInterruption
+                    ? 'cannot return in the same substitution request'
+                    : 'can only return for own replacement';
+                break;
+            }
+        }
+        if (reason) {
+            reasons.push(`${buildLineupOptionLabel(player)}: ${reason}`);
+        }
+    }
+    return reasons.sort((a, b) => a.localeCompare(b));
+}
+
+function hasAnyEligibleSubstitutionPosition(teamId) {
+    for (let position = 1; position <= 6; position++) {
+        if (getEligibleIncomingPlayersForPosition(teamId, position).length > 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function recordTimeoutForTeam(team) {
@@ -2198,6 +2688,7 @@ function normalizeRulesValues(rawValues) {
         breakBetweenSetsMins: asPositiveInteger(rawValues.breakBetweenSetsMins ?? 3, 'Official break between sets', 0),
         maxTimeoutsRegularSet: asPositiveInteger(rawValues.maxTimeoutsRegularSet ?? 2, 'Max timeouts in regular set', 0),
         maxTimeoutsDeciderSet: asPositiveInteger(rawValues.maxTimeoutsDeciderSet ?? 2, 'Max timeouts in decider set', 0),
+        maxSubsPerSet: asPositiveInteger(rawValues.maxSubsPerSet ?? 6, 'Max substitutions per set', 0),
         allowPlayerStaffRoleCumulation: Boolean(rawValues.allowPlayerStaffRoleCumulation)
     };
 
@@ -2312,6 +2803,7 @@ function getPresetSummaryLine(values) {
         `Min libero if 13: ${values.minliberoifthirteen}`,
         `Break between sets: ${values.breakBetweenSetsMins} min`,
         `Timeouts: ${values.maxTimeoutsRegularSet}/${values.maxTimeoutsDeciderSet} reg/decider`,
+        `Subs/set: ${values.maxSubsPerSet}`,
         `Player/staff cumulation: ${values.allowPlayerStaffRoleCumulation ? 'Allowed' : 'Not allowed'}`
     ].join(' | ');
 }
@@ -2329,6 +2821,7 @@ function setRulesFormValues(ruleValues) {
     elements.breakBetweenSetsMins.value = ruleValues.breakBetweenSetsMins;
     elements.maxTimeoutsRegularSet.value = ruleValues.maxTimeoutsRegularSet;
     elements.maxTimeoutsDeciderSet.value = ruleValues.maxTimeoutsDeciderSet;
+    elements.maxSubsPerSet.value = ruleValues.maxSubsPerSet;
     elements.allowPlayerStaffRoleCumulation.checked = Boolean(ruleValues.allowPlayerStaffRoleCumulation);
 }
 
@@ -2346,6 +2839,7 @@ function getRulesFromForm() {
         breakBetweenSetsMins: elements.breakBetweenSetsMins.value,
         maxTimeoutsRegularSet: elements.maxTimeoutsRegularSet.value,
         maxTimeoutsDeciderSet: elements.maxTimeoutsDeciderSet.value,
+        maxSubsPerSet: elements.maxSubsPerSet.value,
         allowPlayerStaffRoleCumulation: elements.allowPlayerStaffRoleCumulation.checked
     });
 }
@@ -2364,7 +2858,8 @@ function applyRules(ruleValues) {
         ruleValues.allowPlayerStaffRoleCumulation,
         ruleValues.breakBetweenSetsMins,
         ruleValues.maxTimeoutsRegularSet,
-        ruleValues.maxTimeoutsDeciderSet
+        ruleValues.maxTimeoutsDeciderSet,
+        ruleValues.maxSubsPerSet
     );
 }
 
@@ -2396,6 +2891,7 @@ function updateRulesPanelView() {
         elements.breakBetweenSetsMins,
         elements.maxTimeoutsRegularSet,
         elements.maxTimeoutsDeciderSet,
+        elements.maxSubsPerSet,
         elements.allowPlayerStaffRoleCumulation
     ]) {
         input.disabled = ruleFieldsReadOnly;
@@ -2578,6 +3074,7 @@ function lockPrematchSetup() {
         elements.breakBetweenSetsMins,
         elements.maxTimeoutsRegularSet,
         elements.maxTimeoutsDeciderSet,
+        elements.maxSubsPerSet,
         elements.allowPlayerStaffRoleCumulation
     ];
 
@@ -2710,6 +3207,8 @@ function updateScoringServingValues() {
     elements.pointsTeamB.textContent = mygame.totalPoints.teamB;
     elements.timeoutsLeftTeamA.textContent = getTimeoutUsageLabel('teamA');
     elements.timeoutsLeftTeamB.textContent = getTimeoutUsageLabel('teamB');
+    elements.subsUsedTeamA.textContent = getSubUsageLabel('teamA');
+    elements.subsUsedTeamB.textContent = getSubUsageLabel('teamB');
 
     elements.servingStateTeamA.textContent = mygame.servingstate.teamA;
     elements.servingStateTeamB.textContent = mygame.servingstate.teamB;
@@ -2815,11 +3314,17 @@ function updateActionAvailability() {
     const canRedo = canManageSet && mygame.redoHistory.length > 0;
     const canTimeoutTeamA = canManageSet && getRemainingTimeoutsForCurrentSet('teamA') > 0;
     const canTimeoutTeamB = canManageSet && getRemainingTimeoutsForCurrentSet('teamB') > 0;
+    const canSubTeamA = canManageSet && !setupState.substitutionMode.active && getRemainingSubsForCurrentSet('teamA') > 0;
+    const canSubTeamB = canManageSet && !setupState.substitutionMode.active && getRemainingSubsForCurrentSet('teamB') > 0;
 
     elements.incTeamA.disabled = !canScore;
     elements.incTeamB.disabled = !canScore;
     elements.timeoutTeamA.disabled = !canTimeoutTeamA;
     elements.timeoutTeamB.disabled = !canTimeoutTeamB;
+    elements.subTeamA.disabled = !canSubTeamA;
+    elements.subTeamB.disabled = !canSubTeamB;
+    elements.subTeamA.textContent = 'SUB';
+    elements.subTeamB.textContent = 'SUB';
     elements.undoLastPoint.disabled = !canUndo;
     elements.redoLastPoint.disabled = !canRedo;
     elements.completeSet.disabled = !canManageSet;
@@ -2827,6 +3332,16 @@ function updateActionAvailability() {
     const deciderTossRequired = setupState.matchStarted && !mygame.isGameOver && mygame.isPreDeciderToss;
     elements.applyDeciderToss.disabled = !deciderTossRequired;
     elements.applyLineups.disabled = !setupState.prematchTossConfirmed || mygame.isGameOver || lineupState.locked;
+    if (setupState.substitutionMode.active) {
+        elements.applyLineups.disabled = !canManageSet;
+        elements.applyLineups.textContent = 'Confirm Substitution';
+        elements.doneSubstitutions.disabled = !canManageSet;
+        elements.doneSubstitutions.classList.remove('hidden');
+    } else {
+        elements.applyLineups.textContent = 'Apply Lineups For Set';
+        elements.doneSubstitutions.disabled = true;
+        elements.doneSubstitutions.classList.add('hidden');
+    }
     elements.importRulesJson.disabled = setupState.matchStarted;
     elements.importHomeRosterJson.disabled = setupState.matchStarted;
     elements.importAwayRosterJson.disabled = setupState.matchStarted;
@@ -3270,7 +3785,9 @@ function hookEventListeners() {
     for (const select of getAllLineupSelectElements()) {
         select.addEventListener('change', () => {
             markLineupDirtyFromFormChange(select);
-            renderLineupsPanel();
+            if (!setupState.substitutionMode.active) {
+                renderLineupsPanel();
+            }
             updateSetupBadge();
             updateActionAvailability();
         });
@@ -3280,11 +3797,17 @@ function hookEventListeners() {
     elements.completeGame.addEventListener('click', interruptGame);
 
     elements.incTeamA.addEventListener('click', () => {
+        cancelSubstitutionMode();
+        clearSubstitutionInterruptionState();
+        setSubstitutionPanelNotice('', []);
         mygame.awardPoint('teamA');
         updateSetsElements();
     });
 
     elements.incTeamB.addEventListener('click', () => {
+        cancelSubstitutionMode();
+        clearSubstitutionInterruptionState();
+        setSubstitutionPanelNotice('', []);
         mygame.awardPoint('teamB');
         updateSetsElements();
     });
@@ -3295,6 +3818,20 @@ function hookEventListeners() {
 
     elements.timeoutTeamB.addEventListener('click', () => {
         recordTimeoutForTeam('teamB');
+    });
+
+    elements.subTeamA.addEventListener('click', () => {
+        startSubstitutionMode('teamA');
+    });
+
+    elements.subTeamB.addEventListener('click', () => {
+        startSubstitutionMode('teamB');
+    });
+
+    elements.doneSubstitutions.addEventListener('click', () => {
+        setSubstitutionPanelNotice('', []);
+        cancelSubstitutionMode();
+        setLineupsFeedback('Substitution request finished.', '');
     });
 
     elements.undoLastPoint.addEventListener('click', () => {
@@ -3320,6 +3857,7 @@ function hookEventListeners() {
         elements.breakBetweenSetsMins,
         elements.maxTimeoutsRegularSet,
         elements.maxTimeoutsDeciderSet,
+        elements.maxSubsPerSet,
         elements.allowPlayerStaffRoleCumulation
     ]) {
         input.addEventListener('change', markRulesDirty);

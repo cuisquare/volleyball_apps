@@ -88,7 +88,8 @@ export function buildSnapshot({ mygame, setupState, savedRuleProfiles }) {
                 allowPlayerStaffRoleCumulation: mygame.fixture.rules.allowPlayerStaffRoleCumulation,
                 breakBetweenSetsMins: mygame.fixture.rules.breakBetweenSetsMins,
                 maxTimeoutsRegularSet: mygame.fixture.rules.maxTimeoutsRegularSet,
-                maxTimeoutsDeciderSet: mygame.fixture.rules.maxTimeoutsDeciderSet
+                maxTimeoutsDeciderSet: mygame.fixture.rules.maxTimeoutsDeciderSet,
+                maxSubsPerSet: mygame.fixture.rules.maxSubsPerSet
             },
             home_roster: deepClone(mygame.fixture.home_roster || []),
             away_roster: deepClone(mygame.fixture.away_roster || [])
@@ -169,7 +170,8 @@ export function applySnapshot({ snapshot, mygame, setupState, setSavedRuleProfil
         Boolean(fixtureRules.allowPlayerStaffRoleCumulation),
         Number.isFinite(Number(fixtureRules.breakBetweenSetsMins)) ? Number(fixtureRules.breakBetweenSetsMins) : 3,
         Number.isFinite(Number(fixtureRules.maxTimeoutsRegularSet)) ? Number(fixtureRules.maxTimeoutsRegularSet) : 2,
-        Number.isFinite(Number(fixtureRules.maxTimeoutsDeciderSet)) ? Number(fixtureRules.maxTimeoutsDeciderSet) : 2
+        Number.isFinite(Number(fixtureRules.maxTimeoutsDeciderSet)) ? Number(fixtureRules.maxTimeoutsDeciderSet) : 2,
+        Number.isFinite(Number(fixtureRules.maxSubsPerSet)) ? Number(fixtureRules.maxSubsPerSet) : 6
     );
     mygame.fixture.home_roster = deepClone(Array.isArray(fixture.home_roster) ? fixture.home_roster : []);
     mygame.fixture.away_roster = deepClone(Array.isArray(fixture.away_roster) ? fixture.away_roster : []);

@@ -661,6 +661,37 @@ class Game {
         return entry;
     }
 
+    getSubstitutionsForSet(setNumber) {
+        if (!Number.isInteger(setNumber) || setNumber < 1) {
+            return [];
+        }
+        const substitutionEntries = Array.isArray(this.history.placeholders.substitutions)
+            ? this.history.placeholders.substitutions
+            : [];
+        return substitutionEntries.filter((entry) => entry.setNumber === setNumber);
+    }
+
+    recordSubstitution(setNumber, team, score, playerOutId, playerInId, playerOutLabel, playerInLabel, substitutionKind = 'regular') {
+        if (!Array.isArray(this.history.placeholders.substitutions)) {
+            this.history.placeholders.substitutions = [];
+        }
+
+        const entry = {
+            setNumber,
+            team,
+            score,
+            playerOutId,
+            playerInId,
+            playerOutLabel,
+            playerInLabel,
+            substitutionKind,
+            at: new Date().toISOString()
+        };
+        this.history.placeholders.substitutions.push(entry);
+        this.logEvent('substitution_recorded', entry);
+        return entry;
+    }
+
 
 }
 
