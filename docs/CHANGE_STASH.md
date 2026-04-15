@@ -13,6 +13,8 @@ Update this file whenever an item is added, completed, or reprioritized.
 - [ ] Codebase refactor review: split responsibilities from `main_game_scoring.js` into classes/modules.
 - [ ] Game penalties: data model/history support.
 - [ ] Game penalties: in-app recording at event time (type + recipient: team/player/coach/bench).
+- [ ] Add exceptional substitution support, with exact implementation rules to be checked from the official regulations, but broadly allowing a constrained override path beyond normal substitution limits and pair restrictions when an exceptional substitution is permitted.
+- [ ] Add libero retirement handling, with exact rule constraints to be verified from the official regulations, so an unfit libero can be declared out of the match and replaced by an eligible regular player acting as libero for the remainder of the game.
 - [ ] Add an optional non-libero player `subrole` field selected from fully spelled role values `Setter`, `Outside Hitter`, `Opposite`, and `Middle Blocker`, and display the corresponding symbols `S`, `OH`, `OP`, and `MB` in the roster tables.
 - [ ] Introduce match-wide action undo/redo that restores full prior states rather than only current-set points, and move the undo/redo controls from the scoreboard into a globally visible app-level controls section alongside save/load and JSON import/export.
 - [ ] Display points-scored history and recorded set start/end times in the scoring app.
