@@ -52,6 +52,7 @@ Update this file whenever an item is added, completed, or reprioritized.
 - [x] Team details extension with bench personnel input and display, including rules-controlled player/staff role cumulation.
 - [x] Team Details extended to support rostered vs non-rostered entries, a wider eligible-player pool, and a combined `Eligible Players` / `Unrostered Players` section with roster/unroster controls.
 - [x] Team Details roster management refined with a shared modal add/edit/remove flow, inline roster/unroster quick actions, bench personnel ordering by role, and formatted `Last name, initials` display with full-name hover support.
+- [x] Team Details roster validation relaxed for repairable import/edit states so duplicate shirt numbers and excess imported liberos can be corrected in-app, while readiness messaging now surfaces duplicate shirt-number clashes and `Apply Team Details` remains the final legality gate.
 - [x] Introduced a pending set-start workflow where applying a lineup stages the next set and `Start Set` finalizes the lineup and begins play.
 - [x] Set start/end time tracking with official and actual set times, including rules-controlled break duration between sets.
 - [x] Timeout recording during sets with rules-controlled limits, scoreboard request buttons, and used/max timeout tracking per team.

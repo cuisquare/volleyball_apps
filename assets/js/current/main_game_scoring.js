@@ -1160,6 +1160,18 @@ function getRosteredPlayers(roster) {
     return roster.filter((player) => player.isPlayer && player.rostered);
 }
 
+function getDuplicateRosteredShirtNumbers(roster) {
+    const counts = new Map();
+    for (const player of getRosteredPlayers(roster)) {
+        counts.set(player.shirtNumber, (counts.get(player.shirtNumber) || 0) + 1);
+    }
+
+    return Array.from(counts.entries())
+        .filter(([, count]) => count > 1)
+        .map(([shirtNumber]) => shirtNumber)
+        .sort((a, b) => a - b);
+}
+
 function renderRoster(teamSide) {
     const roster = setupState.rosters[teamSide];
     const controls = getRosterInputs(teamSide);
@@ -1184,7 +1196,8 @@ function renderRoster(teamSide) {
     const requiredLiberos = getMinLiberosForActiveRoster(rosteredPlayers.length);
     const missingLiberos = Math.max(0, requiredLiberos - liberos);
     const missingCaptain = captains === 0 ? 1 : 0;
-    if (missingPlayers > 0 || missingNonLiberos > 0 || overflowPlayers > 0 || overflowNonLiberos > 0 || missingLiberos > 0 || missingCaptain > 0) {
+    const duplicateShirtNumbers = getDuplicateRosteredShirtNumbers(roster);
+    if (missingPlayers > 0 || missingNonLiberos > 0 || overflowPlayers > 0 || overflowNonLiberos > 0 || missingLiberos > 0 || missingCaptain > 0 || duplicateShirtNumbers.length > 0) {
         const parts = [];
         if (missingPlayers > 0) {
             parts.push(`${missingPlayers} more player(s)`);
@@ -1203,6 +1216,9 @@ function renderRoster(teamSide) {
         }
         if (missingCaptain > 0) {
             parts.push('1 more captain');
+        }
+        if (duplicateShirtNumbers.length > 0) {
+            parts.push(`unique shirt numbers (duplicate: ${duplicateShirtNumbers.join(', ')})`);
         }
         readinessHint = `Not ready: need ${parts.join(', ')}`;
     }
@@ -1370,12 +1386,11 @@ function validateRosterForTeam(teamSide, roster) {
         return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster cannot exceed ${maxPlayers} players.`);
     }
 
-    const numbers = new Set();
-    for (const player of players) {
-        if (numbers.has(player.shirtNumber)) {
-            return withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster has duplicate shirt number ${player.shirtNumber}.`);
-        }
-        numbers.add(player.shirtNumber);
+    const duplicateShirtNumbers = getDuplicateRosteredShirtNumbers(roster);
+    if (duplicateShirtNumbers.length > 0) {
+        return withRulesContext(
+            `${teamSide === 'home' ? 'Home' : 'Away'} roster has duplicate shirt number${duplicateShirtNumbers.length > 1 ? 's' : ''} ${duplicateShirtNumbers.join(', ')}.`
+        );
     }
 
     const liberos = players.filter((player) => player.isLibero).length;
@@ -1412,14 +1427,6 @@ function validateRosterEntryForTeam(teamSide, roster, options = {}) {
     const teamLabel = teamSide === 'home' ? 'Home' : 'Away';
     const allowExtraLiberos = Boolean(options.allowExtraLiberos);
     const players = getRosteredPlayers(roster);
-
-    const numbers = new Set();
-    for (const player of players) {
-        if (numbers.has(player.shirtNumber)) {
-            return withRulesContext(`${teamLabel} roster has duplicate shirt number ${player.shirtNumber}.`);
-        }
-        numbers.add(player.shirtNumber);
-    }
 
     const liberos = players.filter((player) => player.isLibero).length;
     const maxLiberos = getMaxLiberosPerRoster();
@@ -1485,6 +1492,7 @@ function toggleRosteredStatus(teamSide, playerId, nextRostered) {
     }
 
     const currentRosteredPlayers = getRosteredPlayers(roster).length;
+    const currentRosteredLiberos = getRosteredPlayers(roster).filter((player) => player.isLibero).length;
     if (nextRostered && target.isPlayer && !target.rostered && currentRosteredPlayers >= getMaxRosterPlayers()) {
         setTeamDetailsFeedback(withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster is at max size for current rules. Unroster or remove an existing rostered player before rostering another player.`), 'error');
         return;
@@ -1501,7 +1509,16 @@ function toggleRosteredStatus(teamSide, playerId, nextRostered) {
         };
     });
 
-    const entryValidationError = validateRosterEntryForTeam(teamSide, nextRoster);
+    const nextRosteredLiberos = getRosteredPlayers(nextRoster).filter((player) => player.isLibero).length;
+    if (nextRosteredLiberos > currentRosteredLiberos && nextRosteredLiberos > getMaxLiberosPerRoster()) {
+        setTeamDetailsFeedback(
+            withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster cannot have more than ${getMaxLiberosPerRoster()} liberos.`),
+            'error'
+        );
+        return;
+    }
+
+    const entryValidationError = validateRosterEntryForTeam(teamSide, nextRoster, { allowExtraLiberos: true });
     if (entryValidationError) {
         setTeamDetailsFeedback(entryValidationError, 'error');
         return;
@@ -1535,6 +1552,7 @@ function addRosterPlayer(teamSide) {
     const roster = setupState.rosters[teamSide];
     const editingId = setupState.editingRosterPlayerId[teamSide];
     const playerCount = getRosteredPlayers(roster).length;
+    const currentRosteredLiberos = getRosteredPlayers(roster).filter((player) => player.isLibero).length;
     const maxPlayers = getMaxRosterPlayers();
 
     if (!editingId && controls.isPlayerInput.checked && controls.rosteredInput.checked && playerCount >= getMaxRosterPlayers()) {
@@ -1559,11 +1577,6 @@ function addRosterPlayer(teamSide) {
     }
     if (isPlayer && (!Number.isInteger(shirtNumber) || shirtNumber <= 0)) {
         setTeamDetailsFeedback('Shirt number must be a positive integer.', 'error');
-        return;
-    }
-    const duplicateNumber = isPlayer && roster.some((player) => player.isPlayer && player.shirtNumber === shirtNumber && player.id !== editingId);
-    if (duplicateNumber) {
-        setTeamDetailsFeedback(`Shirt number ${shirtNumber} is already used in ${teamSide} roster.`, 'error');
         return;
     }
 
@@ -1598,9 +1611,17 @@ function addRosterPlayer(teamSide) {
         }];
 
     const nextRosteredPlayerCount = getRosteredPlayers(rosterForValidation).length;
+    const nextRosteredLiberos = getRosteredPlayers(rosterForValidation).filter((player) => player.isLibero).length;
     const isIncreasingRosteredPlayers = nextRosteredPlayerCount > playerCount;
     if (isIncreasingRosteredPlayers && nextRosteredPlayerCount > maxPlayers) {
         setTeamDetailsFeedback(withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster is already above the active roster limit. Unroster or remove rostered players before increasing the rostered player count.`), 'error');
+        return;
+    }
+    if (nextRosteredLiberos > currentRosteredLiberos && nextRosteredLiberos > getMaxLiberosPerRoster()) {
+        setTeamDetailsFeedback(
+            withRulesContext(`${teamSide === 'home' ? 'Home' : 'Away'} roster cannot have more than ${getMaxLiberosPerRoster()} liberos.`),
+            'error'
+        );
         return;
     }
 
@@ -1613,7 +1634,7 @@ function addRosterPlayer(teamSide) {
         }
     }
 
-    const entryValidationError = validateRosterEntryForTeam(teamSide, rosterForValidation);
+    const entryValidationError = validateRosterEntryForTeam(teamSide, rosterForValidation, { allowExtraLiberos: true });
     if (entryValidationError) {
         setTeamDetailsFeedback(entryValidationError, 'error');
         return;
