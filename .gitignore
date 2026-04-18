@@ -1,6 +1,6 @@
 scrap/
 test*
 assets/rosters/london_league/*
-london_league_rosters/output/*
-london_league_rosters/cache/*
+volleyzone_rosters/output/*
+volleyzone_rosters/cache/*
 tmp_*

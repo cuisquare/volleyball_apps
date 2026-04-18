@@ -17,22 +17,28 @@ const {
   normalizeName,
   slugify,
 } = require("./normalize");
-const { OUTPUT_DIR } = require("./config");
+const { getProfileOutputDir } = require("./config");
 
 function buildCoverageLine({ teamName, matchedShirtCount, squadCount }) {
   return `- \`${teamName}\`: ${matchedShirtCount}/${squadCount} squad players matched to published shirt numbers across the sampled teamsheets`;
 }
 
 async function generateDivision({
+  profile,
   seasonId,
   seasonLabel,
   competitionId,
   divisionName,
   refresh = false,
 }) {
-  const fixtureResponse = await getFixturesByCompetition(seasonId, competitionId, {
-    refresh,
-  });
+  const fixtureResponse = await getFixturesByCompetition(
+    profile,
+    seasonId,
+    competitionId,
+    {
+      refresh,
+    }
+  );
   const parsed = parseFixturesByCompetitionResponse(fixtureResponse.text);
   const fixtureRows = parsed.fixtureRows;
   if (!fixtureRows.length) {
@@ -44,7 +50,7 @@ async function generateDivision({
   const effectiveDivisionName =
     divisionName || fixtureRows[0].competitionName || `Competition ${competitionId}`;
   const divisionSlug = buildDivisionSlug(effectiveDivisionName);
-  const divisionDir = path.join(OUTPUT_DIR, divisionSlug);
+  const divisionDir = path.join(getProfileOutputDir(profile), divisionSlug);
   await ensureDir(divisionDir);
 
   const teamSamples = new Map();
@@ -76,7 +82,9 @@ async function generateDivision({
       side: sample.side,
     });
     const cacheKey = `${seasonId}_${competitionId}_${sample.teamId}`;
-    const squadResponse = await getSquadPage(squadUrl, cacheKey, { refresh });
+    const squadResponse = await getSquadPage(profile, squadUrl, cacheKey, {
+      refresh,
+    });
     squadInfos.set(sample.teamName, {
       ...parseSquadPage(squadResponse.text),
       squadUrl,
@@ -86,9 +94,15 @@ async function generateDivision({
   const allTeamsheetEntries = [];
   for (const row of fixtureRows) {
     try {
-      const teamsheet = await getTeamSheet(row.fixtureId, row.homeTeam, row.awayTeam, {
-        refresh,
-      });
+      const teamsheet = await getTeamSheet(
+        profile,
+        row.fixtureId,
+        row.homeTeam,
+        row.awayTeam,
+        {
+          refresh,
+        }
+      );
       allTeamsheetEntries.push(...parseTeamsheet(teamsheet.text));
     } catch (error) {
       // Keep going; some fixtures may not expose a teamsheet fragment.
@@ -136,11 +150,11 @@ async function generateDivision({
     (row) => `- \`${row.homeTeam} vs ${row.awayTeam}\`: fixture \`${row.fixtureId}\``
   );
 
-  const readme = `# London League ${effectiveDivisionName} Rosters
+  const readme = `# ${profile.competitionLabel} ${effectiveDivisionName} Rosters
 
 These roster files are prepared for import into the \`game_scoring\` app.
 
-This folder covers the ${seasonLabel} London League ${effectiveDivisionName} team set recovered from the public fixtures/results data:
+This folder covers the ${seasonLabel} ${profile.competitionLabel} ${effectiveDivisionName} team set recovered from the public fixtures/results data:
 
 ${teamNames.map((teamName) => `- \`${teamName}\``).join("\n")}
 
@@ -148,7 +162,7 @@ ${teamNames.map((teamName) => `- \`${teamName}\``).join("\n")}
 
 - Season id: \`${seasonId}\`
 - Competition id: \`${competitionId}\`
-- Division source page: \`https://competitions.volleyzone.co.uk/fixture-and-results/lva/\`
+- Division source page: \`${profile.fixtureResultsUrl}\`
 
 Full eligible squad pages used:
 
@@ -173,6 +187,7 @@ ${coverageLines.join("\n")}
   await writeText(path.join(divisionDir, "README.md"), `${readme}\n`);
 
   return {
+    profileId: profile.id,
     divisionName: effectiveDivisionName,
     divisionSlug,
     divisionDir,

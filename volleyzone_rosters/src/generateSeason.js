@@ -6,9 +6,9 @@ const {
 } = require("./parseFixtureResults");
 const { seasonLabelToSlug } = require("./normalize");
 const { generateDivision } = require("./generateDivision");
-const { OUTPUT_DIR } = require("./config");
+const { getProfileOutputDir } = require("./config");
 
-function buildTopLevelReadme({ season, divisionsGenerated }) {
+function buildTopLevelReadme({ profile, season, divisionsGenerated }) {
   const coverage = divisionsGenerated
     .slice()
     .sort((a, b) => a.divisionSlug.localeCompare(b.divisionSlug))
@@ -18,15 +18,15 @@ function buildTopLevelReadme({ season, divisionsGenerated }) {
     )
     .join("\n");
 
-  return `# London League Rosters
+  return `# ${profile.competitionLabel} Rosters
 
-This folder stores import-ready London League roster files for the \`game_scoring\` app.
+This folder stores import-ready ${profile.competitionLabel} roster files for the \`game_scoring\` app.
 
 ## Current Season Index
 
 The current-season division list below was extracted from the public competition dropdown on:
 
-- \`https://competitions.volleyzone.co.uk/fixture-and-results/lva/\`
+- \`${profile.fixtureResultsUrl}\`
 
 Season id observed on that page:
 
@@ -49,8 +49,8 @@ That keeps the squad page as the source for eligibility, while using teamsheets 
 `;
 }
 
-async function generateCurrentSeason({ refresh = false } = {}) {
-  const fixturePage = await getFixtureResultsPage({ refresh });
+async function generateCurrentSeason({ profile, refresh = false } = {}) {
+  const fixturePage = await getFixtureResultsPage(profile, { refresh });
   const seasons = parseSeasonOptions(fixturePage.text);
   const currentSeason = seasons.find((season) => season.selected);
   if (!currentSeason) {
@@ -62,6 +62,7 @@ async function generateCurrentSeason({ refresh = false } = {}) {
   for (const division of divisions) {
     generated.push(
       await generateDivision({
+        profile,
         seasonId: currentSeason.seasonId,
         seasonLabel: currentSeason.label,
         competitionId: division.competitionId,
@@ -71,22 +72,30 @@ async function generateCurrentSeason({ refresh = false } = {}) {
     );
   }
 
+  const outputDir = getProfileOutputDir(profile);
   const seasonSlug = seasonLabelToSlug(currentSeason.label);
-  const indexPath = path.join(OUTPUT_DIR, `divisions_${seasonSlug}.json`);
+  const indexPath = path.join(outputDir, `divisions_${seasonSlug}.json`);
   const indexJson = {
-    type: "london_league_division_index",
+    type: "volleyzone_division_index",
+    profileId: profile.id,
+    competitionLabel: profile.competitionLabel,
     seasonId: currentSeason.seasonId,
     seasonLabel: currentSeason.label,
-    source: "https://competitions.volleyzone.co.uk/fixture-and-results/lva/",
+    source: profile.fixtureResultsUrl,
     divisions,
   };
   await writeText(indexPath, `${JSON.stringify(indexJson, null, 2)}\n`);
   await writeText(
-    path.join(OUTPUT_DIR, "README.md"),
-    `${buildTopLevelReadme({ season: currentSeason, divisionsGenerated: generated })}\n`
+    path.join(outputDir, "README.md"),
+    `${buildTopLevelReadme({
+      profile,
+      season: currentSeason,
+      divisionsGenerated: generated,
+    })}\n`
   );
 
   return {
+    profileId: profile.id,
     season: currentSeason,
     divisionsGenerated: generated,
     indexPath,

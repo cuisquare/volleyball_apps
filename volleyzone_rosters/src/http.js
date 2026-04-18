@@ -1,16 +1,8 @@
 const fs = require("fs/promises");
 const path = require("path");
 const {
-  PAGE_CACHE_DIR,
-  SEASON_CACHE_DIR,
-  DIVISION_CACHE_DIR,
-  SQUAD_CACHE_DIR,
-  TEAMSHEET_CACHE_DIR,
-  FIXTURE_RESULTS_URL,
   AJAX_URL,
-  PAGE_TITLE,
-  LAST_SEGMENT,
-  USER_ID,
+  getProfileCacheDirs,
 } = require("./config");
 
 async function ensureDir(dirPath) {
@@ -41,21 +33,30 @@ async function fetchText(url, options = {}) {
   return response.text();
 }
 
-async function getFixtureResultsPage({ refresh = false } = {}) {
-  const cachePath = path.join(PAGE_CACHE_DIR, "fixture_results_lva.html");
+async function getFixtureResultsPage(profile, { refresh = false } = {}) {
+  const cacheDirs = getProfileCacheDirs(profile);
+  const cachePath = path.join(
+    cacheDirs.pages,
+    `fixture_results_${profile.cacheSlug || profile.id}.html`
+  );
   if (!refresh) {
     const cached = await readIfExists(cachePath);
     if (cached) {
       return { text: cached, cachePath, fromCache: true };
     }
   }
-  const text = await fetchText(FIXTURE_RESULTS_URL);
+  const text = await fetchText(profile.fixtureResultsUrl);
   await writeText(cachePath, text);
   return { text, cachePath, fromCache: false };
 }
 
-async function getSeasonCompetitions(seasonId, { refresh = false } = {}) {
-  const cachePath = path.join(SEASON_CACHE_DIR, `season_${seasonId}.json`);
+async function getSeasonCompetitions(
+  profile,
+  seasonId,
+  { refresh = false } = {}
+) {
+  const cacheDirs = getProfileCacheDirs(profile);
+  const cachePath = path.join(cacheDirs.seasons, `season_${seasonId}.json`);
   if (!refresh) {
     const cached = await readIfExists(cachePath);
     if (cached) {
@@ -65,8 +66,8 @@ async function getSeasonCompetitions(seasonId, { refresh = false } = {}) {
 
   const body = new URLSearchParams({
     seasonID: String(seasonId),
-    pageTitle: PAGE_TITLE,
-    lastSegment: LAST_SEGMENT,
+    pageTitle: profile.pageTitle,
+    lastSegment: profile.lastSegment,
   });
 
   const text = await fetchText(`${AJAX_URL}?action=fetch_season_competitions`, {
@@ -82,12 +83,14 @@ async function getSeasonCompetitions(seasonId, { refresh = false } = {}) {
 }
 
 async function getFixturesByCompetition(
+  profile,
   seasonId,
   competitionId,
   { refresh = false } = {}
 ) {
+  const cacheDirs = getProfileCacheDirs(profile);
   const cachePath = path.join(
-    DIVISION_CACHE_DIR,
+    cacheDirs.divisions,
     `season_${seasonId}_competition_${competitionId}.json`
   );
   if (!refresh) {
@@ -100,9 +103,9 @@ async function getFixturesByCompetition(
   const body = new URLSearchParams({
     seasonidgrp: String(seasonId),
     fix_compID: String(competitionId),
-    pageTitle: PAGE_TITLE,
-    userId: USER_ID,
-    lastSegment: LAST_SEGMENT,
+    pageTitle: profile.pageTitle,
+    userId: profile.userId,
+    lastSegment: profile.lastSegment,
   });
 
   const text = await fetchText(`${AJAX_URL}?action=fetch_fixture_by_competition`, {
@@ -117,8 +120,54 @@ async function getFixturesByCompetition(
   return { text, cachePath, fromCache: false };
 }
 
-async function getSquadPage(url, cacheKey, { refresh = false } = {}) {
-  const cachePath = path.join(SQUAD_CACHE_DIR, `${cacheKey}.html`);
+async function getFixturesByCompetitionGroup(
+  profile,
+  seasonId,
+  fixCompgrpID,
+  { refresh = false, extraFields = {} } = {}
+) {
+  const cacheDirs = getProfileCacheDirs(profile);
+  const safeGroupId = String(fixCompgrpID).replace(/[^a-zA-Z0-9,_-]+/g, "_");
+  const cachePath = path.join(
+    cacheDirs.divisions,
+    `season_${seasonId}_group_${safeGroupId}.html`
+  );
+  if (!refresh) {
+    const cached = await readIfExists(cachePath);
+    if (cached) {
+      return { text: cached, cachePath, fromCache: true };
+    }
+  }
+
+  const body = new URLSearchParams({
+    seasonidgrp: String(seasonId),
+    fix_compgrpID: String(fixCompgrpID),
+    pageTitle: profile.pageTitle,
+    userId: profile.userId,
+    lastSegment: profile.lastSegment,
+    ...Object.fromEntries(
+      Object.entries(extraFields || {}).map(([key, value]) => [key, String(value)])
+    ),
+  });
+
+  const text = await fetchText(
+    `${AJAX_URL}?action=fetch_fixture_by_competitiongrp`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      },
+      body,
+    }
+  );
+
+  await writeText(cachePath, text);
+  return { text, cachePath, fromCache: false };
+}
+
+async function getSquadPage(profile, url, cacheKey, { refresh = false } = {}) {
+  const cacheDirs = getProfileCacheDirs(profile);
+  const cachePath = path.join(cacheDirs.squads, `${cacheKey}.html`);
   if (!refresh) {
     const cached = await readIfExists(cachePath);
     if (cached) {
@@ -131,12 +180,14 @@ async function getSquadPage(url, cacheKey, { refresh = false } = {}) {
 }
 
 async function getTeamSheet(
+  profile,
   fixtureId,
   homeTeam,
   awayTeam,
   { refresh = false } = {}
 ) {
-  const cachePath = path.join(TEAMSHEET_CACHE_DIR, `fixture_${fixtureId}.html`);
+  const cacheDirs = getProfileCacheDirs(profile);
+  const cachePath = path.join(cacheDirs.teamsheets, `fixture_${fixtureId}.html`);
   if (!refresh) {
     const cached = await readIfExists(cachePath);
     if (cached) {
@@ -149,7 +200,7 @@ async function getTeamSheet(
     hometeam: homeTeam,
     awayteam: awayTeam,
     id: String(fixtureId),
-    pageTitle: PAGE_TITLE,
+    pageTitle: profile.pageTitle,
   });
 
   const text = await fetchText(AJAX_URL, {
@@ -170,6 +221,7 @@ module.exports = {
   getFixtureResultsPage,
   getSeasonCompetitions,
   getFixturesByCompetition,
+  getFixturesByCompetitionGroup,
   getSquadPage,
   getTeamSheet,
 };

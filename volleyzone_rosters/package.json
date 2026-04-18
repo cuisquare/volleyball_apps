@@ -1,9 +1,10 @@
 {
-  "name": "london_league_rosters",
+  "name": "volleyzone_rosters",
   "version": "0.1.0",
   "private": true,
-  "description": "Season-aware London League roster extraction utility for the volleyball_positions repo",
+  "description": "Season-aware VolleyZone competition roster extraction utility for the volleyball_positions repo",
   "scripts": {
+    "profiles": "node src/cli.js profiles",
     "seasons": "node src/cli.js seasons",
     "current-divisions": "node src/cli.js current-divisions",
     "season-info": "node src/cli.js season-info",
