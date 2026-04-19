@@ -207,14 +207,21 @@ select {
 
 .scoreboard {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 16px;
   padding: 14px;
+}
+
+.scoreboard-live-row,
+.scoreboard-status-row {
+  display: flex;
+  gap: 16px;
 }
 
 .teams-container {
   display: flex;
   gap: 20px;
+  flex: 1 1 auto;
 }
 
 .left .team:first-child {
@@ -235,12 +242,18 @@ select {
 
 .team {
   text-align: center;
-  min-width: 200px;
+  flex: 1 1 0;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 12px;
+  background: rgba(15, 92, 192, 0.03);
 }
 
 .team h2,
 .game-controls h2,
-.game-status h2 {
+.game-status h2,
+.game-status h3 {
   margin: 0 0 8px;
 }
 
@@ -250,12 +263,56 @@ select {
 }
 
 .game-controls {
-  min-width: 220px;
-  border-left: 1px solid var(--line);
-  padding-left: 14px;
+  flex: 0 0 300px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  background: rgba(15, 92, 192, 0.02);
+}
+
+.game-controls-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.game-status {
+  flex: 1 1 auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: rgba(15, 92, 192, 0.02);
+}
+
+.game-status-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.game-status-team-summary,
+.game-status-message {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--panel);
+}
+
+.game-status-team-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.game-status-team-summary p,
+.game-status-message p {
+  margin: 0;
 }
 
 .game-status p {
@@ -512,24 +569,25 @@ input[type="radio"]:disabled {
     grid-template-columns: 1fr;
   }
 
-  .scoreboard {
+  .scoreboard-live-row,
+  .scoreboard-status-row {
     flex-direction: column;
   }
 
   .game-controls {
-    border-left: 0;
-    border-top: 1px solid var(--line);
-    padding-left: 0;
-    padding-top: 12px;
+    flex-basis: auto;
   }
 
   .teams-container {
-    justify-content: center;
-    flex-wrap: wrap;
+    flex-direction: column;
   }
 
   .team {
-    min-width: 160px;
+    min-width: 0;
+  }
+
+  .game-status-summary {
+    grid-template-columns: 1fr;
   }
 
   .modal-backdrop {

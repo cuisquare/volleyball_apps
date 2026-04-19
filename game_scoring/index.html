@@ -481,59 +481,66 @@
   </section>
 
   <main class="scoreboard hidden" id="scoreboard-panel">
-    <div class="teams-container left" id="teams-container">
-      <div class="team" id="team-a">
-        <h2>Team A</h2>
-        <p id="name-teamA"></p>
-        <div id="ongoingSetStateTeamA">
-          <h2>Points:</h2>
-          <p class="score" id="score-teamA">0</p>
-          <button id="increase-score-teamA" type="button">+</button>
-          <p id="servingstate-teamA">Unknown</p>
-          <button id="timeout-teamA" type="button">TIME OUT</button>
-          <p id="timeouts-left-teamA">0 / 0</p>
-          <button id="sub-teamA" type="button">SUB</button>
-          <p id="subs-used-teamA">0 / 0</p>
+    <div class="scoreboard-live-row">
+      <div class="teams-container left" id="teams-container">
+        <div class="team" id="team-a">
+          <h2 id="scoreboard-teamA-title">Team A</h2>
+          <div id="ongoingSetStateTeamA">
+            <h2>Points:</h2>
+            <p class="score" id="score-teamA">0</p>
+            <button id="increase-score-teamA" type="button">+</button>
+            <p id="servingstate-teamA">Unknown</p>
+            <button id="timeout-teamA" type="button">TIME OUT</button>
+            <p id="timeouts-left-teamA">0 / 0</p>
+            <button id="sub-teamA" type="button">SUB</button>
+            <p id="subs-used-teamA">0 / 0</p>
+          </div>
         </div>
-        <div id="accruedSetsPointsTeamA">
-          <h2>Sets:</h2>
-          <p class="score" id="sets-teamA">0</p>
-          <h2>Points total:</h2>
-          <p class="score" id="points-teamA">0</p>
-        </div>
-      </div>
 
-      <div class="team" id="team-b">
-        <h2>Team B</h2>
-        <p id="name-teamB"></p>
-        <div id="ongoingSetStateTeamB">
-          <h2>Points:</h2>
-          <p class="score" id="score-teamB">0</p>
-          <button id="increase-score-teamB" type="button">+</button>
-          <p id="servingstate-teamB">Unknown</p>
-          <button id="timeout-teamB" type="button">TIME OUT</button>
-          <p id="timeouts-left-teamB">0 / 0</p>
-          <button id="sub-teamB" type="button">SUB</button>
-          <p id="subs-used-teamB">0 / 0</p>
-        </div>
-        <div id="accruedSetsPointsTeamB">
-          <h2>Sets:</h2>
-          <p class="score" id="sets-teamB">0</p>
-          <h2>Points total:</h2>
-          <p class="score" id="points-teamB">0</p>
+        <div class="team" id="team-b">
+          <h2 id="scoreboard-teamB-title">Team B</h2>
+          <div id="ongoingSetStateTeamB">
+            <h2>Points:</h2>
+            <p class="score" id="score-teamB">0</p>
+            <button id="increase-score-teamB" type="button">+</button>
+            <p id="servingstate-teamB">Unknown</p>
+            <button id="timeout-teamB" type="button">TIME OUT</button>
+            <p id="timeouts-left-teamB">0 / 0</p>
+            <button id="sub-teamB" type="button">SUB</button>
+            <p id="subs-used-teamB">0 / 0</p>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="game-controls" id="game-controls">
-      <h2>Game Controls</h2>
-      <button id="undo-last-point" type="button">Undo Last Point</button>
-      <button id="redo-last-point" type="button">Redo Last Point</button>
-      <button id="completeGame" type="button">Interrupt Game</button>
-      <button id="completeSet" type="button">Complete Set</button>
+    <div class="scoreboard-status-row">
+      <div class="game-controls" id="game-controls">
+        <h2>Game Controls</h2>
+        <div class="game-controls-actions">
+          <button id="undo-last-point" type="button">Undo Last Point</button>
+          <button id="redo-last-point" type="button">Redo Last Point</button>
+          <button id="completeGame" type="button">Interrupt Game</button>
+          <button id="completeSet" type="button">Complete Set</button>
+        </div>
+      </div>
       <div class="game-status">
-        <h2>Game Status:</h2>
-        <p id="game-status"></p>
+        <h2>Game Status</h2>
+        <div class="game-status-summary">
+          <div class="game-status-team-summary">
+            <h3 id="game-status-teamA-label">Team A</h3>
+            <p>Sets accrued: <strong id="sets-teamA">0</strong></p>
+            <p>Points accrued: <strong id="points-teamA">0</strong></p>
+          </div>
+          <div class="game-status-team-summary">
+            <h3 id="game-status-teamB-label">Team B</h3>
+            <p>Sets accrued: <strong id="sets-teamB">0</strong></p>
+            <p>Points accrued: <strong id="points-teamB">0</strong></p>
+          </div>
+        </div>
+        <div class="game-status-message">
+          <h3>Current State</h3>
+          <p id="game-status"></p>
+        </div>
       </div>
     </div>
   </main>

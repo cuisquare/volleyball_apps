@@ -214,8 +214,10 @@ const elements = {
     completeGame: document.getElementById('completeGame'),
     undoLastPoint: document.getElementById('undo-last-point'),
     redoLastPoint: document.getElementById('redo-last-point'),
-    teamAName: document.getElementById('name-teamA'),
-    teamBName: document.getElementById('name-teamB'),
+    scoreboardTeamATitle: document.getElementById('scoreboard-teamA-title'),
+    scoreboardTeamBTitle: document.getElementById('scoreboard-teamB-title'),
+    gameStatusTeamALabel: document.getElementById('game-status-teamA-label'),
+    gameStatusTeamBLabel: document.getElementById('game-status-teamB-label'),
     scoreTeamA: document.getElementById('score-teamA'),
     scoreTeamB: document.getElementById('score-teamB'),
     setsTeamA: document.getElementById('sets-teamA'),
@@ -3216,9 +3218,21 @@ function getTeamLabelOrFallback(teamId) {
     return teamId === 'teamA' ? 'Team A' : 'Team B';
 }
 
+function getScoreboardTeamTitle(teamId) {
+    const sideLabel = teamId === 'teamA' ? 'Team A' : 'Team B';
+    const teamName = mygame.getTeamName(teamId);
+    if (teamName && teamName !== 'Unknown') {
+        return `${teamName} (${sideLabel})`;
+    }
+
+    return sideLabel;
+}
+
 function updateScoringServingValues() {
-    elements.teamAName.textContent = getTeamLabelOrFallback('teamA');
-    elements.teamBName.textContent = getTeamLabelOrFallback('teamB');
+    elements.scoreboardTeamATitle.textContent = getScoreboardTeamTitle('teamA');
+    elements.scoreboardTeamBTitle.textContent = getScoreboardTeamTitle('teamB');
+    elements.gameStatusTeamALabel.textContent = getScoreboardTeamTitle('teamA');
+    elements.gameStatusTeamBLabel.textContent = getScoreboardTeamTitle('teamB');
 
     elements.scoreTeamA.textContent = mygame.currentSet.teamA;
     elements.scoreTeamB.textContent = mygame.currentSet.teamB;
