@@ -105,6 +105,8 @@ const setupState = {
         message: '',
         items: []
     },
+    courtRotationHistory: [],
+    courtRotationRedoHistory: [],
     nextRosterPlayerId: 1,
     matchStarted: false,
     setupLocked: false,
@@ -216,6 +218,8 @@ const elements = {
     redoLastPoint: document.getElementById('redo-last-point'),
     scoreboardTeamATitle: document.getElementById('scoreboard-teamA-title'),
     scoreboardTeamBTitle: document.getElementById('scoreboard-teamB-title'),
+    scoreboardCourtTeamA: document.getElementById('scoreboard-court-teamA'),
+    scoreboardCourtTeamB: document.getElementById('scoreboard-court-teamB'),
     gameStatusTeamALabel: document.getElementById('game-status-teamA-label'),
     gameStatusTeamBLabel: document.getElementById('game-status-teamB-label'),
     scoreTeamA: document.getElementById('score-teamA'),
@@ -1776,7 +1780,11 @@ function ensureLineupStateForCurrentSet() {
             started: false,
             locked: false,
             teamA: {},
-            teamB: {}
+            teamB: {},
+            courtRotationOffsets: {
+                teamA: 0,
+                teamB: 0
+            }
         };
     } else {
         const lineupState = setupState.lineupsBySet[setNumber];
@@ -1794,6 +1802,18 @@ function ensureLineupStateForCurrentSet() {
         }
         if (!lineupState.teamB || typeof lineupState.teamB !== 'object') {
             lineupState.teamB = {};
+        }
+        if (!lineupState.courtRotationOffsets || typeof lineupState.courtRotationOffsets !== 'object') {
+            lineupState.courtRotationOffsets = {
+                teamA: 0,
+                teamB: 0
+            };
+        }
+        if (!Number.isInteger(lineupState.courtRotationOffsets.teamA)) {
+            lineupState.courtRotationOffsets.teamA = 0;
+        }
+        if (!Number.isInteger(lineupState.courtRotationOffsets.teamB)) {
+            lineupState.courtRotationOffsets.teamB = 0;
         }
     }
     ensureSubstitutionStateForLineupState(setupState.lineupsBySet[setNumber]);
@@ -1823,6 +1843,8 @@ function sanitizeLineupSelections(teamId, lineupSelections) {
 function resetLineupsState() {
     setupState.lineupsBySet = {};
     setupState.lineupPromptedSet = 0;
+    setupState.courtRotationHistory = [];
+    setupState.courtRotationRedoHistory = [];
     setupState.substitutionMode = {
         active: false,
         teamId: '',
@@ -1836,6 +1858,31 @@ function resetLineupsState() {
     setSubstitutionPanelNotice('', []);
     setLineupsFeedback('', '');
     setLineupsSubstitutionHint('', []);
+}
+
+function getCourtRotationSnapshotForCurrentSet() {
+    const lineupState = ensureLineupStateForCurrentSet();
+    return {
+        teamA: Number(lineupState.courtRotationOffsets.teamA) || 0,
+        teamB: Number(lineupState.courtRotationOffsets.teamB) || 0
+    };
+}
+
+function restoreCourtRotationSnapshotForCurrentSet(snapshot) {
+    const lineupState = ensureLineupStateForCurrentSet();
+    lineupState.courtRotationOffsets.teamA = Number(snapshot?.teamA) || 0;
+    lineupState.courtRotationOffsets.teamB = Number(snapshot?.teamB) || 0;
+}
+
+function rotateCourtDisplayForTeam(teamId) {
+    const lineupState = ensureLineupStateForCurrentSet();
+    const currentOffset = Number(lineupState.courtRotationOffsets[teamId]) || 0;
+    lineupState.courtRotationOffsets[teamId] = (currentOffset + 1) % 6;
+}
+
+function resetCourtRotationHistory() {
+    setupState.courtRotationHistory = [];
+    setupState.courtRotationRedoHistory = [];
 }
 
 function currentSetLineupConfirmed() {
@@ -3228,9 +3275,45 @@ function getScoreboardTeamTitle(teamId) {
     return sideLabel;
 }
 
+function getDisplayedLineupSelections(teamId) {
+    const lineupState = ensureLineupStateForCurrentSet();
+    const baseSelections = lineupState[teamId] || {};
+    const rotationOffset = Number(lineupState.courtRotationOffsets[teamId]) || 0;
+    const displayedSelections = {};
+
+    for (let position = 1; position <= 6; position++) {
+        const mappedBasePosition = ((position + rotationOffset - 1) % 6) + 1;
+        displayedSelections[position] = baseSelections[mappedBasePosition] || '';
+    }
+
+    return displayedSelections;
+}
+
+function renderScoreboardCourt(teamId, container) {
+    const roster = getNonLiberoRosterForTeamId(teamId);
+    const byId = new Map(roster.map((player) => [player.id, player]));
+    const displayedSelections = getDisplayedLineupSelections(teamId);
+    const scorerViewCells = [4, 3, 2, 5, 6, 1];
+
+    container.innerHTML = scorerViewCells.map((position) => {
+        const playerId = displayedSelections[position] || '';
+        const player = playerId ? byId.get(playerId) || null : null;
+        const shirtNumber = player && Number.isInteger(player.shirtNumber) ? `#${player.shirtNumber}` : '—';
+        const hoverName = player ? escapeHtml(getRosterHoverName(player)) : '';
+        return `
+            <div class="scoreboard-court-cell${player ? '' : ' scoreboard-court-empty'}"${hoverName ? ` title="${hoverName}"` : ''}>
+                <span class="scoreboard-court-position">P${position}</span>
+                <span class="scoreboard-court-number">${shirtNumber}</span>
+            </div>
+        `;
+    }).join('');
+}
+
 function updateScoringServingValues() {
     elements.scoreboardTeamATitle.textContent = getScoreboardTeamTitle('teamA');
     elements.scoreboardTeamBTitle.textContent = getScoreboardTeamTitle('teamB');
+    renderScoreboardCourt('teamA', elements.scoreboardCourtTeamA);
+    renderScoreboardCourt('teamB', elements.scoreboardCourtTeamB);
     elements.gameStatusTeamALabel.textContent = getScoreboardTeamTitle('teamA');
     elements.gameStatusTeamBLabel.textContent = getScoreboardTeamTitle('teamB');
 
@@ -3585,6 +3668,7 @@ function startCurrentSet() {
     const firstSetStart = !setupState.matchStarted;
     const startTimes = getOfficialAndActualStartTimesForSet(startingSetNumber);
     setupState.matchStarted = true;
+    resetCourtRotationHistory();
     ensureLineupStateForCurrentSet();
     markCurrentSetStarted();
     mygame.recordSetStartTime(startingSetNumber, startTimes.startTime, startTimes.actualStartTime);
@@ -3715,6 +3799,7 @@ function completeCurrentSet() {
     const endTime = getLaterTimeString(actualEndTime, minimumOfficialEndTime);
     mygame.recordSetEndTime(completedSetNumber, endTime, actualEndTime);
     mygame.completeSet();
+    resetCourtRotationHistory();
     ensureLineupStateForCurrentSet();
     const endDelayNote = actualEndTime && endTime !== actualEndTime
         ? ` Actual end recorded as ${actualEndTime}.`
@@ -3835,7 +3920,16 @@ function hookEventListeners() {
         cancelSubstitutionMode();
         clearSubstitutionInterruptionState();
         setSubstitutionPanelNotice('', []);
-        mygame.awardPoint('teamA');
+        const previousServingTeam = mygame.team_serving_currently;
+        const rotationSnapshot = getCourtRotationSnapshotForCurrentSet();
+        const pointAwarded = mygame.awardPoint('teamA');
+        if (pointAwarded) {
+            setupState.courtRotationHistory.push(rotationSnapshot);
+            setupState.courtRotationRedoHistory = [];
+            if (previousServingTeam !== 'teamA' && previousServingTeam !== 'Unknown') {
+                rotateCourtDisplayForTeam('teamA');
+            }
+        }
         updateSetsElements();
     });
 
@@ -3843,7 +3937,16 @@ function hookEventListeners() {
         cancelSubstitutionMode();
         clearSubstitutionInterruptionState();
         setSubstitutionPanelNotice('', []);
-        mygame.awardPoint('teamB');
+        const previousServingTeam = mygame.team_serving_currently;
+        const rotationSnapshot = getCourtRotationSnapshotForCurrentSet();
+        const pointAwarded = mygame.awardPoint('teamB');
+        if (pointAwarded) {
+            setupState.courtRotationHistory.push(rotationSnapshot);
+            setupState.courtRotationRedoHistory = [];
+            if (previousServingTeam !== 'teamB' && previousServingTeam !== 'Unknown') {
+                rotateCourtDisplayForTeam('teamB');
+            }
+        }
         updateSetsElements();
     });
 
@@ -3870,12 +3973,30 @@ function hookEventListeners() {
     });
 
     elements.undoLastPoint.addEventListener('click', () => {
-        mygame.undoLastPoint();
+        const currentRotationSnapshot = getCourtRotationSnapshotForCurrentSet();
+        const pointUndone = mygame.undoLastPoint();
+        if (pointUndone) {
+            setupState.courtRotationRedoHistory.push(currentRotationSnapshot);
+            const previousRotationSnapshot = setupState.courtRotationHistory.pop();
+            if (previousRotationSnapshot) {
+                restoreCourtRotationSnapshotForCurrentSet(previousRotationSnapshot);
+            } else {
+                restoreCourtRotationSnapshotForCurrentSet({ teamA: 0, teamB: 0 });
+            }
+        }
         updateSetsElements();
     });
 
     elements.redoLastPoint.addEventListener('click', () => {
-        mygame.redoLastPoint();
+        const currentRotationSnapshot = getCourtRotationSnapshotForCurrentSet();
+        const pointRedone = mygame.redoLastPoint();
+        if (pointRedone) {
+            setupState.courtRotationHistory.push(currentRotationSnapshot);
+            const redoRotationSnapshot = setupState.courtRotationRedoHistory.pop();
+            if (redoRotationSnapshot) {
+                restoreCourtRotationSnapshotForCurrentSet(redoRotationSnapshot);
+            }
+        }
         updateSetsElements();
     });
 

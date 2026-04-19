@@ -257,9 +257,60 @@ select {
   margin: 0 0 8px;
 }
 
+.team h3 {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
 .score {
   font-size: 3rem;
   margin: 8px 0;
+}
+
+.scoreboard-court-wrap {
+  margin-top: 14px;
+  text-align: left;
+}
+
+.scoreboard-court {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(56px, 1fr));
+  gap: 8px;
+}
+
+.scoreboard-court-cell {
+  position: relative;
+  min-height: 62px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+
+.scoreboard-court-position {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.scoreboard-court-number {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.scoreboard-court-empty .scoreboard-court-number {
+  color: var(--muted);
+  font-weight: 500;
 }
 
 .game-controls {
