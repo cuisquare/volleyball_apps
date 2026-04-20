@@ -105,7 +105,15 @@ const setupState = {
         active: false,
         teamId: '',
         outgoingPosition: 0,
-        requestPairs: []
+        requestPairs: [],
+        baselineSelections: {
+            teamA: {},
+            teamB: {}
+        },
+        stagedSelections: {
+            teamA: {},
+            teamB: {}
+        }
     },
     substitutionInterruptionPairs: {
         teamA: [],
@@ -372,6 +380,23 @@ function setSubstitutionPanelNotice(message = '', items = []) {
     setupState.substitutionPanelNotice = {
         message,
         items: Array.isArray(items) ? [...items] : []
+    };
+}
+
+function createEmptySubstitutionModeState() {
+    return {
+        active: false,
+        teamId: '',
+        outgoingPosition: 0,
+        requestPairs: [],
+        baselineSelections: {
+            teamA: {},
+            teamB: {}
+        },
+        stagedSelections: {
+            teamA: {},
+            teamB: {}
+        }
     };
 }
 
@@ -1936,12 +1961,7 @@ function resetLineupsState() {
     setupState.lineupPromptedSet = 0;
     setupState.courtRotationHistory = [];
     setupState.courtRotationRedoHistory = [];
-    setupState.substitutionMode = {
-        active: false,
-        teamId: '',
-        outgoingPosition: 0,
-        requestPairs: []
-    };
+    setupState.substitutionMode = createEmptySubstitutionModeState();
     setupState.substitutionInterruptionPairs = {
         teamA: [],
         teamB: []
@@ -2062,10 +2082,12 @@ function updateLineupsPanelTeamOrder() {
 function renderLineupSelect(teamId, position, selectedPlayerId, disabled) {
     const select = getLineupSelectElements(teamId)[position - 1];
     const roster = getNonLiberoRosterForTeamId(teamId);
-    const lineupState = ensureLineupStateForCurrentSet();
-    const teamSelections = lineupState[teamId] || {};
+    const teamSelections = getLineupSelectionsForDisplay(teamId);
     const substitutionModeForTeam = setupState.substitutionMode.active && setupState.substitutionMode.teamId === teamId;
     const marker = getSubstitutionMarker(teamId, position);
+    const baselineSelections = substitutionModeForTeam ? getSubstitutionBaselineSelections(teamId) : {};
+    const hasPendingChange = substitutionModeForTeam && (baselineSelections[position] || '') !== (selectedPlayerId || '');
+    const stagedIncomingPositions = substitutionModeForTeam ? getStagedIncomingPlayerPositions(teamId, teamSelections) : new Map();
     const sortedRoster = [...roster].sort((playerA, playerB) => {
         const selectedPosA = getSelectedLineupPosition(teamSelections, playerA.id);
         const selectedPosB = getSelectedLineupPosition(teamSelections, playerB.id);
@@ -2099,7 +2121,9 @@ function renderLineupSelect(teamId, position, selectedPlayerId, disabled) {
     placeholderOption.textContent = substitutionModeForTeam ? 'Select substitute' : 'Select player';
     select.appendChild(placeholderOption);
 
-    const allowedIncomingIds = substitutionModeForTeam ? new Set(getEligibleIncomingPlayersForPosition(teamId, position).map((player) => player.id)) : null;
+    const allowedIncomingIds = substitutionModeForTeam
+        ? new Set(getEligibleIncomingPlayersForPosition(teamId, position, { teamSelectionsOverride: teamSelections }).map((player) => player.id))
+        : null;
     for (const player of sortedRoster) {
         if (substitutionModeForTeam && player.id !== selectedPlayerId && !allowedIncomingIds.has(player.id)) {
             continue;
@@ -2107,7 +2131,24 @@ function renderLineupSelect(teamId, position, selectedPlayerId, disabled) {
         const option = document.createElement('option');
         option.value = player.id;
         const baseLabel = buildLineupOptionLabel(player);
-        const suffix = player.id === selectedPlayerId ? '' : getLineupOptionSuffix(teamSelections, position, player.id);
+        let suffix = player.id === selectedPlayerId ? '' : getLineupOptionSuffix(teamSelections, position, player.id);
+        if (substitutionModeForTeam) {
+            if (hasPendingChange && player.id === selectedPlayerId) {
+                suffix = '[staged]';
+            } else if (hasPendingChange && player.id === (baselineSelections[position] || '')) {
+                suffix = '[original]';
+            } else {
+                const stagedAtPosition = stagedIncomingPositions.get(player.id) || 0;
+                if (stagedAtPosition && stagedAtPosition !== position) {
+                    suffix = suffix ? `${suffix} [staged]` : '[staged]';
+                }
+            }
+        } else {
+            const stagedAtPosition = stagedIncomingPositions.get(player.id) || 0;
+            if (stagedAtPosition && stagedAtPosition !== position) {
+                suffix = suffix ? `${suffix} [staged]` : '[staged]';
+            }
+        }
         option.textContent = suffix ? `${baseLabel}  ${suffix}` : baseLabel;
         select.appendChild(option);
     }
@@ -2116,10 +2157,57 @@ function renderLineupSelect(teamId, position, selectedPlayerId, disabled) {
     select.disabled = disabled;
     select.parentElement.classList.toggle('lineup-sub-active', marker.className === 'lineup-sub-active');
     select.parentElement.classList.toggle('lineup-sub-locked', marker.className === 'lineup-sub-locked');
+    select.parentElement.classList.toggle('lineup-sub-pending', hasPendingChange);
     const label = select.parentElement.querySelector('label');
     if (label) {
         label.textContent = marker.text ? `Position ${position} (${marker.text})` : `Position ${position}`;
     }
+}
+
+function getLineupSelectionsForDisplay(teamId) {
+    const lineupState = ensureLineupStateForCurrentSet();
+    if (setupState.substitutionMode.active && setupState.substitutionMode.teamId === teamId) {
+        return {
+            ...(setupState.substitutionMode.stagedSelections[teamId] || {})
+        };
+    }
+    return {
+        ...(lineupState[teamId] || {})
+    };
+}
+
+function getSubstitutionBaselineSelections(teamId) {
+    if (!setupState.substitutionMode.active || setupState.substitutionMode.teamId !== teamId) {
+        return {};
+    }
+    return {
+        ...(setupState.substitutionMode.baselineSelections[teamId] || {})
+    };
+}
+
+function getStagedSubstitutionChangedPositions(teamId, stagedSelections = null) {
+    const baselineSelections = getSubstitutionBaselineSelections(teamId);
+    const nextSelections = stagedSelections || getLineupSelectionsForDisplay(teamId);
+    const changed = [];
+    for (let position = 1; position <= 6; position++) {
+        if ((baselineSelections[position] || '') !== (nextSelections[position] || '')) {
+            changed.push(position);
+        }
+    }
+    return changed;
+}
+
+function getStagedIncomingPlayerPositions(teamId, stagedSelections = null) {
+    const baselineSelections = getSubstitutionBaselineSelections(teamId);
+    const nextSelections = stagedSelections || getLineupSelectionsForDisplay(teamId);
+    const incomingPositions = new Map();
+    for (const position of getStagedSubstitutionChangedPositions(teamId, nextSelections)) {
+        const playerId = nextSelections[position] || '';
+        if (playerId) {
+            incomingPositions.set(playerId, position);
+        }
+    }
+    return incomingPositions;
 }
 
 function renderLineupsPanel() {
@@ -2143,21 +2231,25 @@ function renderLineupsPanel() {
     }
 
     const baseReadOnly = (lineupState.locked && !setupState.substitutionMode.active) || mygame.isGameOver || !setupState.prematchTossConfirmed;
+    const displayedTeamA = getLineupSelectionsForDisplay('teamA');
+    const displayedTeamB = getLineupSelectionsForDisplay('teamB');
 
     for (let position = 1; position <= 6; position++) {
         const readOnlyTeamA = baseReadOnly
-            || (setupState.substitutionMode.active && (setupState.substitutionMode.teamId !== 'teamA' || !getEligibleIncomingPlayersForPosition('teamA', position).length));
+            || (setupState.substitutionMode.active && (setupState.substitutionMode.teamId !== 'teamA' || !getEligibleIncomingPlayersForPosition('teamA', position, { teamSelectionsOverride: displayedTeamA }).length));
         const readOnlyTeamB = baseReadOnly
-            || (setupState.substitutionMode.active && (setupState.substitutionMode.teamId !== 'teamB' || !getEligibleIncomingPlayersForPosition('teamB', position).length));
-        renderLineupSelect('teamA', position, lineupState.teamA[position] || '', readOnlyTeamA);
-        renderLineupSelect('teamB', position, lineupState.teamB[position] || '', readOnlyTeamB);
+            || (setupState.substitutionMode.active && (setupState.substitutionMode.teamId !== 'teamB' || !getEligibleIncomingPlayersForPosition('teamB', position, { teamSelectionsOverride: displayedTeamB }).length));
+        renderLineupSelect('teamA', position, displayedTeamA[position] || '', readOnlyTeamA);
+        renderLineupSelect('teamB', position, displayedTeamB[position] || '', readOnlyTeamB);
     }
 
     if (setupState.substitutionMode.active) {
         const teamLabel = getTeamLabelOrFallback(setupState.substitutionMode.teamId);
+        const teamSelections = getLineupSelectionsForDisplay(setupState.substitutionMode.teamId);
+        const pendingCount = getStagedSubstitutionChangedPositions(setupState.substitutionMode.teamId).length;
         setLineupsSubstitutionHint(
-            `${teamLabel} substitution mode: choose one eligible on-court position and select a legal replacement. ${getRemainingSubsForCurrentSet(setupState.substitutionMode.teamId)} substitution(s) remaining this set.`,
-            getUnavailableBenchReasons(setupState.substitutionMode.teamId)
+            `${teamLabel} substitution mode: stage one or more legal substitutions, then apply them together. ${pendingCount} pending; ${getRemainingSubsForCurrentSet(setupState.substitutionMode.teamId)} substitution(s) remaining this set.`,
+            getUnavailableBenchReasons(setupState.substitutionMode.teamId, { teamSelectionsOverride: teamSelections })
         );
     } else if (setupState.substitutionPanelNotice.message) {
         setLineupsSubstitutionHint(
@@ -2201,6 +2293,46 @@ function validateLineupForTeam(teamId, lineupSelections) {
     return '';
 }
 
+function syncStagedSelectionsFromForm(teamId, preferredPosition = 0) {
+    const currentSelections = getLineupSelectionsFromForm(teamId);
+    if (!setupState.substitutionMode.active || setupState.substitutionMode.teamId !== teamId) {
+        return currentSelections;
+    }
+
+    const baselineSelections = getSubstitutionBaselineSelections(teamId);
+    const nextSelections = { ...currentSelections };
+    if (preferredPosition >= 1 && preferredPosition <= 6) {
+        const preferredIncomingId = nextSelections[preferredPosition] || '';
+        if (preferredIncomingId) {
+            for (let position = 1; position <= 6; position++) {
+                if (position === preferredPosition) {
+                    continue;
+                }
+                if ((nextSelections[position] || '') === preferredIncomingId) {
+                    nextSelections[position] = baselineSelections[position] || '';
+                }
+            }
+        }
+    }
+
+    const changedPositions = getStagedSubstitutionChangedPositions(teamId, nextSelections);
+    const incomingPositions = new Map();
+    for (const position of changedPositions) {
+        const incomingPlayerId = nextSelections[position] || '';
+        if (!incomingPlayerId) {
+            continue;
+        }
+        if (incomingPositions.has(incomingPlayerId)) {
+            nextSelections[position] = baselineSelections[position] || '';
+            continue;
+        }
+        incomingPositions.set(incomingPlayerId, position);
+    }
+
+    setupState.substitutionMode.stagedSelections[teamId] = nextSelections;
+    return nextSelections;
+}
+
 function startSubstitutionMode(teamId) {
     if (setupState.substitutionMode.active && setupState.substitutionMode.teamId === teamId) {
         setActivePanel('lineups');
@@ -2223,17 +2355,19 @@ function startSubstitutionMode(teamId) {
         setSetupFeedback(`${getTeamLabelOrFallback(teamId)} has no legal substitutions available right now.`, 'error');
         return;
     }
-    setupState.substitutionMode = {
-        active: true,
-        teamId,
-        outgoingPosition: 0,
-        requestPairs: Array.isArray(setupState.substitutionInterruptionPairs[teamId])
-            ? [...setupState.substitutionInterruptionPairs[teamId]]
-            : []
-    };
+    const lineupState = ensureLineupStateForCurrentSet();
+    const currentSelections = { ...(lineupState[teamId] || {}) };
+    setupState.substitutionMode = createEmptySubstitutionModeState();
+    setupState.substitutionMode.active = true;
+    setupState.substitutionMode.teamId = teamId;
+    setupState.substitutionMode.requestPairs = Array.isArray(setupState.substitutionInterruptionPairs[teamId])
+        ? [...setupState.substitutionInterruptionPairs[teamId]]
+        : [];
+    setupState.substitutionMode.baselineSelections[teamId] = { ...currentSelections };
+    setupState.substitutionMode.stagedSelections[teamId] = { ...currentSelections };
     setSubstitutionPanelNotice('', []);
     setActivePanel('lineups');
-    setLineupsFeedback(`Substitution mode: choose a legal ${getTeamLabelOrFallback(teamId)} substitution and confirm it.`, '');
+    setLineupsFeedback(`Substitution mode: stage legal ${getTeamLabelOrFallback(teamId)} substitutions, then apply them together.`, '');
     renderLineupsPanel();
     updateActionAvailability();
 }
@@ -2242,12 +2376,7 @@ function cancelSubstitutionMode() {
     if (!setupState.substitutionMode.active) {
         return;
     }
-    setupState.substitutionMode = {
-        active: false,
-        teamId: '',
-        outgoingPosition: 0,
-        requestPairs: []
-    };
+    setupState.substitutionMode = createEmptySubstitutionModeState();
     renderLineupsPanel();
     updateActionAvailability();
 }
@@ -2262,92 +2391,98 @@ function clearSubstitutionInterruptionState() {
 function applySubstitutionForCurrentSet() {
     const teamId = setupState.substitutionMode.teamId;
     const lineupState = ensureLineupStateForCurrentSet();
-    const originalSelections = { ...(lineupState[teamId] || {}) };
-    const updatedSelections = getLineupSelectionsFromForm(teamId);
-    const changedPositions = [];
-    for (let position = 1; position <= 6; position++) {
-        if ((originalSelections[position] || '') !== (updatedSelections[position] || '')) {
-            changedPositions.push(position);
-        }
+    const originalSelections = getSubstitutionBaselineSelections(teamId);
+    const updatedSelections = syncStagedSelectionsFromForm(teamId);
+    const changedPositions = getStagedSubstitutionChangedPositions(teamId, updatedSelections);
+    if (changedPositions.length < 1) {
+        setLineupsFeedback('Stage at least one legal substitution before applying.', 'error');
+        return;
     }
-    if (changedPositions.length !== 1) {
-        setLineupsFeedback('A substitution must change exactly one on-court position.', 'error');
+    if (getUsedSubsForCurrentSet(teamId) + changedPositions.length > getMaxSubsPerSet()) {
+        setLineupsFeedback(`${getTeamLabelOrFallback(teamId)} would exceed the maximum of ${getMaxSubsPerSet()} substitutions in this set.`, 'error');
         return;
     }
 
-    const position = changedPositions[0];
-    const outgoingPlayerId = originalSelections[position] || '';
-    const incomingPlayerId = updatedSelections[position] || '';
-    const eligibleIncoming = getEligibleIncomingPlayersForPosition(teamId, position).map((player) => player.id);
-    if (!outgoingPlayerId || !incomingPlayerId || !eligibleIncoming.includes(incomingPlayerId)) {
-        setLineupsFeedback('Selected substitution is not legal for that position.', 'error');
-        return;
-    }
-
-    const substitutionState = getSubstitutionStateForCurrentSet(teamId);
-    const positionState = substitutionState.positions[position];
-    const substitutionKind = positionState.substitutePlayerId && positionState.currentPlayerId === positionState.substitutePlayerId
-        ? 'return'
-        : 'regular';
-    const outgoingRole = getAssignedPlayingRole(teamId, outgoingPlayerId);
-
-    lineupState[teamId][position] = incomingPlayerId;
-    positionState.currentPlayerId = incomingPlayerId;
-    if (outgoingRole) {
-        ensurePlayerRoleAssignmentsShape();
-        setupState.playerRoleAssignments[teamId][incomingPlayerId] = outgoingRole;
-    }
-    if (substitutionKind === 'regular') {
-        positionState.substitutePlayerId = incomingPlayerId;
-        const requestPair = {
-            position,
-            originalPlayerId: outgoingPlayerId,
-            substitutePlayerId: incomingPlayerId
-        };
-        if (setupState.substitutionMode.active && setupState.substitutionMode.teamId === teamId) {
-            setupState.substitutionMode.requestPairs.push(requestPair);
+    for (const position of changedPositions) {
+        const outgoingPlayerId = originalSelections[position] || '';
+        const incomingPlayerId = updatedSelections[position] || '';
+        const eligibleIncoming = getEligibleIncomingPlayersForPosition(teamId, position, { teamSelectionsOverride: updatedSelections }).map((player) => player.id);
+        if (!outgoingPlayerId || !incomingPlayerId || !eligibleIncoming.includes(incomingPlayerId)) {
+            setLineupsFeedback(`Selected substitution is not legal for position ${position}.`, 'error');
+            return;
         }
-        if (!Array.isArray(setupState.substitutionInterruptionPairs[teamId])) {
-            setupState.substitutionInterruptionPairs[teamId] = [];
-        }
-        setupState.substitutionInterruptionPairs[teamId].push(requestPair);
-    } else {
-        positionState.closed = true;
     }
-    substitutionState.used += 1;
 
-    const outgoingPlayer = getRosterForTeamId(teamId).find((player) => player.id === outgoingPlayerId);
-    const incomingPlayer = getRosterForTeamId(teamId).find((player) => player.id === incomingPlayerId);
     const score = getScoreNotationForTeam(teamId);
-    mygame.recordSubstitution(
-        getCurrentSetNumberForLineup(),
-        teamId,
-        score,
-        outgoingPlayerId,
-        incomingPlayerId,
-        outgoingPlayer ? buildLineupOptionLabel(outgoingPlayer) : outgoingPlayerId,
-        incomingPlayer ? buildLineupOptionLabel(incomingPlayer) : incomingPlayerId,
-        substitutionKind
-    );
-    mygame.addExternalEvent('substitution_applied', {
-        setNumber: getCurrentSetNumberForLineup(),
-        team: teamId,
-        score,
-        position,
-        playerOutId: outgoingPlayerId,
-        playerInId: incomingPlayerId,
-        substitutionKind
-    });
+    const setNumber = getCurrentSetNumberForLineup();
+    const roster = getRosterForTeamId(teamId);
+
+    for (const position of changedPositions) {
+        const outgoingPlayerId = originalSelections[position] || '';
+        const incomingPlayerId = updatedSelections[position] || '';
+        const substitutionState = getSubstitutionStateForCurrentSet(teamId);
+        const positionState = substitutionState.positions[position];
+        const substitutionKind = positionState.substitutePlayerId && positionState.currentPlayerId === positionState.substitutePlayerId
+            ? 'return'
+            : 'regular';
+        const outgoingRole = getAssignedPlayingRole(teamId, outgoingPlayerId);
+
+        lineupState[teamId][position] = incomingPlayerId;
+        positionState.currentPlayerId = incomingPlayerId;
+        if (outgoingRole) {
+            ensurePlayerRoleAssignmentsShape();
+            setupState.playerRoleAssignments[teamId][incomingPlayerId] = outgoingRole;
+        }
+        if (substitutionKind === 'regular') {
+            positionState.substitutePlayerId = incomingPlayerId;
+            const requestPair = {
+                position,
+                originalPlayerId: outgoingPlayerId,
+                substitutePlayerId: incomingPlayerId
+            };
+            if (!Array.isArray(setupState.substitutionInterruptionPairs[teamId])) {
+                setupState.substitutionInterruptionPairs[teamId] = [];
+            }
+            setupState.substitutionInterruptionPairs[teamId].push(requestPair);
+        } else {
+            positionState.closed = true;
+        }
+        substitutionState.used += 1;
+
+        const outgoingPlayer = roster.find((player) => player.id === outgoingPlayerId);
+        const incomingPlayer = roster.find((player) => player.id === incomingPlayerId);
+        mygame.recordSubstitution(
+            setNumber,
+            teamId,
+            score,
+            outgoingPlayerId,
+            incomingPlayerId,
+            outgoingPlayer ? buildLineupOptionLabel(outgoingPlayer) : outgoingPlayerId,
+            incomingPlayer ? buildLineupOptionLabel(incomingPlayer) : incomingPlayerId,
+            substitutionKind
+        );
+        mygame.addExternalEvent('substitution_applied', {
+            setNumber,
+            team: teamId,
+            score,
+            position,
+            playerOutId: outgoingPlayerId,
+            playerInId: incomingPlayerId,
+            substitutionKind
+        });
+    }
 
     const keepSubstitutionModeActive = getRemainingSubsForCurrentSet(teamId) > 0 && hasAnyEligibleSubstitutionPosition(teamId);
     if (keepSubstitutionModeActive) {
-        setupState.substitutionMode = {
-            active: true,
-            teamId,
-            outgoingPosition: 0,
-            requestPairs: setupState.substitutionMode.requestPairs
-        };
-        setLineupsFeedback(`${getTeamLabelOrFallback(teamId)} substitution recorded at ${score}. Select the next legal substitution or press SUBS DONE when finished.`, 'success');
+        setupState.substitutionMode = createEmptySubstitutionModeState();
+        setupState.substitutionMode.active = true;
+        setupState.substitutionMode.teamId = teamId;
+        setupState.substitutionMode.requestPairs = Array.isArray(setupState.substitutionInterruptionPairs[teamId])
+            ? [...setupState.substitutionInterruptionPairs[teamId]]
+            : [];
+        setupState.substitutionMode.baselineSelections[teamId] = { ...(lineupState[teamId] || {}) };
+        setupState.substitutionMode.stagedSelections[teamId] = { ...(lineupState[teamId] || {}) };
+        setLineupsFeedback(`${getTeamLabelOrFallback(teamId)} ${changedPositions.length === 1 ? 'substitution' : `${changedPositions.length} substitutions`} recorded at ${score}. Stage the next legal substitution request or press SUBS DONE when finished.`, 'success');
     } else {
         const remainingSubs = getRemainingSubsForCurrentSet(teamId);
         cancelSubstitutionMode();
@@ -2362,7 +2497,7 @@ function applySubstitutionForCurrentSet() {
                 getUnavailableBenchReasons(teamId)
             );
         }
-        setLineupsFeedback(`${getTeamLabelOrFallback(teamId)} substitution recorded at ${score}.`, 'success');
+        setLineupsFeedback(`${getTeamLabelOrFallback(teamId)} ${changedPositions.length === 1 ? 'substitution' : `${changedPositions.length} substitutions`} recorded at ${score}.`, 'success');
     }
     updateSetsElements();
 }
@@ -2666,9 +2801,10 @@ function getSubstitutionStateForCurrentSet(teamId) {
     return lineupState.substitutions[teamId];
 }
 
-function getCurrentOnCourtPlayerIds(teamId) {
+function getCurrentOnCourtPlayerIds(teamId, teamSelectionsOverride = null) {
     const lineupState = ensureLineupStateForCurrentSet();
-    return new Set(Object.values(lineupState[teamId] || {}).filter(Boolean));
+    const teamSelections = teamSelectionsOverride || lineupState[teamId] || {};
+    return new Set(Object.values(teamSelections).filter(Boolean));
 }
 
 function getPositionStateForTeam(teamId, position) {
@@ -2690,14 +2826,33 @@ function isPlayerFreshBenchCandidate(teamId, playerId) {
     return true;
 }
 
-function getEligibleIncomingPlayersForPosition(teamId, position) {
+function getEligibleIncomingPlayersForPosition(teamId, position, options = {}) {
+    const teamSelectionsOverride = options.teamSelectionsOverride || null;
     const substitutionState = getSubstitutionStateForCurrentSet(teamId);
     const positionState = substitutionState.positions[position];
     if (!positionState || positionState.closed || substitutionState.used >= getMaxSubsPerSet()) {
         return [];
     }
-    const onCourtIds = getCurrentOnCourtPlayerIds(teamId);
+    const onCourtIds = getCurrentOnCourtPlayerIds(teamId, teamSelectionsOverride);
+    const stagedIncomingPositions = teamSelectionsOverride ? getStagedIncomingPlayerPositions(teamId, teamSelectionsOverride) : new Map();
     const benchPlayers = getNonLiberoRosterForTeamId(teamId).filter((player) => !onCourtIds.has(player.id));
+    const selectedIncomingId = teamSelectionsOverride ? (teamSelectionsOverride[position] || '') : '';
+    const extraMoveablePlayers = getNonLiberoRosterForTeamId(teamId).filter((player) => {
+        const stagedPosition = stagedIncomingPositions.get(player.id) || 0;
+        return Boolean(stagedPosition && stagedPosition !== position && isPlayerFreshBenchCandidate(teamId, player.id));
+    });
+    const candidatePlayers = [...benchPlayers];
+    if (selectedIncomingId && selectedIncomingId !== positionState.currentPlayerId) {
+        const selectedIncomingPlayer = getNonLiberoRosterForTeamId(teamId).find((player) => player.id === selectedIncomingId);
+        if (selectedIncomingPlayer && !candidatePlayers.some((candidate) => candidate.id === selectedIncomingPlayer.id)) {
+            candidatePlayers.push(selectedIncomingPlayer);
+        }
+    }
+    for (const player of extraMoveablePlayers) {
+        if (!candidatePlayers.some((candidate) => candidate.id === player.id)) {
+            candidatePlayers.push(player);
+        }
+    }
 
     if (positionState.substitutePlayerId && positionState.currentPlayerId === positionState.substitutePlayerId) {
         const isCurrentInterruptionPair = Array.isArray(setupState.substitutionInterruptionPairs[teamId])
@@ -2709,11 +2864,13 @@ function getEligibleIncomingPlayersForPosition(teamId, position) {
         if (isCurrentInterruptionPair) {
             return [];
         }
-        return benchPlayers.filter((player) => player.id === positionState.originalPlayerId);
+        return candidatePlayers.filter((player) => player.id === positionState.originalPlayerId);
     }
 
     if (!positionState.substitutePlayerId && positionState.currentPlayerId === positionState.originalPlayerId) {
-        return benchPlayers.filter((player) => isPlayerFreshBenchCandidate(teamId, player.id));
+        return candidatePlayers.filter((player) =>
+            player.id === positionState.originalPlayerId || isPlayerFreshBenchCandidate(teamId, player.id)
+        );
     }
 
     return [];
@@ -2740,9 +2897,10 @@ function getSubstitutionMarker(teamId, position) {
     return { text: '', className: '' };
 }
 
-function getUnavailableBenchReasons(teamId) {
+function getUnavailableBenchReasons(teamId, options = {}) {
+    const teamSelectionsOverride = options.teamSelectionsOverride || null;
     const reasons = [];
-    const onCourtIds = getCurrentOnCourtPlayerIds(teamId);
+    const onCourtIds = getCurrentOnCourtPlayerIds(teamId, teamSelectionsOverride);
     const substitutionState = getSubstitutionStateForCurrentSet(teamId);
     for (const player of getNonLiberoRosterForTeamId(teamId)) {
         if (onCourtIds.has(player.id)) {
@@ -3657,7 +3815,7 @@ function updateActionAvailability() {
     elements.applyLineups.disabled = !setupState.prematchTossConfirmed || mygame.isGameOver || lineupState.locked;
     if (setupState.substitutionMode.active) {
         elements.applyLineups.disabled = !canManageSet;
-        elements.applyLineups.textContent = 'Confirm Substitution';
+        elements.applyLineups.textContent = 'Apply Subs';
         elements.doneSubstitutions.disabled = !canManageSet;
         elements.doneSubstitutions.classList.remove('hidden');
     } else {
@@ -4190,9 +4348,13 @@ function hookEventListeners() {
     for (const select of getAllLineupSelectElements()) {
         select.addEventListener('change', () => {
             markLineupDirtyFromFormChange(select);
-            if (!setupState.substitutionMode.active) {
-                renderLineupsPanel();
+            if (setupState.substitutionMode.active) {
+                const identity = getLineupIdentityFromSelect(select);
+                if (identity && identity.teamId === setupState.substitutionMode.teamId) {
+                    syncStagedSelectionsFromForm(identity.teamId, identity.position);
+                }
             }
+            renderLineupsPanel();
             updateSetupBadge();
             updateActionAvailability();
         });
@@ -4252,9 +4414,16 @@ function hookEventListeners() {
     });
 
     elements.doneSubstitutions.addEventListener('click', () => {
+        const activeTeamId = setupState.substitutionMode.teamId;
+        const discardedPendingCount = activeTeamId ? getStagedSubstitutionChangedPositions(activeTeamId).length : 0;
         setSubstitutionPanelNotice('', []);
         cancelSubstitutionMode();
-        setLineupsFeedback('Substitution request finished.', '');
+        setLineupsFeedback(
+            discardedPendingCount > 0
+                ? `Substitution request finished. ${discardedPendingCount} staged ${discardedPendingCount === 1 ? 'change was' : 'changes were'} discarded.`
+                : 'Substitution request finished.',
+            ''
+        );
     });
 
     elements.undoLastPoint.addEventListener('click', () => {

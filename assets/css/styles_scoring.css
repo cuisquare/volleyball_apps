@@ -571,6 +571,11 @@ input[type="radio"]:disabled {
   background: #fbf4e6;
 }
 
+.lineup-sub-pending {
+  border-color: #8dc9a3;
+  background: #eaf8ef;
+}
+
 .dark-mode .lineup-sub-active {
   background: #1a2b46;
   border-color: #456ea7;
@@ -579,6 +584,11 @@ input[type="radio"]:disabled {
 .dark-mode .lineup-sub-locked {
   background: #3b2b17;
   border-color: #9b7b43;
+}
+
+.dark-mode .lineup-sub-pending {
+  background: #183123;
+  border-color: #3f8e61;
 }
 
 #lineups-panel select {
