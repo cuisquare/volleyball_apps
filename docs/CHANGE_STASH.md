@@ -57,7 +57,7 @@ Update this file whenever an item is added, completed, or reprioritized.
 - [x] Introduced a pending set-start workflow where applying a lineup stages the next set and `Start Set` finalizes the lineup and begins play.
 - [x] Set start/end time tracking with official and actual set times, including rules-controlled break duration between sets.
 - [x] Timeout recording during sets with rules-controlled limits, scoreboard request buttons, and used/max timeout tracking per team.
-- [x] Player substitutions during sets, including rules-controlled per-set limits, lineup-panel substitution workflow, pair-based return validation, score-at-sub capture, and per-team substitution usage tracking.
+- [x] Player substitutions during sets, including rules-controlled per-set limits, lineup-panel substitution workflow, pair-based return validation, score-at-sub capture, per-team substitution usage tracking, and staged multi-substitution requests with one final apply step.
 - [x] Save/load game state and history (quick save/load + JSON import/export) with pre-toss restore fix.
 
 ### Positions App

@@ -4418,6 +4418,7 @@ function hookEventListeners() {
         const discardedPendingCount = activeTeamId ? getStagedSubstitutionChangedPositions(activeTeamId).length : 0;
         setSubstitutionPanelNotice('', []);
         cancelSubstitutionMode();
+        setActivePanel('scoreboard');
         setLineupsFeedback(
             discardedPendingCount > 0
                 ? `Substitution request finished. ${discardedPendingCount} staged ${discardedPendingCount === 1 ? 'change was' : 'changes were'} discarded.`
