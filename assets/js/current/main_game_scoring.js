@@ -2785,7 +2785,8 @@ function buildResultsSummaryRows() {
 
         const isCurrentLiveSet = setNumber === currentSetNumber && currentSetStarted() && !mygame.isGameOver;
         if (isCurrentLiveSet) {
-            const liveDurationMinutes = getMinutesBetweenTimeStrings(setTimeEntry?.startTime || '', getRoundedCurrentTimeString());
+            const liveStartTime = setTimeEntry?.actualStartTime || setTimeEntry?.startTime || '';
+            const liveDurationMinutes = getMinutesBetweenTimeStrings(liveStartTime, getRoundedCurrentTimeString());
             rows.push({
                 ...baseRow,
                 teamAPoints: currentSetLive.teamA,
@@ -4404,6 +4405,11 @@ function interruptGame() {
     }
 
     mygame.interruptReason = window.prompt('Please enter an interruption reason (optional):') || 'No reason provided';
+    if (setupState.matchStarted && !mygame.isGameOver && currentSetStarted()) {
+        const interruptedSetNumber = mygame.getCurrentSet();
+        const actualEndTime = getRoundedCurrentTimeString();
+        mygame.recordSetEndTime(interruptedSetNumber, actualEndTime, actualEndTime);
+    }
     mygame.completeGame();
     updateSetsElements();
 }
