@@ -256,6 +256,31 @@
     </div>
   </div>
 
+  <div id="role-assignment-modal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal-card role-assignment-modal-card" role="dialog" aria-modal="true" aria-labelledby="role-assignment-modal-title">
+      <div class="modal-header">
+        <div>
+          <h3 id="role-assignment-modal-title">Assign Playing Role</h3>
+          <p id="role-assignment-modal-subtitle" class="hint">Choose the role for this player. The remaining on-court roles will be inferred in service order.</p>
+        </div>
+        <button id="close-role-assignment-modal" type="button" class="modal-close-btn" aria-label="Close role assignment editor">Close</button>
+      </div>
+      <div id="role-assignment-buttons" class="role-assignment-buttons">
+        <button type="button" class="role-assignment-btn" data-role-symbol="S">S</button>
+        <button type="button" class="role-assignment-btn" data-role-symbol="O1">O1</button>
+        <button type="button" class="role-assignment-btn" data-role-symbol="M1">M1</button>
+        <button type="button" class="role-assignment-btn" data-role-symbol="OP">OP</button>
+        <button type="button" class="role-assignment-btn" data-role-symbol="O2">O2</button>
+        <button type="button" class="role-assignment-btn" data-role-symbol="M2">M2</button>
+      </div>
+      <div class="setup-actions modal-actions">
+        <button id="clear-role-assignment" type="button">Clear Roles</button>
+        <button id="cancel-role-assignment" type="button">Cancel</button>
+      </div>
+      <p id="role-assignment-feedback" class="setup-feedback hidden"></p>
+    </div>
+  </div>
+
   <section id="setup-panel" class="setup-panel">
     <div class="setup-grid">
       <div class="setup-card">

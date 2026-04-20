@@ -52,6 +52,16 @@ const RULES_JSON_VERSION = 2;
 const TEAM_ROSTER_JSON_TYPE = 'volleyball_team_roster';
 const TEAM_ROSTER_JSON_VERSION = 2;
 const BENCH_ROLES = ['Coach', 'Assistant Coach 1', 'Assistant Coach 2', 'Therapist', 'Medical'];
+const PLAYING_ROLES = [
+    { symbol: 'S', label: 'Setter' },
+    { symbol: 'O1', label: 'Outside 1' },
+    { symbol: 'M1', label: 'Middle 1' },
+    { symbol: 'OP', label: 'Opposite' },
+    { symbol: 'O2', label: 'Outside 2' },
+    { symbol: 'M2', label: 'Middle 2' }
+];
+const PLAYING_ROLE_SYMBOLS = PLAYING_ROLES.map((role) => role.symbol);
+const PLAYING_ROLE_LABELS = Object.fromEntries(PLAYING_ROLES.map((role) => [role.symbol, role.label]));
 
 function getBenchRoleSortRank(benchRole) {
     const index = BENCH_ROLES.indexOf(benchRole);
@@ -104,6 +114,18 @@ const setupState = {
     substitutionPanelNotice: {
         message: '',
         items: []
+    },
+    playerRoleAssignments: {
+        teamA: {},
+        teamB: {}
+    },
+    roleEditor: {
+        open: false,
+        teamId: '',
+        position: 0,
+        playerId: '',
+        lastTouchAt: 0,
+        lastTouchKey: ''
     },
     courtRotationHistory: [],
     courtRotationRedoHistory: [],
@@ -193,6 +215,14 @@ const elements = {
     cancelRosterEntry: document.getElementById('cancel-roster-entry'),
     removeRosterEntry: document.getElementById('remove-roster-entry'),
     rosterEntryFeedback: document.getElementById('roster-entry-feedback'),
+    roleAssignmentModal: document.getElementById('role-assignment-modal'),
+    roleAssignmentModalTitle: document.getElementById('role-assignment-modal-title'),
+    roleAssignmentModalSubtitle: document.getElementById('role-assignment-modal-subtitle'),
+    closeRoleAssignmentModal: document.getElementById('close-role-assignment-modal'),
+    roleAssignmentButtons: document.getElementById('role-assignment-buttons'),
+    clearRoleAssignment: document.getElementById('clear-role-assignment'),
+    cancelRoleAssignment: document.getElementById('cancel-role-assignment'),
+    roleAssignmentFeedback: document.getElementById('role-assignment-feedback'),
     applyPrematchToss: document.getElementById('apply-prematch-toss'),
     startMatch: document.getElementById('start-match'),
     quickSaveMatch: document.getElementById('quick-save-match'),
@@ -345,6 +375,18 @@ function setSubstitutionPanelNotice(message = '', items = []) {
     };
 }
 
+function setRoleAssignmentFeedback(message = '', variant = '') {
+    elements.roleAssignmentFeedback.textContent = message;
+    elements.roleAssignmentFeedback.classList.remove('hidden', 'error', 'success');
+    if (!message) {
+        elements.roleAssignmentFeedback.classList.add('hidden');
+        return;
+    }
+    if (variant) {
+        elements.roleAssignmentFeedback.classList.add(variant);
+    }
+}
+
 function setGlobalFeedback(message, variant = '') {
     setSetupFeedback(message, variant);
     setRulesFeedback(message, variant);
@@ -408,6 +450,8 @@ function setSavedRuleProfilesFromSnapshot(profiles) {
 function syncUiFromLoadedState() {
     elements.homeTeamName.value = mygame.fixture.hometeam_name || '';
     elements.awayTeamName.value = mygame.fixture.awayteam_name || '';
+    ensurePlayerRoleAssignmentsShape();
+    closeRoleAssignmentModal();
     setupState.rosters.home = Array.isArray(setupState.rosters.home)
         ? setupState.rosters.home.map(normalizeExistingRosterEntry).filter(Boolean)
         : [];
@@ -927,6 +971,7 @@ function markTeamDetailsDirty() {
 
     setupState.teamDetailsConfirmed = false;
     setupState.prematchTossConfirmed = false;
+    setupState.playerRoleAssignments = { teamA: {}, teamB: {} };
     resetLineupsState();
 }
 
@@ -982,6 +1027,52 @@ function formatRosterListName(player) {
 
 function getRosterHoverName(player) {
     return buildFullRosterName(player.firstName, player.lastName) || player.name || '';
+}
+
+function normalizePlayingRoleSymbol(value) {
+    return PLAYING_ROLE_SYMBOLS.includes(value) ? value : '';
+}
+
+function ensurePlayerRoleAssignmentsShape() {
+    if (!setupState.playerRoleAssignments || typeof setupState.playerRoleAssignments !== 'object') {
+        setupState.playerRoleAssignments = { teamA: {}, teamB: {} };
+    }
+    if (!setupState.playerRoleAssignments.teamA || typeof setupState.playerRoleAssignments.teamA !== 'object') {
+        setupState.playerRoleAssignments.teamA = {};
+    }
+    if (!setupState.playerRoleAssignments.teamB || typeof setupState.playerRoleAssignments.teamB !== 'object') {
+        setupState.playerRoleAssignments.teamB = {};
+    }
+
+    for (const teamId of ['teamA', 'teamB']) {
+        for (const [playerId, roleSymbol] of Object.entries(setupState.playerRoleAssignments[teamId])) {
+            const normalized = normalizePlayingRoleSymbol(roleSymbol);
+            if (normalized) {
+                setupState.playerRoleAssignments[teamId][playerId] = normalized;
+            } else {
+                delete setupState.playerRoleAssignments[teamId][playerId];
+            }
+        }
+    }
+}
+
+function getAssignedPlayingRole(teamId, playerId) {
+    ensurePlayerRoleAssignmentsShape();
+    return normalizePlayingRoleSymbol(setupState.playerRoleAssignments[teamId]?.[playerId] || '');
+}
+
+function getPlayingRoleLabel(roleSymbol) {
+    return PLAYING_ROLE_LABELS[roleSymbol] || '';
+}
+
+function getRoleAwareHoverName(teamId, player) {
+    const baseName = getRosterHoverName(player);
+    const roleSymbol = player?.id ? getAssignedPlayingRole(teamId, player.id) : '';
+    const roleLabel = getPlayingRoleLabel(roleSymbol);
+    if (baseName && roleLabel) {
+        return `${baseName} (${roleLabel})`;
+    }
+    return baseName;
 }
 
 function normalizeBenchRole(rawBenchRole) {
@@ -2198,9 +2289,14 @@ function applySubstitutionForCurrentSet() {
     const substitutionKind = positionState.substitutePlayerId && positionState.currentPlayerId === positionState.substitutePlayerId
         ? 'return'
         : 'regular';
+    const outgoingRole = getAssignedPlayingRole(teamId, outgoingPlayerId);
 
     lineupState[teamId][position] = incomingPlayerId;
     positionState.currentPlayerId = incomingPlayerId;
+    if (outgoingRole) {
+        ensurePlayerRoleAssignmentsShape();
+        setupState.playerRoleAssignments[teamId][incomingPlayerId] = outgoingRole;
+    }
     if (substitutionKind === 'regular') {
         positionState.substitutePlayerId = incomingPlayerId;
         const requestPair = {
@@ -3289,6 +3385,113 @@ function getDisplayedLineupSelections(teamId) {
     return displayedSelections;
 }
 
+function clearPlayingRolesForTeam(teamId) {
+    ensurePlayerRoleAssignmentsShape();
+    setupState.playerRoleAssignments[teamId] = {};
+}
+
+function assignPlayingRolesFromAnchor(teamId, anchorPosition, anchorRoleSymbol) {
+    const normalizedAnchor = normalizePlayingRoleSymbol(anchorRoleSymbol);
+    if (!normalizedAnchor) {
+        return false;
+    }
+
+    const displayedSelections = getDisplayedLineupSelections(teamId);
+    const anchorPlayerId = displayedSelections[anchorPosition] || '';
+    if (!anchorPlayerId) {
+        return false;
+    }
+
+    ensurePlayerRoleAssignmentsShape();
+    const nextAssignments = {};
+    const anchorIndex = PLAYING_ROLE_SYMBOLS.indexOf(normalizedAnchor);
+
+    for (let position = 1; position <= 6; position++) {
+        const playerId = displayedSelections[position] || '';
+        if (!playerId) {
+            continue;
+        }
+        const offsetFromAnchor = (position - anchorPosition + 6) % 6;
+        const roleSymbol = PLAYING_ROLE_SYMBOLS[(anchorIndex + offsetFromAnchor) % PLAYING_ROLE_SYMBOLS.length];
+        nextAssignments[playerId] = roleSymbol;
+    }
+
+    setupState.playerRoleAssignments[teamId] = nextAssignments;
+    return true;
+}
+
+function clearDisplayedPlayingRoles(teamId) {
+    const displayedSelections = getDisplayedLineupSelections(teamId);
+    ensurePlayerRoleAssignmentsShape();
+    for (const playerId of Object.values(displayedSelections)) {
+        if (playerId) {
+            delete setupState.playerRoleAssignments[teamId][playerId];
+        }
+    }
+}
+
+function closeRoleAssignmentModal() {
+    setupState.roleEditor.open = false;
+    setupState.roleEditor.teamId = '';
+    setupState.roleEditor.position = 0;
+    setupState.roleEditor.playerId = '';
+    setupState.roleEditor.lastTouchAt = 0;
+    setupState.roleEditor.lastTouchKey = '';
+    setRoleAssignmentFeedback('', '');
+    elements.roleAssignmentModal.classList.add('hidden');
+    elements.roleAssignmentModal.setAttribute('aria-hidden', 'true');
+}
+
+function openRoleAssignmentModal(teamId, position, playerId) {
+    if (!playerId) {
+        return;
+    }
+    const roster = getNonLiberoRosterForTeamId(teamId);
+    const player = roster.find((entry) => entry.id === playerId);
+    if (!player) {
+        return;
+    }
+
+    setupState.roleEditor.open = true;
+    setupState.roleEditor.teamId = teamId;
+    setupState.roleEditor.position = position;
+    setupState.roleEditor.playerId = playerId;
+    elements.roleAssignmentModalTitle.textContent = `Assign Role: #${player.shirtNumber} (${formatRosterListName(player)})`;
+    elements.roleAssignmentModalSubtitle.textContent = `Choose the role for ${getRosterHoverName(player)}. The remaining on-court roles will be inferred in service order for this team.`;
+    setRoleAssignmentFeedback('', '');
+    elements.roleAssignmentModal.classList.remove('hidden');
+    elements.roleAssignmentModal.setAttribute('aria-hidden', 'false');
+}
+
+function applyRoleAssignment(roleSymbol) {
+    const teamId = setupState.roleEditor.teamId;
+    const position = setupState.roleEditor.position;
+    if (!teamId || !position) {
+        closeRoleAssignmentModal();
+        return;
+    }
+
+    const applied = assignPlayingRolesFromAnchor(teamId, position, roleSymbol);
+    if (!applied) {
+        setRoleAssignmentFeedback('Unable to assign roles from that position.', 'error');
+        return;
+    }
+
+    closeRoleAssignmentModal();
+    updateSetsElements();
+}
+
+function clearRoleAssignmentForCurrentTeam() {
+    const teamId = setupState.roleEditor.teamId;
+    if (!teamId) {
+        closeRoleAssignmentModal();
+        return;
+    }
+    clearPlayingRolesForTeam(teamId);
+    closeRoleAssignmentModal();
+    updateSetsElements();
+}
+
 function renderScoreboardCourt(teamId, container) {
     const roster = getNonLiberoRosterForTeamId(teamId);
     const byId = new Map(roster.map((player) => [player.id, player]));
@@ -3299,11 +3502,13 @@ function renderScoreboardCourt(teamId, container) {
         const playerId = displayedSelections[position] || '';
         const player = playerId ? byId.get(playerId) || null : null;
         const shirtNumber = player && Number.isInteger(player.shirtNumber) ? `#${player.shirtNumber}` : '—';
-        const hoverName = player ? escapeHtml(getRosterHoverName(player)) : '';
+        const roleSymbol = player ? getAssignedPlayingRole(teamId, player.id) : '';
+        const hoverName = player ? escapeHtml(getRoleAwareHoverName(teamId, player)) : '';
         return `
-            <div class="scoreboard-court-cell${player ? '' : ' scoreboard-court-empty'}"${hoverName ? ` title="${hoverName}"` : ''}>
+            <div class="scoreboard-court-cell${player ? '' : ' scoreboard-court-empty'}" data-team-id="${teamId}" data-position="${position}" data-player-id="${playerId}"${hoverName ? ` title="${hoverName}"` : ''}>
                 <span class="scoreboard-court-position">P${position}</span>
                 <span class="scoreboard-court-number">${shirtNumber}</span>
+                ${roleSymbol ? `<span class="scoreboard-court-role">${roleSymbol}</span>` : ''}
             </div>
         `;
     }).join('');
@@ -3773,6 +3978,7 @@ function applyTeamDetails() {
     mygame.fixture.awayteam_name = teamDetails.awayName;
     mygame.fixture.home_roster = teamDetails.homeRoster;
     mygame.fixture.away_roster = teamDetails.awayRoster;
+    setupState.playerRoleAssignments = { teamA: {}, teamB: {} };
     setupState.teamDetailsConfirmed = true;
     setupState.prematchTossConfirmed = false;
     resetLineupsState();
@@ -3851,6 +4057,10 @@ function hookEventListeners() {
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && setupState.rosterEditor.open) {
             closeRosterEntryModal();
+            return;
+        }
+        if (event.key === 'Escape' && setupState.roleEditor.open) {
+            closeRoleAssignmentModal();
         }
     });
     elements.exportHomeRosterJson.addEventListener('click', () => exportSingleTeamRosterAsJson('home'));
@@ -3901,6 +4111,81 @@ function hookEventListeners() {
     elements.exportMatchJson.addEventListener('click', exportMatchStateAsJson);
     elements.importMatchJson.addEventListener('click', importMatchStateFromJson);
     elements.importMatchJsonInput.addEventListener('change', handleImportMatchJsonFile);
+    elements.closeRoleAssignmentModal.addEventListener('click', closeRoleAssignmentModal);
+    elements.cancelRoleAssignment.addEventListener('click', closeRoleAssignmentModal);
+    elements.clearRoleAssignment.addEventListener('click', clearRoleAssignmentForCurrentTeam);
+    elements.roleAssignmentButtons.addEventListener('click', (event) => {
+        const button = event.target.closest('.role-assignment-btn');
+        if (!button) {
+            return;
+        }
+        applyRoleAssignment(button.dataset.roleSymbol || '');
+    });
+
+    const onScoreboardCourtContextMenu = (event) => {
+        const cell = event.target.closest('.scoreboard-court-cell');
+        if (!cell) {
+            return;
+        }
+        const playerId = cell.dataset.playerId || '';
+        if (!playerId) {
+            return;
+        }
+        event.preventDefault();
+        openRoleAssignmentModal(
+            cell.dataset.teamId || '',
+            Number.parseInt(cell.dataset.position || '', 10),
+            playerId
+        );
+    };
+
+    const onScoreboardCourtDoubleClick = (event) => {
+        const cell = event.target.closest('.scoreboard-court-cell');
+        if (!cell) {
+            return;
+        }
+        const playerId = cell.dataset.playerId || '';
+        if (!playerId) {
+            return;
+        }
+        openRoleAssignmentModal(
+            cell.dataset.teamId || '',
+            Number.parseInt(cell.dataset.position || '', 10),
+            playerId
+        );
+    };
+
+    const onScoreboardCourtTouchStart = (event) => {
+        const cell = event.target.closest('.scoreboard-court-cell');
+        if (!cell) {
+            return;
+        }
+        const playerId = cell.dataset.playerId || '';
+        if (!playerId) {
+            return;
+        }
+        const touchKey = `${cell.dataset.teamId || ''}:${cell.dataset.position || ''}:${playerId}`;
+        const now = Date.now();
+        if (setupState.roleEditor.lastTouchKey === touchKey && now - setupState.roleEditor.lastTouchAt < 400) {
+            event.preventDefault();
+            openRoleAssignmentModal(
+                cell.dataset.teamId || '',
+                Number.parseInt(cell.dataset.position || '', 10),
+                playerId
+            );
+            setupState.roleEditor.lastTouchAt = 0;
+            setupState.roleEditor.lastTouchKey = '';
+            return;
+        }
+        setupState.roleEditor.lastTouchAt = now;
+        setupState.roleEditor.lastTouchKey = touchKey;
+    };
+
+    for (const court of [elements.scoreboardCourtTeamA, elements.scoreboardCourtTeamB]) {
+        court.addEventListener('contextmenu', onScoreboardCourtContextMenu);
+        court.addEventListener('dblclick', onScoreboardCourtDoubleClick);
+        court.addEventListener('touchstart', onScoreboardCourtTouchStart, { passive: false });
+    }
 
     for (const select of getAllLineupSelectElements()) {
         select.addEventListener('change', () => {
@@ -4081,6 +4366,8 @@ function initSetupDefaults() {
     setupState.editingRosterPlayerId.away = '';
     setupState.rosterEditor.open = false;
     setupState.rosterEditor.teamSide = 'home';
+    setupState.playerRoleAssignments = { teamA: {}, teamB: {} };
+    closeRoleAssignmentModal();
     setupState.nextRosterPlayerId = 1;
     for (const player of [...setupState.rosters.home, ...setupState.rosters.away]) {
         if (typeof player.id === 'string' && player.id.startsWith('p_')) {
@@ -4097,6 +4384,7 @@ function initSetupDefaults() {
     if (setupState.rosters.away.length === 0) {
         setupState.rosters.away = createDefaultRoster();
     }
+    ensurePlayerRoleAssignmentsShape();
     resetLineupsState();
 
     const defaultLeftStarter = document.querySelector('input[name="setup-left-starter"][value="home"]');
