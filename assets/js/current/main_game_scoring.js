@@ -260,12 +260,22 @@ const elements = {
     scoreboardCourtTeamB: document.getElementById('scoreboard-court-teamB'),
     gameStatusTeamALabel: document.getElementById('game-status-teamA-label'),
     gameStatusTeamBLabel: document.getElementById('game-status-teamB-label'),
+    gameStatusResultsBody: document.getElementById('game-status-results-body'),
+    gameStatusTotalTeamAT: document.getElementById('game-status-total-teamA-t'),
+    gameStatusTotalTeamAS: document.getElementById('game-status-total-teamA-s'),
+    gameStatusTotalTeamAW: document.getElementById('game-status-total-teamA-w'),
+    gameStatusTotalTeamAP: document.getElementById('game-status-total-teamA-p'),
+    gameStatusTotalDuration: document.getElementById('game-status-total-duration'),
+    gameStatusTotalTeamBP: document.getElementById('game-status-total-teamB-p'),
+    gameStatusTotalTeamBW: document.getElementById('game-status-total-teamB-w'),
+    gameStatusTotalTeamBS: document.getElementById('game-status-total-teamB-s'),
+    gameStatusTotalTeamBT: document.getElementById('game-status-total-teamB-t'),
+    gameStatusMatchStart: document.getElementById('game-status-match-start'),
+    gameStatusMatchEnd: document.getElementById('game-status-match-end'),
+    gameStatusMatchDuration: document.getElementById('game-status-match-duration'),
+    gameStatusWinner: document.getElementById('game-status-winner'),
     scoreTeamA: document.getElementById('score-teamA'),
     scoreTeamB: document.getElementById('score-teamB'),
-    setsTeamA: document.getElementById('sets-teamA'),
-    setsTeamB: document.getElementById('sets-teamB'),
-    pointsTeamA: document.getElementById('points-teamA'),
-    pointsTeamB: document.getElementById('points-teamB'),
     servingStateTeamA: document.getElementById('servingstate-teamA'),
     servingStateTeamB: document.getElementById('servingstate-teamB'),
     timeoutsLeftTeamA: document.getElementById('timeouts-left-teamA'),
@@ -2665,6 +2675,208 @@ function getLaterTimeString(timeValueA, timeValueB) {
     return dateA >= dateB ? timeValueA : timeValueB;
 }
 
+function getMinutesBetweenTimeStrings(startTime, endTime) {
+    const startDate = parseTimeToDate(startTime);
+    const endDate = parseTimeToDate(endTime);
+    if (!startDate || !endDate) {
+        return null;
+    }
+    let diffMinutes = Math.round((endDate.getTime() - startDate.getTime()) / 60000);
+    if (diffMinutes < 0) {
+        diffMinutes += 24 * 60;
+    }
+    return diffMinutes;
+}
+
+function formatHoursMinutesFromMinutes(totalMinutes) {
+    if (!Number.isFinite(totalMinutes) || totalMinutes < 0) {
+        return '-';
+    }
+    const roundedMinutes = Math.round(totalMinutes);
+    const hours = Math.floor(roundedMinutes / 60);
+    const minutes = roundedMinutes % 60;
+    return `${hours} h, ${minutes} mn`;
+}
+
+function getMaxSetsInMatch() {
+    return Math.max(1, (Number(mygame.fixture.rules.nbsetswin) || 1) * 2 - 1);
+}
+
+function getCompletedSetHistoryEntry(setNumber) {
+    if (!Array.isArray(mygame.history?.sets)) {
+        return null;
+    }
+    return mygame.history.sets.find((entry) => entry.setNumber === setNumber) || null;
+}
+
+function getSetWinFlagsFromHistory(setNumber) {
+    const entry = getCompletedSetHistoryEntry(setNumber);
+    if (!entry) {
+        return { teamA: '', teamB: '' };
+    }
+
+    const previousEntry = setNumber > 1 ? getCompletedSetHistoryEntry(setNumber - 1) : null;
+    const previousWins = previousEntry?.setWinsAfterSet || { teamA: 0, teamB: 0 };
+    const currentWins = entry.setWinsAfterSet || previousWins;
+
+    const deltaTeamA = (currentWins.teamA || 0) - (previousWins.teamA || 0);
+    const deltaTeamB = (currentWins.teamB || 0) - (previousWins.teamB || 0);
+
+    return {
+        teamA: deltaTeamA > 0 ? 1 : 0,
+        teamB: deltaTeamB > 0 ? 1 : 0
+    };
+}
+
+function getSetWinnerFromWinFlags(winFlags) {
+    if (!winFlags) {
+        return '';
+    }
+    if (winFlags.teamA === 1 && winFlags.teamB !== 1) {
+        return 'teamA';
+    }
+    if (winFlags.teamB === 1 && winFlags.teamA !== 1) {
+        return 'teamB';
+    }
+    return '';
+}
+
+function buildResultsSummaryRows() {
+    const rows = [];
+    const maxSets = getMaxSetsInMatch();
+    const currentSetNumber = getCurrentSetNumberForLineup();
+    const currentSetLive = mygame.currentSet || { teamA: 0, teamB: 0 };
+
+    for (let setNumber = 1; setNumber <= maxSets; setNumber++) {
+        const completedEntry = getCompletedSetHistoryEntry(setNumber);
+        const setTimeEntry = getSetTimeEntry(setNumber);
+        const timeoutEntries = getTimeoutsForSet(setNumber);
+        const substitutionEntries = getSubstitutionsForSet(setNumber);
+        const baseRow = {
+            setNumber,
+            teamATimeouts: timeoutEntries.filter((entry) => entry.team === 'teamA').length,
+            teamASubs: substitutionEntries.filter((entry) => entry.team === 'teamA').length,
+            teamAWins: '',
+            teamAPoints: '',
+            durationMinutes: '',
+            teamBPoints: '',
+            teamBWins: '',
+            teamBSubs: substitutionEntries.filter((entry) => entry.team === 'teamB').length,
+            teamBTimeouts: timeoutEntries.filter((entry) => entry.team === 'teamB').length,
+            isInProgress: false,
+            isEmpty: true
+        };
+
+        if (completedEntry) {
+            const winFlags = getSetWinFlagsFromHistory(setNumber);
+            const winner = getSetWinnerFromWinFlags(winFlags);
+            const durationMinutes = getMinutesBetweenTimeStrings(setTimeEntry?.startTime || '', setTimeEntry?.endTime || '');
+            rows.push({
+                ...baseRow,
+                teamAWins: winFlags.teamA,
+                teamAPoints: completedEntry.score.teamA,
+                durationMinutes: durationMinutes ?? '',
+                teamBPoints: completedEntry.score.teamB,
+                teamBWins: winFlags.teamB,
+                isEmpty: false
+            });
+            continue;
+        }
+
+        const isCurrentLiveSet = setNumber === currentSetNumber && currentSetStarted() && !mygame.isGameOver;
+        if (isCurrentLiveSet) {
+            const liveDurationMinutes = getMinutesBetweenTimeStrings(setTimeEntry?.startTime || '', getRoundedCurrentTimeString());
+            rows.push({
+                ...baseRow,
+                teamAPoints: currentSetLive.teamA,
+                durationMinutes: liveDurationMinutes ?? '',
+                teamBPoints: currentSetLive.teamB,
+                isInProgress: true,
+                isEmpty: false
+            });
+            continue;
+        }
+
+        rows.push(baseRow);
+    }
+
+    return rows;
+}
+
+function renderGameStatusResults() {
+    const rows = buildResultsSummaryRows();
+    const blank = '';
+    elements.gameStatusResultsBody.innerHTML = rows.map((row) => `
+        <tr class="${row.isInProgress ? 'in-progress-row' : row.isEmpty ? 'empty-row' : ''}">
+            <td>${row.isEmpty ? blank : row.teamATimeouts}</td>
+            <td>${row.isEmpty ? blank : row.teamASubs}</td>
+            <td>${row.teamAWins === '' ? blank : row.teamAWins}</td>
+            <td>${row.teamAPoints === '' ? blank : row.teamAPoints}</td>
+            <td class="set-number-cell">${row.setNumber}</td>
+            <td>${row.durationMinutes === '' ? blank : row.durationMinutes}</td>
+            <td>${row.teamBPoints === '' ? blank : row.teamBPoints}</td>
+            <td>${row.teamBWins === '' ? blank : row.teamBWins}</td>
+            <td>${row.isEmpty ? blank : row.teamBSubs}</td>
+            <td>${row.isEmpty ? blank : row.teamBTimeouts}</td>
+        </tr>
+    `).join('');
+
+    const totals = rows.reduce((acc, row) => {
+        acc.teamATimeouts += Number.isFinite(row.teamATimeouts) ? row.teamATimeouts : 0;
+        acc.teamASubs += Number.isFinite(row.teamASubs) ? row.teamASubs : 0;
+        acc.teamAWins += Number.isFinite(row.teamAWins) ? row.teamAWins : 0;
+        acc.teamAPoints += Number.isFinite(row.teamAPoints) ? row.teamAPoints : 0;
+        acc.durationMinutes += Number.isFinite(row.durationMinutes) ? row.durationMinutes : 0;
+        acc.teamBPoints += Number.isFinite(row.teamBPoints) ? row.teamBPoints : 0;
+        acc.teamBWins += Number.isFinite(row.teamBWins) ? row.teamBWins : 0;
+        acc.teamBSubs += Number.isFinite(row.teamBSubs) ? row.teamBSubs : 0;
+        acc.teamBTimeouts += Number.isFinite(row.teamBTimeouts) ? row.teamBTimeouts : 0;
+        return acc;
+    }, {
+        teamATimeouts: 0,
+        teamASubs: 0,
+        teamAWins: 0,
+        teamAPoints: 0,
+        durationMinutes: 0,
+        teamBPoints: 0,
+        teamBWins: 0,
+        teamBSubs: 0,
+        teamBTimeouts: 0
+    });
+
+    elements.gameStatusTotalTeamAT.textContent = String(totals.teamATimeouts);
+    elements.gameStatusTotalTeamAS.textContent = String(totals.teamASubs);
+    elements.gameStatusTotalTeamAW.textContent = String(totals.teamAWins);
+    elements.gameStatusTotalTeamAP.textContent = String(totals.teamAPoints);
+    elements.gameStatusTotalDuration.textContent = String(totals.durationMinutes);
+    elements.gameStatusTotalTeamBP.textContent = String(totals.teamBPoints);
+    elements.gameStatusTotalTeamBW.textContent = String(totals.teamBWins);
+    elements.gameStatusTotalTeamBS.textContent = String(totals.teamBSubs);
+    elements.gameStatusTotalTeamBT.textContent = String(totals.teamBTimeouts);
+
+    const setTimeEntries = Array.isArray(mygame.history?.placeholders?.setTimes)
+        ? mygame.history.placeholders.setTimes.filter((entry) => entry.startTime || entry.endTime)
+        : [];
+    const sortedSetTimeEntries = [...setTimeEntries].sort((a, b) => a.setNumber - b.setNumber);
+    const matchStart = sortedSetTimeEntries.find((entry) => entry.startTime)?.startTime || '-';
+    const lastEndedEntry = [...sortedSetTimeEntries].reverse().find((entry) => entry.endTime);
+    const matchEnd = lastEndedEntry?.endTime || '-';
+    const elapsedMinutes = matchStart !== '-'
+        ? getMinutesBetweenTimeStrings(matchStart, matchEnd !== '-' ? matchEnd : getRoundedCurrentTimeString())
+        : null;
+    elements.gameStatusMatchStart.textContent = matchStart;
+    elements.gameStatusMatchEnd.textContent = matchEnd;
+    elements.gameStatusMatchDuration.textContent = elapsedMinutes == null ? '-' : formatHoursMinutesFromMinutes(elapsedMinutes);
+
+    const winnerName = mygame.gameWinner === 'Draw'
+        ? 'Draw'
+        : getTeamLabelOrFallback(mygame.gameWinner);
+    const winnerLabel = mygame.isGameOver
+        ? `${winnerName} (${mygame.setWins.teamA} : ${mygame.setWins.teamB})`
+        : `Pending (${mygame.setWins.teamA} : ${mygame.setWins.teamB})`;
+    elements.gameStatusWinner.textContent = winnerLabel;
+}
+
 function getSetTimeEntry(setNumber) {
     if (!mygame.history?.placeholders?.setTimes) {
         return null;
@@ -3511,12 +3723,27 @@ function updateTeamPosition() {
 }
 
 function getTeamLabelOrFallback(teamId) {
+    if (teamId === 'teamA' || teamId === 'teamB') {
+        const name = mygame.getTeamName(teamId);
+        if (name && name !== 'Unknown') {
+            return name;
+        }
+        return teamId === 'teamA' ? 'Team A' : 'Team B';
+    }
+
+    if (teamId === 'Draw') {
+        return 'Draw';
+    }
+
+    if (teamId === 'Unknown') {
+        return 'Unknown';
+    }
+
     const name = mygame.getTeamName(teamId);
     if (name && name !== 'Unknown') {
         return name;
     }
-
-    return teamId === 'teamA' ? 'Team A' : 'Team B';
+    return String(teamId || 'Unknown');
 }
 
 function getScoreboardTeamTitle(teamId) {
@@ -3682,10 +3909,7 @@ function updateScoringServingValues() {
 
     elements.scoreTeamA.textContent = mygame.currentSet.teamA;
     elements.scoreTeamB.textContent = mygame.currentSet.teamB;
-    elements.setsTeamA.textContent = mygame.setWins.teamA;
-    elements.setsTeamB.textContent = mygame.setWins.teamB;
-    elements.pointsTeamA.textContent = mygame.totalPoints.teamA;
-    elements.pointsTeamB.textContent = mygame.totalPoints.teamB;
+    renderGameStatusResults();
     elements.timeoutsLeftTeamA.textContent = getTimeoutUsageLabel('teamA');
     elements.timeoutsLeftTeamB.textContent = getTimeoutUsageLabel('teamB');
     elements.subsUsedTeamA.textContent = getSubUsageLabel('teamA');

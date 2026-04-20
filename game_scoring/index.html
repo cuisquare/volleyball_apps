@@ -556,25 +556,58 @@
           <button id="completeSet" type="button">Complete Set</button>
         </div>
       </div>
-      <div class="game-status">
-        <h2>Game Status</h2>
-        <div class="game-status-summary">
-          <div class="game-status-team-summary">
-            <h3 id="game-status-teamA-label">Team A</h3>
-            <p>Sets accrued: <strong id="sets-teamA">0</strong></p>
-            <p>Points accrued: <strong id="points-teamA">0</strong></p>
+        <div class="game-status">
+          <h2>Game Status</h2>
+          <div class="game-status-results">
+            <table class="game-status-results-table">
+              <thead>
+                <tr>
+                  <th colspan="4" id="game-status-teamA-label">Team A</th>
+                  <th>Set</th>
+                  <th>Dur</th>
+                  <th colspan="4" id="game-status-teamB-label">Team B</th>
+                </tr>
+                <tr>
+                  <th>T</th>
+                  <th>S</th>
+                  <th>W</th>
+                  <th>P</th>
+                  <th>#</th>
+                  <th>Min</th>
+                  <th>P</th>
+                  <th>W</th>
+                  <th>S</th>
+                  <th>T</th>
+                </tr>
+              </thead>
+              <tbody id="game-status-results-body"></tbody>
+              <tfoot>
+                <tr>
+                  <th id="game-status-total-teamA-t">0</th>
+                  <th id="game-status-total-teamA-s">0</th>
+                  <th id="game-status-total-teamA-w">0</th>
+                  <th id="game-status-total-teamA-p">0</th>
+                  <th>Total</th>
+                  <th id="game-status-total-duration">0</th>
+                  <th id="game-status-total-teamB-p">0</th>
+                  <th id="game-status-total-teamB-w">0</th>
+                  <th id="game-status-total-teamB-s">0</th>
+                  <th id="game-status-total-teamB-t">0</th>
+                </tr>
+              </tfoot>
+            </table>
+            <div class="game-status-results-meta">
+              <p><strong>Match Start:</strong> <span id="game-status-match-start">-</span></p>
+              <p><strong>Match End:</strong> <span id="game-status-match-end">-</span></p>
+              <p><strong>Match Duration:</strong> <span id="game-status-match-duration">-</span></p>
+              <p><strong>Winner:</strong> <span id="game-status-winner">Pending</span></p>
+            </div>
           </div>
-          <div class="game-status-team-summary">
-            <h3 id="game-status-teamB-label">Team B</h3>
-            <p>Sets accrued: <strong id="sets-teamB">0</strong></p>
-            <p>Points accrued: <strong id="points-teamB">0</strong></p>
+          <div class="game-status-message">
+            <h3>Current State</h3>
+            <p id="game-status"></p>
           </div>
         </div>
-        <div class="game-status-message">
-          <h3>Current State</h3>
-          <p id="game-status"></p>
-        </div>
-      </div>
     </div>
   </main>
 

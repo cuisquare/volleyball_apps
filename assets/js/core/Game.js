@@ -467,7 +467,6 @@ class Game {
 
     completeGame() {
         this.game_interrupted = true;
-        this.isGameOver = true;
         this._team_serving_deciderset = "Game_interrupted";
         this.resetCurrentServingState();
         this.completeSet(false);

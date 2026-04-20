@@ -362,13 +362,7 @@ select {
   background: rgba(15, 92, 192, 0.02);
 }
 
-.game-status-summary {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(180px, 1fr));
-  gap: 12px;
-}
-
-.game-status-team-summary,
+.game-status-results,
 .game-status-message {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -376,13 +370,51 @@ select {
   background: var(--panel);
 }
 
-.game-status-team-summary {
+.game-status-results {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
+  overflow-x: auto;
 }
 
-.game-status-team-summary p,
+.game-status-results-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.86rem;
+}
+
+.game-status-results-table th,
+.game-status-results-table td {
+  border: 1px solid var(--line);
+  padding: 6px 4px;
+  text-align: center;
+}
+
+.game-status-results-table thead th,
+.game-status-results-table tfoot th {
+  background: rgba(15, 92, 192, 0.05);
+}
+
+.game-status-results-table .set-number-cell {
+  font-weight: 700;
+}
+
+.game-status-results-table .in-progress-row td {
+  background: rgba(15, 143, 79, 0.06);
+}
+
+.game-status-results-table .empty-row td {
+  color: var(--muted);
+}
+
+.game-status-results-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 8px 16px;
+}
+
+.game-status-results-meta p,
 .game-status-message p {
   margin: 0;
 }
@@ -668,8 +700,12 @@ input[type="radio"]:disabled {
     min-width: 0;
   }
 
-  .game-status-summary {
+  .game-status-results-meta {
     grid-template-columns: 1fr;
+  }
+
+  .game-status-results-table {
+    font-size: 0.8rem;
   }
 
   .modal-backdrop {
