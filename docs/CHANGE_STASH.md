@@ -18,13 +18,13 @@ Update this file whenever an item is added, completed, or reprioritized.
 - [ ] Add libero retirement handling, with exact rule constraints to be verified from the official regulations, so an unfit libero can be declared out of the match and replaced by an eligible regular player acting as libero for the remainder of the game.
 - [ ] Add an optional non-libero player `subrole` field selected from fully spelled role values `Setter`, `Outside Hitter`, `Opposite`, and `Middle Blocker`, and display the corresponding symbols `S`, `OH`, `OP`, and `MB` in the roster tables.
 - [ ] Introduce match-wide action undo/redo that restores full prior states rather than only current-set points, and move the undo/redo controls from the scoreboard into a globally visible app-level controls section alongside save/load and JSON import/export.
-- [ ] Display points-scored history and recorded set start/end times in the scoring app.
+- [ ] Display points-scored history in the scoring app, building on the current recorded set start/end times and compact Game Status results summary.
 - [ ] Add a match notes interface so scorers can record in-game remarks such as missing equipment, referee absence, or reasons for delayed start, and persist those notes in match state/output.
 - [ ] Add an interface to select one MVP for each team from the active playing roster.
 - [ ] Generate a PDF output that fills an FIVB scoresheet from the information recorded through the app, mirroring a completed paper scoresheet as closely as possible.
 - [ ] Add player-level match statistics capture, including scorer identity and action categories such as attack, block, assist, and reception quality.
 - [ ] Add match-metadata capture for official warm-up time, official first-serve time, venue, competition, division, competition name, competition gender, senior/junior category, country code, team three-letter codes, referees with names and registration numbers, scorer and assistant scorer where applicable, and line-judge names for 2- or 4-line-judge configurations.
-- [ ] Add a game-summary panel, toggled from the top menu like the other main panels, that shows full per-set accumulated match information in a symmetrical tabular layout mirroring the FIVB scoresheet Results section, including points scored, timeouts, substitutions, and set duration in minutes.
+- [ ] Expand the current compact Game Status results summary into a dedicated game-summary panel, toggled from the top menu, with a fuller symmetrical FIVB-scoresheet-style layout for per-set points, wins, timeouts, substitutions, set duration, and match-level summary fields.
 - [ ] Rework the top-menu navigation and controls, which are becoming cluttered and unfocused as more scoring-app panels and actions are added.
 - [ ] Add fixture-based London League import in the scoring app, using `london_league_rosters` facilities to load current-season teamsheets/rosters from the website after selecting a division, home team, and away team, with either live-populated or cached/static fixture values.
 
@@ -58,6 +58,7 @@ Update this file whenever an item is added, completed, or reprioritized.
 - [x] Set start/end time tracking with official and actual set times, including rules-controlled break duration between sets.
 - [x] Timeout recording during sets with rules-controlled limits, scoreboard request buttons, and used/max timeout tracking per team.
 - [x] Player substitutions during sets, including rules-controlled per-set limits, lineup-panel substitution workflow, pair-based return validation, score-at-sub capture, per-team substitution usage tracking, and staged multi-substitution requests with one final apply step.
+- [x] Compact FIVB-style results summary added to Game Status, including per-set points/wins/timeouts/substitutions/duration, totals, match start/end/duration, winner summary, and correct interrupted-set/live-duration handling.
 - [x] Save/load game state and history (quick save/load + JSON import/export) with pre-toss restore fix.
 
 ### Positions App
