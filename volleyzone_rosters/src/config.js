@@ -22,6 +22,10 @@ function getProfileOutputDir(profile) {
   return path.join(OUTPUT_DIR, profileId);
 }
 
+function getProfileSeasonOutputDir(profile, seasonSlug) {
+  return path.join(getProfileOutputDir(profile), seasonSlug);
+}
+
 module.exports = {
   ROOT_DIR,
   TOOL_DIR,
@@ -30,4 +34,5 @@ module.exports = {
   AJAX_URL,
   getProfileCacheDirs,
   getProfileOutputDir,
+  getProfileSeasonOutputDir,
 };

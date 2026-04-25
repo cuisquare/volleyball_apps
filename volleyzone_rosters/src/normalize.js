@@ -113,6 +113,9 @@ function buildObservedMap(entries, teamName) {
     if (entry.teamName !== teamName) {
       continue;
     }
+    if (!entry.isPlayer) {
+      continue;
+    }
     const key = normalizeName(entry.name);
     if (!map.has(key)) {
       map.set(key, {

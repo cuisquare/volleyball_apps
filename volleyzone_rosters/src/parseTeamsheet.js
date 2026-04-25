@@ -12,6 +12,43 @@ function cleanText(text) {
   return decodeHtml(text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
 }
 
+function extractTags(text) {
+  const tags = [];
+  const regex = /\(([^)]+)\)/g;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    const values = cleanText(match[1])
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+    tags.push(...values);
+  }
+  return tags;
+}
+
+function classifyRole(tags, shirtNumber) {
+  const lowered = tags.map((tag) => tag.toLowerCase());
+  if (lowered.includes("head coach")) {
+    return "head_coach";
+  }
+  if (lowered.includes("coach")) {
+    return "coach";
+  }
+  if (lowered.includes("assistant coach")) {
+    return "assistant_coach";
+  }
+  if (lowered.includes("bench personnel")) {
+    return "bench_personnel";
+  }
+  if (lowered.includes("statistician")) {
+    return "statistician";
+  }
+  if (Number.isInteger(shirtNumber)) {
+    return "player";
+  }
+  return "staff";
+}
+
 function parseTeamsheet(html) {
   const entries = [];
   const sectionRegex =
@@ -37,10 +74,12 @@ function parseTeamsheet(html) {
         continue;
       }
 
-      const isLibero = /\(Libero\)/i.test(text);
-      const isCaptain = /\(Captain\)/i.test(text);
+      const tags = extractTags(text);
+      const isLibero = tags.some((tag) => /^libero$/i.test(tag));
+      const isCaptain = tags.some((tag) => /^captain$/i.test(tag));
+      const role = classifyRole(tags, shirtNumber);
       const name = text
-        .replace(/\((Libero|Captain|Coach)\)/gi, "")
+        .replace(/\([^)]*\)/g, "")
         .replace(/\s+/g, " ")
         .trim();
 
@@ -54,6 +93,9 @@ function parseTeamsheet(html) {
         shirtNumber,
         isLibero,
         isCaptain,
+        tags,
+        role,
+        isPlayer: role === "player",
       });
     }
   }

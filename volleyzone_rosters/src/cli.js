@@ -1,21 +1,15 @@
-const {
-  getFixtureResultsPage,
-  getSeasonCompetitions,
-  getFixturesByCompetitionGroup,
-} = require("./http");
-const {
-  parseSeasonOptions,
-  parseDivisionOptions,
-  parseDivisionOptionsFromFragment,
-  parseCompetitionGroupOptions,
-  parseCompetitionGroupOptionsFromFragment,
-} = require("./parseFixtureResults");
-const {
-  parseSeasonCompetitionsResponse,
-} = require("./fetchSeasonCompetitions");
+const { getFixtureResultsPage, getSeasonCompetitions } = require("./http");
+const { parseSeasonCompetitionsResponse } = require("./fetchSeasonCompetitions");
+const { parseSeasonOptions } = require("./parseFixtureResults");
 const { generateCurrentSeason } = require("./generateSeason");
 const { generateDivision } = require("./generateDivision");
+const { exportMatchPeople } = require("./exportMatchPeople");
+const { exportSeasonMatchPeople } = require("./exportSeasonMatchPeople");
+const {
+  exportCurrentSeasonMatchPeople,
+} = require("./exportCurrentSeasonMatchPeople");
 const { getProfile, listProfiles } = require("./profiles");
+const { discoverCurrentDivisions } = require("./discoverCurrentDivisions");
 
 function getArgValue(flag) {
   const index = process.argv.indexOf(flag);
@@ -57,90 +51,8 @@ async function cmdCurrentDivisions() {
   const profile = getProfile(getArgValue("--profile") || "london_league");
   const mode = getDivisionMode(profile);
   const refresh = hasFlag("--refresh");
-  const { text, cachePath, fromCache } = await getFixtureResultsPage(profile, {
-    refresh,
-  });
-  const seasons = parseSeasonOptions(text);
-  const currentSeason = seasons.find((season) => season.selected) || null;
-  let divisions = [];
-  let groups = [];
-  let filtered = false;
-  let divisionSource = "fixture_results_page";
-  let groupCachePath = null;
-  let groupFromCache = null;
-
-  if (mode === "filtered") {
-    if (!profile.groupFilter) {
-      throw new Error(
-        `Profile '${profile.id}' does not define filtered division discovery.`
-      );
-    }
-    if (!currentSeason) {
-      throw new Error("Unable to determine current season for filtered division discovery");
-    }
-
-    const seasonResponse = await getSeasonCompetitions(profile, currentSeason.seasonId, {
-      refresh,
-    });
-    const parsedSeason = parseSeasonCompetitionsResponse(seasonResponse.text);
-    if (!parsedSeason.ok) {
-      throw new Error(
-        `Unable to parse season competition response for season ${currentSeason.seasonId}`
-      );
-    }
-
-    groups = parseCompetitionGroupOptionsFromFragment(parsedSeason.groupsSeason);
-    if (!groups.length) {
-      groups = parseCompetitionGroupOptions(text);
-    }
-
-    const matchingGroup = groups.find((group) =>
-      (group.seasonName || "")
-        .toLowerCase()
-        .includes(profile.groupFilter.seasonNameContains.toLowerCase())
-    );
-
-    if (!matchingGroup) {
-      throw new Error(
-        `Could not find a competition group matching '${profile.groupFilter.seasonNameContains}' for profile '${profile.id}'.`
-      );
-    }
-
-    const fixCompgrpID = profile.groupFilter.buildFixCompgrpID({
-      selectedGroupId: matchingGroup.groupId,
-      seasonId: currentSeason.seasonId,
-      profile,
-    });
-
-    const filteredResponse = await getFixturesByCompetitionGroup(
-      profile,
-      currentSeason.seasonId,
-      fixCompgrpID,
-      { refresh }
-    );
-    divisions = parseDivisionOptionsFromFragment(filteredResponse.text);
-    filtered = true;
-    divisionSource = "competition_group_filtered";
-    groupCachePath = filteredResponse.cachePath;
-    groupFromCache = filteredResponse.fromCache;
-  } else {
-    divisions = parseDivisionOptions(text);
-    groups = parseCompetitionGroupOptions(text);
-  }
-
-  printJson({
-    profile,
-    source: divisionSource,
-    mode,
-    cachePath,
-    fromCache,
-    currentSeason,
-    groups,
-    filtered,
-    groupCachePath,
-    groupFromCache,
-    divisions,
-  });
+  const result = await discoverCurrentDivisions(profile, { refresh, mode });
+  printJson(result);
 }
 
 async function cmdSeasonInfo() {
@@ -200,6 +112,60 @@ async function cmdProfiles() {
   });
 }
 
+async function cmdExportMatchPeople() {
+  const profile = getProfile(getArgValue("--profile") || "london_league");
+  const seasonId = getArgValue("--season-id");
+  const competitionId = getArgValue("--competition-id");
+  const divisionName = getArgValue("--division-name");
+  if (!seasonId || !competitionId) {
+    throw new Error("Missing required --season-id or --competition-id");
+  }
+  const refresh = hasFlag("--refresh");
+  const skipExisting = hasFlag("--skip-existing");
+  const result = await exportMatchPeople({
+    profile,
+    seasonId: Number(seasonId),
+    seasonLabel: getArgValue("--season-label") || String(seasonId),
+    competitionId: Number(competitionId),
+    divisionName,
+    refresh,
+    skipExisting,
+  });
+  printJson(result);
+}
+
+async function cmdExportCurrentSeasonMatchPeople() {
+  const profile = getProfile(getArgValue("--profile") || "london_league");
+  const refresh = hasFlag("--refresh");
+  const skipExisting = hasFlag("--skip-existing");
+  const result = await exportCurrentSeasonMatchPeople({
+    profile,
+    refresh,
+    skipExisting,
+  });
+  printJson(result);
+}
+
+async function cmdExportSeasonMatchPeople() {
+  const profile = getProfile(getArgValue("--profile") || "london_league");
+  const seasonId = getArgValue("--season-id");
+  if (!seasonId) {
+    throw new Error("Missing required --season-id");
+  }
+  const refresh = hasFlag("--refresh");
+  const skipExisting = hasFlag("--skip-existing");
+  const mode = getArgValue("--mode") || profile.defaultDivisionMode || "raw";
+  const result = await exportSeasonMatchPeople({
+    profile,
+    seasonId: Number(seasonId),
+    seasonLabel: getArgValue("--season-label") || String(seasonId),
+    refresh,
+    skipExisting,
+    mode,
+  });
+  printJson(result);
+}
+
 async function main() {
   const command = process.argv[2];
   switch (command) {
@@ -221,9 +187,18 @@ async function main() {
     case "profiles":
       await cmdProfiles();
       return;
+    case "export-match-people":
+      await cmdExportMatchPeople();
+      return;
+    case "export-current-season-match-people":
+      await cmdExportCurrentSeasonMatchPeople();
+      return;
+    case "export-season-match-people":
+      await cmdExportSeasonMatchPeople();
+      return;
     default:
       process.stderr.write(
-        "Usage: node src/cli.js <profiles|seasons|current-divisions|season-info|generate-current-season|generate-division> [--profile ID] [--mode raw|filtered] [--season-id N] [--competition-id N] [--division-name NAME] [--refresh]\n"
+        "Usage: node src/cli.js <profiles|seasons|current-divisions|season-info|generate-current-season|generate-division|export-match-people|export-current-season-match-people|export-season-match-people> [--profile ID] [--mode raw|filtered] [--season-id N] [--competition-id N] [--division-name NAME] [--refresh] [--skip-existing]\n"
       );
       process.exitCode = 1;
   }

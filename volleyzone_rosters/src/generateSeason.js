@@ -1,12 +1,9 @@
 const path = require("path");
-const { getFixtureResultsPage, writeText } = require("./http");
-const {
-  parseSeasonOptions,
-  parseDivisionOptions,
-} = require("./parseFixtureResults");
+const { writeText } = require("./http");
 const { seasonLabelToSlug } = require("./normalize");
 const { generateDivision } = require("./generateDivision");
 const { getProfileOutputDir } = require("./config");
+const { discoverCurrentDivisions } = require("./discoverCurrentDivisions");
 
 function buildTopLevelReadme({ profile, season, divisionsGenerated }) {
   const coverage = divisionsGenerated
@@ -50,14 +47,13 @@ That keeps the squad page as the source for eligibility, while using teamsheets 
 }
 
 async function generateCurrentSeason({ profile, refresh = false } = {}) {
-  const fixturePage = await getFixtureResultsPage(profile, { refresh });
-  const seasons = parseSeasonOptions(fixturePage.text);
-  const currentSeason = seasons.find((season) => season.selected);
+  const discovery = await discoverCurrentDivisions(profile, { refresh });
+  const currentSeason = discovery.currentSeason;
   if (!currentSeason) {
     throw new Error("Unable to determine current season from fixture page");
   }
 
-  const divisions = parseDivisionOptions(fixturePage.text);
+  const divisions = discovery.divisions;
   const generated = [];
   for (const division of divisions) {
     generated.push(

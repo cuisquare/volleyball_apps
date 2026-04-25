@@ -26,6 +26,8 @@ The generator currently supports:
 - fetching division fixture data from the same JSON endpoint the site uses
 - fetching squad pages and teamsheets
 - generating roster JSON files and division READMEs in `volleyzone_rosters/output/<profile>/`
+- exporting normalized match-level CSV data for one division or a whole current season
+- exporting normalized match-level CSV data for a chosen season or the current season
 
 ## Profiles
 
@@ -62,6 +64,10 @@ node volleyzone_rosters/src/cli.js current-divisions --profile nvl --mode filter
 node volleyzone_rosters/src/cli.js season-info --profile london_league --season-id 3484
 node volleyzone_rosters/src/cli.js generate-division --profile london_league --season-id 3881 --season-label 2025-2026 --competition-id 209510 --division-name "Men's Division 1B"
 node volleyzone_rosters/src/cli.js generate-current-season --profile london_league
+node volleyzone_rosters/src/cli.js export-match-people --profile london_league --season-id 3881 --season-label 2025-2026 --competition-id 209501 --division-name "Women's Premier Division"
+node volleyzone_rosters/src/cli.js export-season-match-people --profile london_league --season-id 3881 --season-label 2025-2026
+node volleyzone_rosters/src/cli.js export-current-season-match-people --profile london_league
+node volleyzone_rosters/src/cli.js export-current-season-match-people --profile london_league --skip-existing
 ```
 
 Equivalent npm scripts:
@@ -76,6 +82,10 @@ npm run current-divisions -- --profile nvl --mode filtered
 npm run season-info -- --profile london_league --season-id 3484
 npm run generate-division -- --profile london_league --season-id 3881 --season-label 2025-2026 --competition-id 209510 --division-name "Men's Division 1B"
 npm run generate-current-season -- --profile london_league
+npm run export-match-people -- --profile london_league --season-id 3881 --season-label 2025-2026 --competition-id 209501 --division-name "Women's Premier Division"
+npm run export-season-match-people -- --profile london_league --season-id 3881 --season-label 2025-2026
+npm run export-current-season-match-people -- --profile london_league
+npm run export-current-season-match-people -- --profile london_league --skip-existing
 ```
 
 ## Cache Layout
@@ -93,6 +103,19 @@ Cache is now profile-aware:
 Generated output is also profile-aware:
 
 - `output/<profile>/`
+
+Match export output is season-aware:
+
+- `output/<profile>/<season_slug>/<division_slug>/`
+
+Match export commands write:
+
+- `matches.csv`
+- `match_people.csv`
+
+inside each division folder, and the season bulk exports write a `match_exports.json` index file into the season folder.
+
+When re-running exports, `--skip-existing` will leave any division alone if both CSV files already exist and `--refresh` is not set.
 
 This allows London League, NVL, Super League, and similar competition families to coexist without overwriting one another.
 
