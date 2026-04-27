@@ -4,6 +4,7 @@ const { seasonLabelToSlug } = require("./normalize");
 const { getProfileSeasonOutputDir } = require("./config");
 const { discoverCurrentDivisions } = require("./discoverCurrentDivisions");
 const { exportMatchPeople } = require("./exportMatchPeople");
+const { logProgress } = require("./progress");
 
 async function exportCurrentSeasonMatchPeople({
   profile,
@@ -15,9 +16,15 @@ async function exportCurrentSeasonMatchPeople({
   if (!currentSeason) {
     throw new Error("Unable to determine current season from fixture page");
   }
+  logProgress(
+    `Current season for ${profile.id} is ${currentSeason.label}; ${discovery.divisions.length} divisions discovered`
+  );
 
   const exports = [];
-  for (const division of discovery.divisions) {
+  for (const [index, division] of discovery.divisions.entries()) {
+    logProgress(
+      `Exporting current-season division ${index + 1}/${discovery.divisions.length}: ${division.name}`
+    );
     exports.push(
       await exportMatchPeople({
         profile,
@@ -57,6 +64,7 @@ async function exportCurrentSeasonMatchPeople({
   };
 
   await writeText(indexPath, `${JSON.stringify(indexJson, null, 2)}\n`);
+  logProgress(`Wrote season export index: ${indexPath}`);
 
   return {
     profileId: profile.id,

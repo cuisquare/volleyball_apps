@@ -15,6 +15,7 @@ const {
   MATCH_PEOPLE_COLUMNS,
 } = require("./extractMatchData");
 const { writeCsv } = require("./csv");
+const { logProgress } = require("./progress");
 
 async function fileExists(filePath) {
   try {
@@ -53,6 +54,9 @@ async function exportMatchPeople({
 
   const effectiveDivisionName =
     divisionName || fixtureRows[0].competitionName || `Competition ${competitionId}`;
+  logProgress(
+    `Preparing export for ${profile.id} ${seasonLabel} / ${effectiveDivisionName} (${fixtureRows.length} fixtures)`
+  );
   const divisionSlug = buildDivisionSlug(effectiveDivisionName);
   const seasonSlug = seasonLabelToSlug(seasonLabel);
   const divisionDir = path.join(
@@ -69,6 +73,9 @@ async function exportMatchPeople({
     (await fileExists(matchesCsvPath)) &&
     (await fileExists(matchPeopleCsvPath))
   ) {
+    logProgress(
+      `Skipping ${effectiveDivisionName} because matches.csv and match_people.csv already exist`
+    );
     return {
       profileId: profile.id,
       seasonId,
@@ -91,7 +98,10 @@ async function exportMatchPeople({
   const peopleRows = [];
   const skippedFixtureIds = [];
 
-  for (const fixture of fixtureRows) {
+  for (const [index, fixture] of fixtureRows.entries()) {
+    logProgress(
+      `  [${index + 1}/${fixtureRows.length}] ${fixture.homeTeam} vs ${fixture.awayTeam}`
+    );
     let teamsheetEntries = [];
     try {
       const teamsheet = await getTeamSheet(
@@ -104,6 +114,7 @@ async function exportMatchPeople({
       teamsheetEntries = parseTeamsheet(teamsheet.text);
     } catch (error) {
       skippedFixtureIds.push(fixture.fixtureId);
+      logProgress(`    teamsheet unavailable for fixture ${fixture.fixtureId}`);
     }
 
     const extracted = buildMatchExport({
@@ -118,6 +129,11 @@ async function exportMatchPeople({
 
   await writeCsv(matchesCsvPath, MATCH_COLUMNS, matchRows);
   await writeCsv(matchPeopleCsvPath, MATCH_PEOPLE_COLUMNS, peopleRows);
+  logProgress(
+    `Wrote ${effectiveDivisionName}: ${path.basename(matchesCsvPath)}, ${path.basename(
+      matchPeopleCsvPath
+    )}`
+  );
 
   return {
     profileId: profile.id,

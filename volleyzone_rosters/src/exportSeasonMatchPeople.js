@@ -4,6 +4,7 @@ const { seasonLabelToSlug } = require("./normalize");
 const { getProfileSeasonOutputDir } = require("./config");
 const { discoverSeasonDivisions } = require("./discoverSeasonDivisions");
 const { exportMatchPeople } = require("./exportMatchPeople");
+const { logProgress } = require("./progress");
 
 async function exportSeasonMatchPeople({
   profile,
@@ -17,9 +18,15 @@ async function exportSeasonMatchPeople({
     refresh,
     mode,
   });
+  logProgress(
+    `Discovered ${discovery.divisions.length} divisions for ${profile.id} ${seasonLabel} using ${discovery.mode} mode`
+  );
 
   const exports = [];
-  for (const division of discovery.divisions) {
+  for (const [index, division] of discovery.divisions.entries()) {
+    logProgress(
+      `Exporting division ${index + 1}/${discovery.divisions.length}: ${division.name}`
+    );
     exports.push(
       await exportMatchPeople({
         profile,
@@ -59,6 +66,7 @@ async function exportSeasonMatchPeople({
   };
 
   await writeText(indexPath, `${JSON.stringify(indexJson, null, 2)}\n`);
+  logProgress(`Wrote season export index: ${indexPath}`);
 
   return {
     profileId: profile.id,
